@@ -1,0 +1,147 @@
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { connectDB } from "@/lib/db";
+import { User } from "@/models/User";
+import { VerificationCode } from "@/models/VerificationCode";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+
+function text(value: unknown, max = 100) {
+  return String(value ?? "").trim().slice(0, max);
+}
+
+function normalizeUsername(value: unknown) {
+  return String(value ?? "").trim().toLowerCase().slice(0, 30);
+}
+
+function normalizePhone(value: unknown) {
+  return String(value ?? "")
+    .replace(/[^\d\-+\s()]/g, "")
+    .trim()
+    .slice(0, 30);
+}
+
+export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isRateLimited(`signup:${ip}`, 3, 60 * 60 * 1000)) {
+    return NextResponse.json(
+      { ok: false, error: "잠시 후 다시 시도해 주세요. (1시간에 3회 제한)" },
+      { status: 429 }
+    );
+  }
+
+  try {
+    const body = await req.json();
+
+    const name = text(body?.name, 50);
+    const username = normalizeUsername(body?.username);
+    const password = String(body?.password ?? "");
+    const passwordConfirm = String(body?.passwordConfirm ?? "");
+    const phone = normalizePhone(body?.phone);
+    const address = text(body?.address, 200);
+    const detailAddress = text(body?.detailAddress, 200);
+    const email = String(body?.email ?? "").trim().toLowerCase();
+    const verificationCode = String(body?.verificationCode ?? "").trim();
+
+    if (!name) {
+      return NextResponse.json({ ok: false, error: "이름을 입력해 주세요." }, { status: 400 });
+    }
+
+    if (!username || username.length < 4) {
+      return NextResponse.json({ ok: false, error: "아이디는 4자 이상 입력해 주세요." }, { status: 400 });
+    }
+
+    if (!password || password.length < 8) {
+      return NextResponse.json({ ok: false, error: "비밀번호는 8자 이상 입력해 주세요." }, { status: 400 });
+    }
+
+    if (password !== passwordConfirm) {
+      return NextResponse.json({ ok: false, error: "비밀번호 확인이 일치하지 않습니다." }, { status: 400 });
+    }
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ ok: false, error: "올바른 이메일 주소를 입력해 주세요." }, { status: 400 });
+    }
+
+    if (!verificationCode) {
+      return NextResponse.json({ ok: false, error: "이메일 인증을 완료해 주세요." }, { status: 400 });
+    }
+
+    if (!phone) {
+      return NextResponse.json({ ok: false, error: "전화번호를 입력해 주세요." }, { status: 400 });
+    }
+
+    if (!address) {
+      return NextResponse.json({ ok: false, error: "주소를 입력해 주세요." }, { status: 400 });
+    }
+
+    await connectDB();
+
+    // 이메일 인증 코드 검증
+    const record = await VerificationCode.findOne({ email }).lean() as any;
+
+    if (!record) {
+      return NextResponse.json(
+        { ok: false, error: "인증 코드가 없습니다. 인증 코드를 다시 발송해 주세요." },
+        { status: 400 }
+      );
+    }
+
+    if (new Date() > new Date(record.expiresAt)) {
+      return NextResponse.json(
+        { ok: false, error: "인증 코드가 만료되었습니다. 인증 코드를 다시 발송해 주세요." },
+        { status: 400 }
+      );
+    }
+
+    if (record.code !== verificationCode) {
+      return NextResponse.json(
+        { ok: false, error: "인증 코드가 올바르지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    // 중복 확인
+    const existsUsername = await User.findOne({ username }, { _id: 1 }).lean();
+    if (existsUsername) {
+      return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
+    }
+
+    const existsEmail = await User.findOne({ email }, { _id: 1 }).lean();
+    if (existsEmail) {
+      return NextResponse.json({ ok: false, error: "이미 사용 중인 이메일입니다." }, { status: 409 });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await User.create({
+      username,
+      passwordHash,
+      name,
+      email,
+      role: "CUSTOMER",
+      status: "ACTIVE",
+      pointBalance: 0,
+      customerProfile: {
+        phone,
+        address,
+        detailAddress,
+        onboardingCompleted: false,
+        interests: [],
+      },
+    });
+
+    // 사용된 인증 코드 삭제
+    await VerificationCode.deleteOne({ email });
+
+    return NextResponse.json({
+      ok: true,
+      message: "고객 회원가입이 완료되었습니다.",
+    });
+  } catch (error) {
+    console.error("[CUSTOMER_SIGNUP_POST_ERROR]", error);
+    return NextResponse.json(
+      { ok: false, error: "고객 회원가입에 실패했습니다." },
+      { status: 500 }
+    );
+  }
+}

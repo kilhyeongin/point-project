@@ -1,0 +1,235 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────────────────────────────────────
+   THEME MAPPING (Tailwind v4 → CSS vars)
+───────────────────────────────────────────── */
+@theme inline {
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-heading: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.4);
+  --radius-4xl: calc(var(--radius) * 3);
+}
+
+/* ─────────────────────────────────────────────
+   LIGHT THEME — Premium Korean Fintech
+   Inspired by Toss but more distinctive
+───────────────────────────────────────────── */
+:root {
+  /* Background: cool near-white, not pure white */
+  --background: oklch(0.975 0.005 240);
+  --foreground: oklch(0.13 0.025 255);
+
+  /* Card: pure white — floats above background */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0.025 255);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.13 0.025 255);
+
+  /* Primary: vibrant blue #0057FF zone */
+  --primary: oklch(0.52 0.27 264);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary: very light blue tint */
+  --secondary: oklch(0.955 0.018 255);
+  --secondary-foreground: oklch(0.35 0.1 264);
+
+  /* Muted: subtle gray with blue undertone */
+  --muted: oklch(0.955 0.008 250);
+  --muted-foreground: oklch(0.50 0.02 255);
+
+  /* Accent: interactive hover */
+  --accent: oklch(0.945 0.018 260);
+  --accent-foreground: oklch(0.52 0.27 264);
+
+  /* Danger */
+  --destructive: oklch(0.555 0.235 27);
+
+  /* Border: extremely subtle */
+  --border: oklch(0.918 0.008 250);
+  --input: oklch(0.918 0.008 250);
+  --ring: oklch(0.52 0.27 264);
+
+  /* Charts */
+  --chart-1: oklch(0.52 0.27 264);
+  --chart-2: oklch(0.62 0.19 200);
+  --chart-3: oklch(0.65 0.18 145);
+  --chart-4: oklch(0.68 0.18 45);
+  --chart-5: oklch(0.58 0.22 310);
+
+  /* Radius — slightly rounder than before */
+  --radius: 0.875rem;
+
+  /* Sidebar */
+  --sidebar: oklch(0.135 0.03 255);
+  --sidebar-foreground: oklch(0.96 0.005 255);
+  --sidebar-primary: oklch(0.52 0.27 264);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.22 0.04 255);
+  --sidebar-accent-foreground: oklch(0.96 0.005 255);
+  --sidebar-border: oklch(0.22 0.03 255);
+  --sidebar-ring: oklch(0.52 0.27 264);
+}
+
+/* ─────────────────────────────────────────────
+   BASE LAYER
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.025em;
+    font-weight: 700;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   SHADOW SYSTEM — No borders, only shadows
+───────────────────────────────────────────── */
+@layer utilities {
+  /* Card elevation levels */
+  .shadow-card {
+    box-shadow:
+      0 0 0 1px oklch(0.918 0.008 250),
+      0 2px 8px -2px oklch(0.52 0.27 264 / 0.06),
+      0 4px 16px -4px oklch(0 0 0 / 0.06);
+  }
+
+  .shadow-card-hover {
+    box-shadow:
+      0 0 0 1px oklch(0.52 0.27 264 / 0.15),
+      0 4px 16px -4px oklch(0.52 0.27 264 / 0.12),
+      0 8px 32px -8px oklch(0 0 0 / 0.08);
+  }
+
+  .shadow-elevated {
+    box-shadow:
+      0 0 0 1px oklch(0.918 0.008 250),
+      0 8px 24px -6px oklch(0 0 0 / 0.1),
+      0 16px 48px -12px oklch(0 0 0 / 0.08);
+  }
+
+  .shadow-primary {
+    box-shadow:
+      0 4px 16px -4px oklch(0.52 0.27 264 / 0.4),
+      0 2px 6px -2px oklch(0.52 0.27 264 / 0.25);
+  }
+
+  /* Smooth transitions everywhere */
+  .transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Glass effect for overlays */
+  .glass {
+    background: oklch(1 0 0 / 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Gradient text */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, oklch(0.52 0.27 264), oklch(0.62 0.22 240));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Scrollbar hide */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   COMPONENT OVERRIDES
+───────────────────────────────────────────── */
+@layer components {
+  /* Input: no harsh border, subtle shadow */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  /* Focus ring: blue glow */
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px oklch(0.52 0.27 264 / 0.15),
+      0 0 0 1px oklch(0.52 0.27 264 / 0.8);
+  }
+
+  /* Button press animation */
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
