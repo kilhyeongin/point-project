@@ -72,8 +72,8 @@ export default function PartnerScanPage() {
           () => {}
         );
         isRunningRef.current = true;
-      } catch {
-        if (!cancelled) setMsg("카메라 시작 실패 (권한을 허용했는지 확인)");
+      } catch (err) {
+        if (!cancelled) setMsg(`카메라 시작 실패: ${err instanceof Error ? err.message : String(err)}`);
       }
     })();
 
