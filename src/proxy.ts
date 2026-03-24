@@ -9,9 +9,13 @@ export function proxy(request: NextRequest) {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("X-XSS-Protection", "1; mode=block");
+
+  const isScanPage = request.nextUrl.pathname.startsWith("/partner/scan");
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()"
+    isScanPage
+      ? "camera=(self), microphone=(), geolocation=()"
+      : "camera=(), microphone=(), geolocation=()"
   );
 
   return response;
