@@ -174,7 +174,7 @@ export default function PartnerScanPage() {
           <QrCode className="w-4 h-4 text-primary" />
           <span className="text-sm font-bold text-foreground">QR 카메라</span>
         </div>
-        <div id={regionId} className="rounded-xl overflow-hidden min-h-64 w-full" />
+        <div id={regionId} className="rounded-xl min-h-64 w-full" />
       </div>
 
       {/* Form */}
