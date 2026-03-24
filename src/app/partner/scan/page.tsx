@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Html5Qrcode as Html5QrcodeType } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QrCode, CheckCircle2 } from "lucide-react";
@@ -25,96 +24,97 @@ export default function PartnerScanPage() {
 
   const amountNum = useMemo(() => onlyDigitsToNumber(amountText), [amountText]);
 
-  const qrRef = useRef<Html5QrcodeType | null>(null);
-  const isRunningRef = useRef(false);
-  const regionId = "qr-reader-region";
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scanningRef = useRef(false);
 
-  async function stopScanner() {
-    const qr = qrRef.current;
-    if (!qr || !isRunningRef.current) return;
-    isRunningRef.current = false;
+  function stopCamera() {
+    scanningRef.current = false;
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    if (videoRef.current) { videoRef.current.srcObject = null; }
+  }
+
+  async function startCamera(onFound: (text: string) => void) {
+    stopCamera();
     try {
-      await qr.stop();
-    } catch {
-      // already stopped — ignore
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
+      video.srcObject = stream;
+      await video.play();
+      scanningRef.current = true;
+
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const decoder = new Html5Qrcode("qr-decoder-hidden");
+
+      async function scanFrame() {
+        if (!scanningRef.current || !videoRef.current) return;
+        const v = videoRef.current;
+        const w = v.videoWidth;
+        const h = v.videoHeight;
+        if (!w || !h) { timerRef.current = setTimeout(scanFrame, 300); return; }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { timerRef.current = setTimeout(scanFrame, 300); return; }
+        ctx.drawImage(v, 0, 0, w, h);
+
+        await new Promise<void>(resolve => {
+          canvas.toBlob(async (blob) => {
+            if (!blob) { resolve(); return; }
+            try {
+              const file = new File([blob], "frame.jpg", { type: "image/jpeg" });
+              const result = await decoder.scanFile(file, false);
+              if (scanningRef.current) {
+                scanningRef.current = false;
+                stopCamera();
+                onFound(result);
+              }
+            } catch {
+              // QR not found in this frame, continue
+            }
+            resolve();
+          }, "image/jpeg", 0.8);
+        });
+
+        if (scanningRef.current) {
+          timerRef.current = setTimeout(scanFrame, 200);
+        }
+      }
+
+      timerRef.current = setTimeout(scanFrame, 500);
+    } catch (err) {
+      setMsg(`카메라 시작 실패: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      if (cancelled) return;
-
-      const qr = new Html5Qrcode(regionId);
-      qrRef.current = qr;
-
-      setMsg("");
-      try {
-        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-        if (!isIOS) {
-          const permStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-          permStream.getTracks().forEach(t => t.stop());
-          if (cancelled) { try { qr.clear(); } catch {} return; }
-        }
-
-        await qr.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 280 },
-          (decodedText) => {
-            if (cancelled) return;
-            isRunningRef.current = false;
-            try { qr.stop(); } catch {}
-            setScanned(decodedText);
-            setMsg("스캔 완료. 금액 입력 후 차감요청을 생성하세요.");
-          },
-          () => {}
-        );
-        isRunningRef.current = true;
-      } catch (err) {
-        if (!cancelled) setMsg(`카메라 시작 실패: ${err instanceof Error ? err.message : String(err)}`);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      stopScanner().finally(() => {
-        try { qrRef.current?.clear(); } catch {}
-        qrRef.current = null;
-      });
-    };
+    startCamera((text) => {
+      setScanned(text);
+      setMsg("스캔 완료. 금액 입력 후 차감요청을 생성하세요.");
+    });
+    return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function createUseRequestByQr() {
     setMsg("");
-
-    if (!scanned) {
-      setMsg("먼저 QR을 스캔해주세요.");
-      return;
-    }
-    if (amountNum <= 0) {
-      setMsg("금액을 1 이상 입력해주세요.");
-      return;
-    }
+    if (!scanned) { setMsg("먼저 QR을 스캔해주세요."); return; }
+    if (amountNum <= 0) { setMsg("금액을 1 이상 입력해주세요."); return; }
 
     try {
       const res = await fetch("/api/partner/use-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          qrPayload: scanned,
-          amount: amountNum,
-          note: note.trim(),
-        }),
+        body: JSON.stringify({ qrPayload: scanned, amount: amountNum, note: note.trim() }),
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        setMsg(data?.message ?? "차감요청 생성 실패");
-        return;
-      }
+      if (!res.ok) { setMsg(data?.message ?? "차감요청 생성 실패"); return; }
 
       const instant = data?.instant ?? false;
       setMsg(
@@ -126,21 +126,10 @@ export default function PartnerScanPage() {
       setAmountText("0");
       setNote("");
 
-      const qr = qrRef.current;
-      if (qr) {
-        await qr.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 280 },
-          (decodedText) => {
-            isRunningRef.current = false;
-            try { qr.stop(); } catch {}
-            setScanned(decodedText);
-            setMsg("스캔 완료. 금액 입력 후 차감요청을 생성하세요.");
-          },
-          () => {}
-        );
-        isRunningRef.current = true;
-      }
+      startCamera((text) => {
+        setScanned(text);
+        setMsg("스캔 완료. 금액 입력 후 차감요청을 생성하세요.");
+      });
     } catch {
       setMsg("네트워크 오류");
     }
@@ -174,7 +163,15 @@ export default function PartnerScanPage() {
           <QrCode className="w-4 h-4 text-primary" />
           <span className="text-sm font-bold text-foreground">QR 카메라</span>
         </div>
-        <div id={regionId} className="rounded-xl min-h-64 w-full" />
+        <div id="qr-decoder-hidden" style={{ display: "none" }} />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full rounded-xl"
+          style={{ minHeight: "200px", background: "#000" }}
+        />
       </div>
 
       {/* Form */}
