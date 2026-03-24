@@ -52,16 +52,8 @@ export default function PartnerScanPage() {
 
       setMsg("");
       try {
-        const cams = await Html5Qrcode.getCameras();
-        if (cancelled) { try { qr.clear(); } catch {} return; }
-        if (!cams || cams.length === 0) {
-          setMsg("카메라를 찾을 수 없습니다.");
-          return;
-        }
-
-        const camId = cams[cams.length - 1].id;
         await qr.start(
-          camId,
+          { facingMode: "environment" },
           { fps: 10, qrbox: 280 },
           (decodedText) => {
             if (cancelled) return;
@@ -129,11 +121,8 @@ export default function PartnerScanPage() {
 
       const qr = qrRef.current;
       if (qr) {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        const cams = await Html5Qrcode.getCameras();
-        const camId = cams[cams.length - 1].id;
         await qr.start(
-          camId,
+          { facingMode: "environment" },
           { fps: 10, qrbox: 280 },
           (decodedText) => {
             isRunningRef.current = false;
@@ -178,7 +167,7 @@ export default function PartnerScanPage() {
           <QrCode className="w-4 h-4 text-primary" />
           <span className="text-sm font-bold text-foreground">QR 카메라</span>
         </div>
-        <div id={regionId} className="rounded-xl overflow-hidden" />
+        <div id={regionId} className="rounded-xl overflow-hidden min-h-64 w-full" />
       </div>
 
       {/* Form */}
