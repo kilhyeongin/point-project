@@ -52,9 +52,12 @@ export default function PartnerScanPage() {
 
       setMsg("");
       try {
-        const permStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        permStream.getTracks().forEach(t => t.stop());
-        if (cancelled) { try { qr.clear(); } catch {} return; }
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        if (!isIOS) {
+          const permStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          permStream.getTracks().forEach(t => t.stop());
+          if (cancelled) { try { qr.clear(); } catch {} return; }
+        }
 
         await qr.start(
           { facingMode: "environment" },
