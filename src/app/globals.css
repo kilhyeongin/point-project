@@ -4,6 +4,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* html5-qrcode 내부 레이아웃 수정 */
+#qr-reader-region__scan_region {
+  position: relative !important;
+  overflow: hidden !important;
+}
+#qr-reader-region__scan_region video {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  position: static !important;
+}
+#qr-reader-region__scan_region canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+#qr-reader-region__dashboard {
+  display: none !important;
+}
+
 /* ─────────────────────────────────────────────
    THEME MAPPING (Tailwind v4 → CSS vars)
 ───────────────────────────────────────────── */
