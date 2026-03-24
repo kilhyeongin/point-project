@@ -52,24 +52,12 @@ export default function PartnerScanPage() {
 
       setMsg("");
       try {
-        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-        let cameraArg: string | { facingMode: string };
-
-        if (isIOS) {
-          cameraArg = { facingMode: "environment" };
-        } else {
-          await navigator.mediaDevices.getUserMedia({ video: true });
-          const cams = await Html5Qrcode.getCameras();
-          if (cancelled) { try { qr.clear(); } catch {} return; }
-          if (!cams || cams.length === 0) {
-            setMsg("카메라를 찾을 수 없습니다.");
-            return;
-          }
-          cameraArg = cams[cams.length - 1].id;
-        }
+        const permStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        permStream.getTracks().forEach(t => t.stop());
+        if (cancelled) { try { qr.clear(); } catch {} return; }
 
         await qr.start(
-          cameraArg,
+          { facingMode: "environment" },
           { fps: 10, qrbox: 280 },
           (decodedText) => {
             if (cancelled) return;
@@ -137,11 +125,8 @@ export default function PartnerScanPage() {
 
       const qr = qrRef.current;
       if (qr) {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        const cams = await Html5Qrcode.getCameras();
-        const camId = cams[cams.length - 1].id;
         await qr.start(
-          camId,
+          { facingMode: "environment" },
           { fps: 10, qrbox: 280 },
           (decodedText) => {
             isRunningRef.current = false;
