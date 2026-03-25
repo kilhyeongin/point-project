@@ -126,7 +126,7 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
             ].map(({ label, value }) => (
               <div key={label} className="flex py-3 border-b border-border/60 last:border-0 gap-4">
                 <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">{label}</span>
-                <span className="text-sm text-foreground">{value}</span>
+                <span className="text-sm text-foreground whitespace-pre-line">{value}</span>
               </div>
             ))}
             {profile.kakaoChannelUrl && (
