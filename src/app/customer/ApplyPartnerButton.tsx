@@ -293,6 +293,7 @@ export default function ApplyPartnerButton({
   const [actionError, setActionError] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
+  const [showForm, setShowForm] = useState(false);
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<SlotInfo[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -614,7 +615,28 @@ export default function ApplyPartnerButton({
 
   // ── 신청 폼 ──
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <div className="space-y-4">
+      {/* 신청하기 버튼 */}
+      {!showForm && (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          style={{ background: "oklch(0.52 0.27 264)" }}
+          className="w-full h-12 rounded-xl text-white text-sm font-bold transition-opacity hover:opacity-90"
+        >
+          신청하기
+        </button>
+      )}
+
+      {externalApplyUrl && !showForm && (
+        <a href={externalApplyUrl} target="_blank" rel="noreferrer"
+          className="flex items-center justify-center h-11 w-full rounded-xl border border-border text-sm font-bold text-foreground bg-card hover:bg-muted transition-colors">
+          외부 신청 링크
+        </a>
+      )}
+
+      {showForm && (
+      <form onSubmit={submit} className="space-y-5">
       {/* 운영 안내 */}
       <div className="flex flex-wrap gap-3 text-xs">
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted font-bold text-foreground">
@@ -746,16 +768,19 @@ export default function ApplyPartnerButton({
         {loading ? "신청 중..." : !date ? "날짜를 선택해 주세요" : !selectedSlot ? "시간을 선택해 주세요" : "제휴사에 신청하기"}
       </button>
 
-      {externalApplyUrl && (
-        <a href={externalApplyUrl} target="_blank" rel="noreferrer"
-          className="flex items-center justify-center h-11 w-full rounded-xl border border-border text-sm font-bold text-foreground bg-card hover:bg-muted transition-colors">
-          외부 신청 링크
-        </a>
-      )}
+      <button
+        type="button"
+        onClick={() => { setShowForm(false); setDate(""); setSelectedSlot(""); setNote(""); setMessage(""); }}
+        className="w-full h-10 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+      >
+        취소
+      </button>
 
       <p className="text-xs text-muted-foreground leading-relaxed">
         신청 전에는 제휴사에 최소 정보만 공개됩니다. 신청 후 이름·연락처·주소가 공개됩니다.
       </p>
     </form>
+      )}
+    </div>
   );
 }

@@ -118,10 +118,36 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
           )}
         </div>
 
+        {/* Business info */}
+        <div className="bg-card shadow-card rounded-2xl p-5">
+          <h2 className="text-base font-black text-foreground mb-4">업체 정보</h2>
+          <div className="space-y-0">
+            {[
+              { label: "카테고리", value: categoryLabels.length > 0 ? categoryLabels.join(", ") : "기타" },
+              { label: "혜택 안내", value: String(profile.benefitText ?? "-") },
+              { label: "주소", value: [profile.address, profile.detailAddress].filter(Boolean).join(" ") || "-" },
+              { label: "전화번호", value: String(profile.phone ?? "-") },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex py-3 border-b border-border/60 last:border-0 gap-4">
+                <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">{label}</span>
+                <span className="text-sm text-foreground">{value}</span>
+              </div>
+            ))}
+            {profile.kakaoChannelUrl && (
+              <div className="flex py-3 gap-4">
+                <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">카카오채널</span>
+                <a href={String(profile.kakaoChannelUrl)} target="_blank" rel="noreferrer"
+                  className="text-sm text-primary font-bold hover:underline underline-offset-2">
+                  바로가기 →
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Apply section */}
         <div className="bg-card shadow-card rounded-2xl p-5 space-y-3">
           <h2 className="text-base font-black text-foreground">신청 및 정보 공개</h2>
-
           <div className={`p-3 rounded-xl border text-sm leading-relaxed ${
             applied
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
@@ -138,7 +164,6 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
                 : "신청 전에는 제휴사에 최소 정보만 공개됩니다. 찜만 해도 잠재고객으로 들어가지만 연락처와 주소는 공개되지 않습니다."}
             </div>
           </div>
-
           <ApplyPartnerButton
             partnerId={String((doc as any)._id)}
             initialApplied={applied}
@@ -166,39 +191,6 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
               blockedDates: Array.isArray(profile.blockedDates) ? profile.blockedDates : [],
             }}
           />
-        </div>
-
-        {/* Business info */}
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <h2 className="text-base font-black text-foreground mb-4">업체 정보</h2>
-
-          <div className="space-y-0">
-            {[
-              { label: "카테고리", value: categoryLabels.length > 0 ? categoryLabels.join(", ") : "기타" },
-              { label: "혜택 안내", value: String(profile.benefitText ?? "-") },
-              { label: "주소", value: [profile.address, profile.detailAddress].filter(Boolean).join(" ") || "-" },
-              { label: "전화번호", value: String(profile.phone ?? "-") },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex py-3 border-b border-border/60 last:border-0 gap-4">
-                <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">{label}</span>
-                <span className="text-sm text-foreground">{value}</span>
-              </div>
-            ))}
-
-            {profile.kakaoChannelUrl && (
-              <div className="flex py-3 gap-4">
-                <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">카카오채널</span>
-                <a
-                  href={String(profile.kakaoChannelUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm text-primary font-bold hover:underline underline-offset-2"
-                >
-                  바로가기 →
-                </a>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
