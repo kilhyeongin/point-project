@@ -9,6 +9,7 @@ import {
 } from "@/lib/partnerCategories";
 import ApplyPartnerButton from "@/app/customer/ApplyPartnerButton";
 import Link from "next/link";
+import { Gift, MapPin, Phone, MessageCircle } from "lucide-react";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -119,30 +120,47 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
         </div>
 
         {/* Business info */}
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <h2 className="text-base font-black text-foreground mb-4">업체 정보</h2>
-          <div className="space-y-0">
-            {[
-              { label: "카테고리", value: categoryLabels.length > 0 ? categoryLabels.join(", ") : "기타" },
-              { label: "혜택 안내", value: String(profile.benefitText ?? "-") },
-              { label: "주소", value: [profile.address, profile.detailAddress].filter(Boolean).join(" ") || "-" },
-              { label: "전화번호", value: String(profile.phone ?? "-") },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex py-3 border-b border-border/60 last:border-0 gap-4">
-                <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">{label}</span>
-                <span className="text-sm text-foreground">{value}</span>
+        <div className="bg-card shadow-card rounded-2xl overflow-hidden">
+          {/* 혜택 안내 - 상단 강조 */}
+          {profile.benefitText && (
+            <div className="px-5 pt-5 pb-4 border-b border-border/60">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Gift className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs font-black text-primary uppercase tracking-wide">혜택</span>
               </div>
-            ))}
-            {profile.kakaoChannelUrl && (
-              <div className="flex py-3 gap-4">
-                <span className="w-20 shrink-0 text-xs font-bold text-muted-foreground pt-0.5">카카오채널</span>
-                <a href={String(profile.kakaoChannelUrl)} target="_blank" rel="noreferrer"
-                  className="text-sm text-primary font-bold hover:underline underline-offset-2">
-                  바로가기 →
-                </a>
-              </div>
-            )}
-          </div>
+              <p className="text-sm text-foreground font-medium leading-relaxed">
+                {String(profile.benefitText)}
+              </p>
+            </div>
+          )}
+
+          {/* 주소 */}
+          {[profile.address, profile.detailAddress].filter(Boolean).join(" ") && (
+            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border/60">
+              <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground">
+                {[profile.address, profile.detailAddress].filter(Boolean).join(" ")}
+              </span>
+            </div>
+          )}
+
+          {/* 전화번호 */}
+          {profile.phone && (
+            <a href={`tel:${String(profile.phone)}`}
+              className="flex items-center gap-3 px-5 py-3.5 border-b border-border/60 hover:bg-muted/40 transition-colors">
+              <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground font-semibold">{String(profile.phone)}</span>
+            </a>
+          )}
+
+          {/* 카카오채널 */}
+          {profile.kakaoChannelUrl && (
+            <a href={String(profile.kakaoChannelUrl)} target="_blank" rel="noreferrer"
+              className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/40 transition-colors">
+              <MessageCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-primary font-bold">카카오채널 바로가기 →</span>
+            </a>
+          )}
         </div>
 
         {/* Apply section */}
