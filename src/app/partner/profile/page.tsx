@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,11 @@ export default function PartnerProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
+  /* 이미지 업로드 상태 */
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   async function load() {
     setLoading(true);
     setMsg("");
@@ -129,6 +134,7 @@ export default function PartnerProfilePage() {
 
   function startEdit() {
     setForm({ ...data });
+    setImagePreview(data.coverImageUrl ?? "");
     setMsg("");
     setMode("edit");
   }
@@ -151,6 +157,41 @@ export default function PartnerProfilePage() {
     }));
   }
 
+  async function handleImageFile(file: File) {
+    if (!file) return;
+    setMsg("");
+    setImageUploading(true);
+    try {
+      const res = await fetch("/api/partner/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: file.type, fileSize: file.size }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        setMsg(data?.message ?? "업로드 URL 발급 실패");
+        return;
+      }
+
+      const putRes = await fetch(data.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) {
+        setMsg("이미지 업로드에 실패했습니다.");
+        return;
+      }
+
+      setImagePreview(data.publicUrl);
+      update("coverImageUrl", data.publicUrl);
+    } catch {
+      setMsg("이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
   async function save() {
     if (!form.name.trim()) {
       setMsg("업체명을 입력해주세요.");
@@ -164,11 +205,6 @@ export default function PartnerProfilePage() {
       setMsg("카카오채널 링크는 http:// 또는 https:// 형식의 올바른 주소만 입력할 수 있습니다.");
       return;
     }
-    if (form.coverImageUrl && !isValidUrl(form.coverImageUrl)) {
-      setMsg("대표 이미지 주소는 http:// 또는 https:// 형식의 올바른 주소만 입력할 수 있습니다.");
-      return;
-    }
-
     setSaving(true);
     setMsg("");
 
@@ -349,10 +385,9 @@ export default function PartnerProfilePage() {
             <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide pb-3 border-b border-border mb-4">
               대표 이미지
             </h2>
-            <InfoRow label="이미지 URL" value={data.coverImageUrl} />
 
-            <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-xs aspect-video bg-muted flex items-center justify-content-center text-sm text-muted-foreground/50">
-              {data.coverImageUrl && isValidUrl(data.coverImageUrl) ? (
+            <div className="rounded-xl overflow-hidden border border-border max-w-xs aspect-video bg-muted flex items-center justify-center text-sm text-muted-foreground/50">
+              {data.coverImageUrl ? (
                 <img
                   src={data.coverImageUrl}
                   alt="대표 이미지"
@@ -362,7 +397,7 @@ export default function PartnerProfilePage() {
                   }}
                 />
               ) : (
-                <span className="m-auto">이미지 없음</span>
+                <span>이미지 없음</span>
               )}
             </div>
           </section>
@@ -563,30 +598,59 @@ export default function PartnerProfilePage() {
               대표 이미지
             </h2>
 
-            <div>
-              <label className="block text-sm font-bold text-foreground mb-1.5">이미지 주소 (URL)</label>
-              <Input
-                value={form.coverImageUrl}
-                onChange={(e) => update("coverImageUrl", e.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-              <div className="mt-1.5 text-xs text-muted-foreground">http:// 또는 https:// 형식의 이미지 URL</div>
-            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageFile(file);
+                e.target.value = "";
+              }}
+            />
 
-            <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-xs aspect-video bg-muted flex items-center justify-center text-sm text-muted-foreground/50">
-              {form.coverImageUrl && isValidUrl(form.coverImageUrl) ? (
-                <img
-                  src={form.coverImageUrl}
-                  alt="대표 이미지 미리보기"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
+            <div
+              className="relative rounded-xl overflow-hidden border-2 border-dashed border-border max-w-xs aspect-video bg-muted flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {imagePreview ? (
+                <>
+                  <img
+                    src={imagePreview}
+                    alt="대표 이미지 미리보기"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <span className="text-white text-sm font-bold">이미지 변경</span>
+                  </div>
+                </>
               ) : (
-                <span>이미지 미리보기</span>
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16v-4m0 0V8m0 4h4m-4 0H8m13 4a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-semibold">클릭하여 이미지 업로드</span>
+                </div>
+              )}
+              {imageUploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">업로드 중...</span>
+                </div>
               )}
             </div>
+
+            <div className="mt-2 text-xs text-muted-foreground">JPG, PNG, WEBP, GIF · 최대 5MB</div>
+
+            {imagePreview && (
+              <button
+                type="button"
+                onClick={() => { setImagePreview(""); update("coverImageUrl", ""); }}
+                className="mt-2 text-xs font-bold text-destructive hover:underline"
+              >
+                이미지 삭제
+              </button>
+            )}
           </section>
 
           {/* 저장 / 취소 */}

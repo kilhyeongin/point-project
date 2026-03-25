@@ -53,6 +53,10 @@ function PartnerCard({
   onFavoriteChanged?: (partnerId: string, next: boolean) => void;
 }) {
   const imageUrl = item.coverImageUrl?.trim();
+  const [benefitExpanded, setBenefitExpanded] = useState(false);
+  const BENEFIT_LINES = 5;
+  const benefitLineCount = (item.benefitText || "").split("\n").length;
+  const benefitLong = benefitLineCount > BENEFIT_LINES || (item.benefitText || "").length > 120;
 
   return (
     <article className="bg-card shadow-card rounded-2xl overflow-hidden flex flex-col hover:shadow-card-hover transition-shadow">
@@ -99,9 +103,18 @@ function PartnerCard({
 
         <div className="bg-primary/5 border border-primary/10 rounded-xl p-3">
           <div className="text-xs font-bold text-primary mb-1">제공 혜택</div>
-          <p className="text-sm text-foreground font-semibold leading-relaxed whitespace-pre-line line-clamp-5">
+          <p className={cn("text-sm text-foreground font-semibold leading-relaxed whitespace-pre-line", !benefitExpanded && "overflow-hidden max-h-[7.1rem]")}>
             {item.benefitText || "등록된 혜택이 없습니다."}
           </p>
+          {benefitLong && (
+            <button
+              type="button"
+              onClick={() => setBenefitExpanded((v) => !v)}
+              className="mt-1.5 text-xs font-bold text-primary hover:underline"
+            >
+              {benefitExpanded ? "접기" : "더보기"}
+            </button>
+          )}
         </div>
 
         <div className="space-y-1.5 text-xs text-muted-foreground">
