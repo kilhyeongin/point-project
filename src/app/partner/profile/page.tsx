@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ImagePlus } from "lucide-react";
 
 type CategoryOption = {
   code: string;
@@ -627,9 +628,7 @@ export default function PartnerProfilePage() {
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16v-4m0 0V8m0 4h4m-4 0H8m13 4a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <ImagePlus className="w-8 h-8" />
                   <span className="text-sm font-semibold">클릭하여 이미지 업로드</span>
                 </div>
               )}

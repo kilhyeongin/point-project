@@ -248,10 +248,10 @@ export default function AdminLedgerPage() {
           <>
             {/* 데스크탑 테이블 */}
             <div className="hidden md:block overflow-x-auto">
-              <div className="min-w-[1200px]">
-                <div className="grid grid-cols-[110px_140px_220px_220px_220px_140px_1fr_170px] gap-2 px-4 py-2 text-xs font-bold text-muted-foreground border-b border-border bg-muted/30">
+              <div className="min-w-[1300px]">
+                <div className="grid grid-cols-[90px_110px_170px_170px_170px_100px_minmax(180px,1fr)_150px] gap-x-3 px-5 py-2.5 text-xs font-bold text-muted-foreground border-b border-border bg-muted/30">
                   <div>유형</div>
-                  <div className="text-right">금액</div>
+                  <div>금액</div>
                   <div>지갑 주인</div>
                   <div>직접 대상</div>
                   <div>실행자</div>
@@ -263,38 +263,42 @@ export default function AdminLedgerPage() {
                 {items.map((it) => (
                   <div
                     key={it.id}
-                    className="grid grid-cols-[110px_140px_220px_220px_220px_140px_1fr_170px] gap-2 px-4 py-3 border-b border-border last:border-0 text-sm items-center"
+                    className="grid grid-cols-[90px_110px_170px_170px_170px_100px_minmax(180px,1fr)_150px] gap-x-3 px-5 py-3.5 border-b border-border last:border-0 text-sm items-start"
                   >
-                    <div>
-                      <Badge className="bg-muted text-muted-foreground border border-border rounded-full text-xs font-black">
+                    <div className="pt-0.5">
+                      <Badge className={cn(
+                        "rounded-full text-xs font-bold border",
+                        it.type === "TOPUP" && "bg-blue-50 text-blue-700 border-blue-200",
+                        it.type === "ISSUE" && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        it.type === "USE" && "bg-orange-50 text-orange-700 border-orange-200",
+                        it.type === "ADJUST" && "bg-purple-50 text-purple-700 border-purple-200",
+                      )}>
                         {typeLabel(it.type)}
                       </Badge>
                     </div>
-                    <div
-                      className={cn(
-                        "text-right font-black",
-                        it.amount < 0 ? "text-red-600" : "text-foreground"
-                      )}
-                    >
+                    <div className={cn(
+                      "font-bold pt-0.5",
+                      it.amount < 0 ? "text-red-600" : it.amount > 0 ? "text-emerald-600" : "text-foreground"
+                    )}>
                       {amountText(it.amount)}
                     </div>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap text-foreground">
                       {renderUserWithRole(it.account)}
                     </div>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap text-foreground">
                       {renderUserWithRole(it.user)}
                     </div>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap text-foreground">
                       {renderUserWithRole(it.actor)}
                     </div>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground">
                       {it.refType || "-"}
                       {it.refId ? ` / ${it.refId}` : ""}
                     </div>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="text-foreground break-words leading-relaxed">
                       {it.note || "-"}
                     </div>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="text-muted-foreground whitespace-nowrap">
                       {it.createdAt ? new Date(it.createdAt).toLocaleString() : "-"}
                     </div>
                   </div>

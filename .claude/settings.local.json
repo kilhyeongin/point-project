@@ -50,7 +50,8 @@
       "Bash(rm -f \"src/app/api/requesters/issue/route.ts\")",
       "Bash(rm -f \"src/app/api/topup-requests/[id]/approve/route.ts\")",
       "Bash(rm -f \"src/app/api/admin/issue-requests/[id]/decide/route.ts\")",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "mcp__serena__find_symbol"
     ]
   }
 }
