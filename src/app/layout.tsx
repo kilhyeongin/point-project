@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "포인트 관리 시스템",
+  title: "업포인트",
   description: "제휴사 포인트 적립·사용·정산 관리 플랫폼",
 };
 
