@@ -180,11 +180,11 @@ export default function PartnerScanPage() {
 
       {msg && (
         <div className={`flex items-start gap-2 p-3 rounded-xl text-sm font-semibold border ${
-          msg.includes("실패") || msg.includes("오류") || msg.includes("먼저") || msg.includes("입력")
+          msg.includes("실패") || msg.includes("오류") || msg.includes("먼저") || msg.startsWith("금액을")
             ? "bg-destructive/8 border-destructive/20 text-destructive"
             : "bg-emerald-50 border-emerald-200 text-emerald-700"
         }`}>
-          {!msg.includes("실패") && !msg.includes("오류") && (
+          {!msg.includes("실패") && !msg.includes("오류") && !msg.startsWith("금액을") && !msg.includes("먼저") && (
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
           )}
           {msg}
@@ -224,7 +224,7 @@ export default function PartnerScanPage() {
         <div className="border-t border-border/60 pt-4 space-y-3">
           <div>
             <label className="block text-sm font-bold text-foreground mb-1.5">
-              차감 금액
+              {mode === "GRANT" ? "적립 금액" : "차감 금액"}
             </label>
             <div className="flex items-center gap-2">
               <Input
