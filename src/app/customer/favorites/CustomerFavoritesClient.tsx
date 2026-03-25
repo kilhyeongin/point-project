@@ -99,7 +99,7 @@ function PartnerCard({
 
         <div className="bg-primary/5 border border-primary/10 rounded-xl p-3">
           <div className="text-xs font-bold text-primary mb-1">제공 혜택</div>
-          <p className="text-sm text-foreground font-semibold leading-relaxed whitespace-pre-line line-clamp-3">
+          <p className="text-sm text-foreground font-semibold leading-relaxed whitespace-pre-line line-clamp-5">
             {item.benefitText || "등록된 혜택이 없습니다."}
           </p>
         </div>
