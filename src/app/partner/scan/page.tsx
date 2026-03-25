@@ -17,6 +17,7 @@ function formatNumber(n: number) {
 }
 
 export default function PartnerScanPage() {
+  const [mode, setMode] = useState<"USE" | "GRANT">("USE");
   const [scanned, setScanned] = useState<string>("");
   const [amountText, setAmountText] = useState<string>("0");
   const [note, setNote] = useState<string>("");
@@ -102,33 +103,40 @@ export default function PartnerScanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function createUseRequestByQr() {
+  async function submitRequest() {
     setMsg("");
     if (!scanned) { setMsg("먼저 QR을 스캔해주세요."); return; }
     if (amountNum <= 0) { setMsg("금액을 1 이상 입력해주세요."); return; }
 
     try {
-      const res = await fetch("/api/partner/use-requests", {
+      const isGrant = mode === "GRANT";
+      const url = isGrant ? "/api/partner/grant-requests" : "/api/partner/use-requests";
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ qrPayload: scanned, amount: amountNum, note: note.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) { setMsg(data?.message ?? "차감요청 생성 실패"); return; }
+      if (!res.ok) { setMsg(data?.message ?? (isGrant ? "적립 실패" : "차감 실패")); return; }
 
-      const instant = data?.instant ?? false;
-      setMsg(
-        instant
-          ? `차감 완료 / ${formatNumber(amountNum)}P → 잔액 ${formatNumber(data?.balanceAfter ?? 0)}P`
-          : `차감요청 생성됨(승인대기) / ${formatNumber(amountNum)}P`
-      );
+      if (isGrant) {
+        setMsg(`적립 완료 / ${formatNumber(amountNum)}P → 내 잔액 ${formatNumber(data?.partnerBalanceAfter ?? 0)}P`);
+      } else {
+        const instant = data?.instant ?? false;
+        setMsg(
+          instant
+            ? `차감 완료 / ${formatNumber(amountNum)}P → 잔액 ${formatNumber(data?.balanceAfter ?? 0)}P`
+            : `차감요청 생성됨(승인대기) / ${formatNumber(amountNum)}P`
+        );
+      }
+
       setScanned("");
       setAmountText("0");
       setNote("");
 
       startCamera((text) => {
         setScanned(text);
-        setMsg("스캔 완료. 금액 입력 후 차감요청을 생성하세요.");
+        setMsg("스캔 완료. 금액 입력 후 처리하세요.");
       });
     } catch {
       setMsg("네트워크 오류");
@@ -140,8 +148,34 @@ export default function PartnerScanPage() {
       <div>
         <h1 className="text-xl font-black text-foreground tracking-tight">QR 스캔 결제</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          고객이 보여주는 QR을 스캔하고, 금액을 입력해 차감요청을 생성합니다.
+          고객이 보여주는 QR을 스캔하고, 금액을 입력해 처리합니다.
         </p>
+      </div>
+
+      {/* 차감 / 적립 토글 */}
+      <div className="flex rounded-xl border border-border overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setMode("USE")}
+          className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
+            mode === "USE"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          차감
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("GRANT")}
+          className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
+            mode === "GRANT"
+              ? "bg-emerald-500 text-white"
+              : "bg-card text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          적립
+        </button>
       </div>
 
       {msg && (
@@ -220,10 +254,10 @@ export default function PartnerScanPage() {
 
           <Button
             type="button"
-            onClick={createUseRequestByQr}
-            className="w-full h-11 font-bold"
+            onClick={submitRequest}
+            className={`w-full h-11 font-bold ${mode === "GRANT" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""}`}
           >
-            차감요청 생성
+            {mode === "GRANT" ? "포인트 적립" : "차감요청 생성"}
           </Button>
         </div>
       </div>
