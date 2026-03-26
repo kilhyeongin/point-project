@@ -25,7 +25,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
       "font-src 'self' cdn.jsdelivr.net",
       `img-src 'self' data: blob: ${s3ImageHost}`,
-      "connect-src 'self' *.sentry.io",
+      `connect-src 'self' *.sentry.io ${s3ImageHost}`,
       "frame-ancestors 'none'",
     ].join("; "),
   },
