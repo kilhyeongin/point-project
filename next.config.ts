@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+// S3 이미지 호스트: {bucket}.s3.{region}.amazonaws.com
+const s3ImageHost =
+  process.env.AWS_S3_BUCKET && process.env.AWS_REGION
+    ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`
+    : "https://*.s3.amazonaws.com";
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -18,7 +24,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' t1.daumcdn.net *.sentry.io",
       "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
       "font-src 'self' cdn.jsdelivr.net",
-      "img-src 'self' data: blob: *.amazonaws.com",
+      `img-src 'self' data: blob: ${s3ImageHost}`,
       "connect-src 'self' *.sentry.io",
       "frame-ancestors 'none'",
     ].join("; "),
