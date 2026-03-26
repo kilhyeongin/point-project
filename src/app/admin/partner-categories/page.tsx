@@ -212,6 +212,9 @@ export default function AdminPartnerCategoriesPage() {
           .cat-search-input {
             max-width: 100%;
           }
+          .cat-col-hide-mobile {
+            display: none;
+          }
         }
       `}</style>
       <section
@@ -377,16 +380,22 @@ export default function AdminPartnerCategoriesPage() {
         </div>
 
         <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-          <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", minWidth: 320, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f9fafb" }}>
-                {["순서", "코드", "카테고리명", "제휴사", "고객", "사용", "관리"].map(
-                  (head) => (
-                    <th key={head} style={thtd}>
-                      {head}
-                    </th>
-                  )
-                )}
+                {[
+                  { label: "순서", hide: false },
+                  { label: "코드", hide: false },
+                  { label: "카테고리명", hide: false },
+                  { label: "제휴사", hide: true },
+                  { label: "고객", hide: true },
+                  { label: "사용", hide: true },
+                  { label: "관리", hide: false },
+                ].map(({ label, hide }) => (
+                  <th key={label} style={thtd} className={hide ? "cat-col-hide-mobile" : ""}>
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -424,9 +433,9 @@ export default function AdminPartnerCategoriesPage() {
                     </td>
                     <td style={thtd}>{item.code}</td>
                     <td style={{ ...thtd, fontWeight: 700 }}>{item.name}</td>
-                    <td style={thtd}>{item.isVisibleToPartner ? "노출" : "숨김"}</td>
-                    <td style={thtd}>{item.isVisibleToCustomer ? "노출" : "숨김"}</td>
-                    <td style={thtd}>{item.isActive ? "사용" : "중지"}</td>
+                    <td style={thtd} className="cat-col-hide-mobile">{item.isVisibleToPartner ? "노출" : "숨김"}</td>
+                    <td style={thtd} className="cat-col-hide-mobile">{item.isVisibleToCustomer ? "노출" : "숨김"}</td>
+                    <td style={thtd} className="cat-col-hide-mobile">{item.isActive ? "사용" : "중지"}</td>
                     <td style={{ ...thtd, whiteSpace: "nowrap" }}>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => setForm(item)} style={{ ...secondaryButton, height: 32, padding: "0 12px", borderRadius: 8, fontSize: 14 }}>
