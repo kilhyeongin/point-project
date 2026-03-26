@@ -398,24 +398,6 @@ export default function CustomerDashboardClient({ session }: Props) {
                 {formatPoint(balance)}<span className="text-2xl ml-1.5 opacity-80">P</span>
               </div>
             )}
-            <div className="mt-5 flex items-center gap-2 flex-wrap">
-              <span className="text-xs opacity-50 font-medium">관심사</span>
-              {interests.length > 0 ? (
-                interests.map((code) => (
-                  <span key={code} className="text-xs bg-white/15 px-2.5 py-1 rounded-full font-semibold">
-                    {allCategories.find(c => c.code === code)?.name || code}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs opacity-50">미설정</span>
-              )}
-              <Link
-                href="/customer/onboarding"
-                className="ml-auto text-xs font-bold opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
-              >
-                변경
-              </Link>
-            </div>
           </div>
         </div>
 
