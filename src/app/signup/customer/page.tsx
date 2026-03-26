@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 declare global {
   interface Window {
     daum: {
-      Postcode: new (config: { oncomplete: (data: DaumPostcodeResult) => void }) => { open: () => void; embed: (el: HTMLElement) => void };
+      Postcode: new (config: { oncomplete: (data: DaumPostcodeResult) => void }) => { open: () => void };
     };
   }
 }
@@ -24,21 +24,6 @@ interface DaumPostcodeResult {
 
 export default function CustomerSignupPage() {
   const router = useRouter();
-  const [showPostcode, setShowPostcode] = useState(false);
-  const postcodeContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (showPostcode && postcodeContainerRef.current) {
-      postcodeContainerRef.current.innerHTML = "";
-      new window.daum.Postcode({
-        oncomplete(data) {
-          const addr = data.roadAddress || data.jibunAddress;
-          setForm((prev) => ({ ...prev, address: addr, detailAddress: "" }));
-          setShowPostcode(false);
-        },
-      }).embed(postcodeContainerRef.current);
-    }
-  }, [showPostcode]);
 
   const [form, setForm] = useState({
     name: "",
@@ -165,7 +150,12 @@ export default function CustomerSignupPage() {
       alert("주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
-    setShowPostcode(true);
+    new window.daum.Postcode({
+      oncomplete(data) {
+        const addr = data.roadAddress || data.jibunAddress;
+        setForm((prev) => ({ ...prev, address: addr, detailAddress: "" }));
+      },
+    }).open();
   }
 
   async function submit() {
@@ -218,18 +208,6 @@ export default function CustomerSignupPage() {
         src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
         strategy="afterInteractive"
       />
-
-      {showPostcode && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowPostcode(false)}>
-          <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-              <span className="font-bold text-sm">주소 검색</span>
-              <button type="button" onClick={() => setShowPostcode(false)} className="text-gray-400 hover:text-gray-700 font-bold text-lg leading-none">✕</button>
-            </div>
-            <div ref={postcodeContainerRef} style={{ height: 480 }} />
-          </div>
-        </div>
-      )}
 
       {/* ── Left panel ── */}
       <div
