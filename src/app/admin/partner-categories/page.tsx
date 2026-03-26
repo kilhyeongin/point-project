@@ -397,7 +397,7 @@ export default function AdminPartnerCategoriesPage() {
                   <tr key={item.id}>
                     <td style={{ ...thtd, whiteSpace: "nowrap" }}>
                       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <span style={{ color: "#9ca3af", fontSize: 13, minWidth: 20 }}>
+                        <span style={{ color: "#9ca3af", fontSize: 14, minWidth: 20 }}>
                           {index + 1}
                         </span>
                         {!isFiltering && (
@@ -429,7 +429,7 @@ export default function AdminPartnerCategoriesPage() {
                     <td style={thtd}>{item.isActive ? "사용" : "중지"}</td>
                     <td style={{ ...thtd, whiteSpace: "nowrap" }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => setForm(item)} style={{ ...secondaryButton, height: 32, padding: "0 12px", borderRadius: 8, fontSize: 13 }}>
+                        <button onClick={() => setForm(item)} style={{ ...secondaryButton, height: 32, padding: "0 12px", borderRadius: 8, fontSize: 14 }}>
                           수정
                         </button>
                         <button
@@ -490,7 +490,7 @@ const dangerButton: CSSProperties = {
   background: "#fff",
   color: "#ef4444",
   fontWeight: 700,
-  fontSize: 13,
+  fontSize: 14,
   cursor: "pointer",
 };
 
@@ -515,5 +515,5 @@ const thtd: CSSProperties = {
   padding: "10px 12px",
   textAlign: "left",
   verticalAlign: "middle",
-  fontSize: 13,
+  fontSize: 14,
 };
