@@ -265,16 +265,6 @@ export default function AdminPartnerCategoriesPage() {
           />
         </div>
 
-        <textarea
-          value={form.description}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, description: e.target.value }))
-          }
-          placeholder="설명"
-          className="cat-input"
-          style={{ minHeight: 96, paddingTop: 12, height: "auto", resize: "none" }}
-        />
-
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <label>
             <input
@@ -435,16 +425,13 @@ export default function AdminPartnerCategoriesPage() {
                     <td style={thtd}>{item.code}</td>
                     <td style={thtd}>
                       <strong>{item.name}</strong>
-                      <div style={{ color: "#6b7280", marginTop: 4 }}>
-                        {item.description || "-"}
-                      </div>
                     </td>
                     <td style={thtd}>{item.isVisibleToPartner ? "노출" : "숨김"}</td>
                     <td style={thtd}>{item.isVisibleToCustomer ? "노출" : "숨김"}</td>
                     <td style={thtd}>{item.isActive ? "사용" : "중지"}</td>
                     <td style={{ ...thtd, whiteSpace: "nowrap" }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => setForm(item)} style={secondaryButton}>
+                        <button onClick={() => setForm(item)} style={{ ...secondaryButton, height: 32, padding: "0 12px", borderRadius: 8, fontSize: 13 }}>
                           수정
                         </button>
                         <button
@@ -498,13 +485,14 @@ const secondaryButton: CSSProperties = {
 };
 
 const dangerButton: CSSProperties = {
-  height: 44,
-  padding: "0 16px",
-  borderRadius: 12,
+  height: 32,
+  padding: "0 12px",
+  borderRadius: 8,
   border: "1px solid #ef4444",
   background: "#fff",
   color: "#ef4444",
-  fontWeight: 800,
+  fontWeight: 700,
+  fontSize: 13,
   cursor: "pointer",
 };
 
