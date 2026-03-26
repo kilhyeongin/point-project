@@ -64,7 +64,7 @@ export default function PartnerSignupPage() {
       const res = await fetch("/api/signup/check-business", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessNumber: form.businessNumber }),
+        body: JSON.stringify({ businessNumber: form.businessNumber, businessName: form.businessName }),
       });
       const data = await res.json();
 
@@ -209,24 +209,63 @@ export default function PartnerSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="h-screen flex overflow-hidden">
       <Script
         src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
         strategy="lazyOnload"
       />
 
-      <div className="w-full max-w-[420px] space-y-6">
-
-        {/* Brand */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/25">
-            <span className="text-primary-foreground text-2xl font-black">P</span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-foreground tracking-tight">포인트 관리 시스템</h1>
-            <p className="text-sm text-muted-foreground mt-1">제휴사 회원가입</p>
+      {/* ── Left panel ── */}
+      <div
+        className="hidden lg:flex flex-col justify-between w-[520px] shrink-0 p-12 relative overflow-hidden h-screen"
+        style={{ background: "linear-gradient(150deg, oklch(0.18 0.06 265) 0%, oklch(0.12 0.04 265) 100%)" }}
+      >
+        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: `radial-gradient(ellipse 80% 60% at 50% -10%, oklch(0.52 0.27 264 / 0.5), transparent), radial-gradient(ellipse 60% 50% at 100% 100%, oklch(0.42 0.22 280 / 0.3), transparent)` }} />
+        <div className="absolute top-24 right-8 w-64 h-64 rounded-full opacity-8" style={{ background: "radial-gradient(circle, oklch(0.52 0.27 264 / 0.2), transparent 70%)" }} />
+        <div className="absolute bottom-32 left-0 w-80 h-80 rounded-full opacity-10" style={{ background: "radial-gradient(circle, oklch(0.62 0.22 240 / 0.25), transparent 70%)" }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.52 0.27 264)" }}>
+              <span className="text-white text-sm font-black">P</span>
+            </div>
+            <span className="text-white/90 text-sm font-bold tracking-wide">포인트 관리 시스템</span>
           </div>
         </div>
+        <div className="relative z-10 space-y-6">
+          <div>
+            <p className="text-white/50 text-sm font-semibold uppercase tracking-widest mb-4">Partner Point Platform</p>
+            <h1 className="text-white font-black leading-tight" style={{ fontSize: "clamp(2rem, 3vw, 2.75rem)", letterSpacing: "-0.04em" }}>
+              제휴사와 고객을<br />하나로 연결하는<br />
+              <span style={{ color: "oklch(0.72 0.2 240)" }}>포인트 플랫폼</span>
+            </h1>
+          </div>
+          <div className="flex flex-col gap-3">
+            {["실시간 포인트 적립 · 사용 관리", "제휴사 매출 정산 자동화", "고객 관심사 기반 추천 시스템"].map((text) => (
+              <div key={text} className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "oklch(0.52 0.27 264)" }} />
+                <span className="text-white/60 text-sm font-medium">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="relative z-10 text-white/25 text-xs">© 2026 Point Management System</p>
+      </div>
+
+      {/* ── Right panel ── */}
+      <div className="flex-1 flex flex-col items-center p-6 py-10 bg-background overflow-y-auto">
+        <div className="lg:hidden flex items-center gap-2 mb-10">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.52 0.27 264)" }}>
+            <span className="text-white text-xs font-black">P</span>
+          </div>
+          <span className="text-foreground font-bold text-sm">포인트 관리 시스템</span>
+        </div>
+
+        <div className="w-full max-w-[420px] space-y-6 py-8">
+
+          <div>
+            <h2 className="text-foreground font-black" style={{ fontSize: "1.875rem", letterSpacing: "-0.04em" }}>제휴사 가입</h2>
+            <p className="text-muted-foreground text-sm mt-2">업체 등록 후 관리자 승인, 고객 연결 및 혜택 운영</p>
+          </div>
 
         {/* Card */}
         <div className="bg-card rounded-3xl p-7 shadow-elevated space-y-5">
@@ -518,6 +557,7 @@ export default function PartnerSignupPage() {
           </Link>
         </p>
 
+        </div>
       </div>
     </div>
   );

@@ -111,10 +111,9 @@ function PartnerCard({
 
       <div className="p-4 flex flex-col gap-3 flex-1">
         {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            {/* Category badges */}
-            <div className="flex flex-wrap gap-1.5 mb-2">
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
               {item.categoryLabels && item.categoryLabels.length > 0 ? (
                 item.categoryLabels.map((label) => (
                   <Badge key={`${item.id}-${label}`} variant="secondary" className="text-xs">
@@ -133,15 +132,15 @@ function PartnerCard({
                 </Badge>
               ))}
             </div>
-            <h3 className="text-lg font-black text-foreground leading-tight">
-              {item.name}
-            </h3>
+            <FavoritePartnerButton
+              partnerId={item.id}
+              initialFavorite={Boolean(item.isFavorite)}
+              onChanged={(next) => onFavoriteChanged?.(item.id, next)}
+            />
           </div>
-          <FavoritePartnerButton
-            partnerId={item.id}
-            initialFavorite={Boolean(item.isFavorite)}
-            onChanged={(next) => onFavoriteChanged?.(item.id, next)}
-          />
+          <h3 className="text-lg font-black text-foreground leading-tight">
+            {item.name}
+          </h3>
         </div>
 
         {/* Intro */}
@@ -182,7 +181,7 @@ function PartnerCard({
         <div className="mt-auto pt-1">
           <Link
             href={`/customer/partner/${item.id}`}
-            className={cn(buttonVariants({ size: "sm" }), "w-full")}
+            className={cn(buttonVariants({}), "w-full h-[45px]")}
           >
             상세 보기
           </Link>
@@ -420,14 +419,15 @@ export default function CustomerDashboardClient({ session }: Props) {
           ) : recommendItems.length === 0 ? (
             <EmptyState text="선택한 관심사와 일치하는 추천 업체가 없습니다." />
           ) : (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <div className="columns-1 sm:columns-2 gap-4">
               {recommendItems.map((item) => (
-                <PartnerCard
-                  key={item.id}
-                  item={item}
-                  recommendationMode
-                  onFavoriteChanged={handleFavoriteChanged}
-                />
+                <div key={item.id} className="break-inside-avoid mb-4">
+                  <PartnerCard
+                    item={item}
+                    recommendationMode
+                    onFavoriteChanged={handleFavoriteChanged}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -524,13 +524,14 @@ export default function CustomerDashboardClient({ session }: Props) {
           ) : items.length === 0 ? (
             <EmptyState text={emptyText} />
           ) : (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <div className="columns-1 sm:columns-2 gap-4">
               {items.map((item) => (
-                <PartnerCard
-                  key={item.id}
-                  item={item}
-                  onFavoriteChanged={handleFavoriteChanged}
-                />
+                <div key={item.id} className="break-inside-avoid mb-4">
+                  <PartnerCard
+                    item={item}
+                    onFavoriteChanged={handleFavoriteChanged}
+                  />
+                </div>
               ))}
             </div>
           )}

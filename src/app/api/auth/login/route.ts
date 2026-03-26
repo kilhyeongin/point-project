@@ -11,8 +11,8 @@ function normalizeUsername(value: string) {
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
-  if (isRateLimited(`login:${ip}`, 5, 60 * 1000)) {
-    const info = getRateLimitInfo(`login:${ip}`, 5, 60 * 1000);
+  if (await isRateLimited(`login:${ip}`, 5, 60 * 1000)) {
+    const info = await getRateLimitInfo(`login:${ip}`, 5, 60 * 1000);
     const retryAfter = Math.ceil((info.resetAt - Date.now()) / 1000);
     return NextResponse.json(
       { ok: false, message: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요." },

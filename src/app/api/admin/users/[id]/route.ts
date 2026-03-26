@@ -5,6 +5,20 @@ import { User } from "@/models/User";
 import { getWalletBalancesMap } from "@/services/wallet";
 import mongoose from "mongoose";
 
+// 전화번호 부분 마스킹: 010-1234-5678 → 010-****-5678
+function maskPhone(phone?: string): string {
+  if (!phone) return "";
+  return phone.replace(/(\d{3})-?(\d{3,4})-?(\d{4})/, "$1-****-$3");
+}
+
+// 사업자등록번호 부분 마스킹: 1234567890 → 123-**-67890
+function maskBusinessNumber(num?: string): string {
+  if (!num) return "";
+  const d = num.replace(/\D/g, "");
+  if (d.length === 10) return `${d.slice(0, 3)}-**-${d.slice(5)}`;
+  return num;
+}
+
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Context) {
@@ -51,8 +65,22 @@ export async function GET(_req: NextRequest, { params }: Context) {
       status: u.status,
       balance: balanceMap.get(id) ?? 0,
       createdAt: u.createdAt,
-      customerProfile: u.customerProfile ?? null,
-      partnerProfile: u.partnerProfile ?? null,
+      customerProfile: u.customerProfile
+        ? {
+            ...u.customerProfile,
+            phone: maskPhone(u.customerProfile.phone),
+            address: u.customerProfile.address ?? "",
+            detailAddress: u.customerProfile.detailAddress ?? "",
+          }
+        : null,
+      partnerProfile: u.partnerProfile
+        ? {
+            ...u.partnerProfile,
+            businessNumber: maskBusinessNumber(u.partnerProfile.businessNumber),
+            contactPhone: maskPhone(u.partnerProfile.contactPhone),
+            phone: maskPhone(u.partnerProfile.phone),
+          }
+        : null,
     },
   });
 }

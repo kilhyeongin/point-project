@@ -5,11 +5,19 @@ import { NextResponse } from "next/server";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { AuditLog } from "@/models/AuditLog";
+import mongoose from "mongoose";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`admin-status:${ip}`, 20, 60 * 1000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다." }, { status: 429 });
+  }
+
   const session = await getSessionFromCookies();
 
   if (!session) {
@@ -47,7 +55,18 @@ export async function PATCH(
     );
   }
 
+  const prevStatus = (user as any).status;
   await User.updateOne({ _id: id }, { $set: { status: newStatus } });
+
+  // Audit log
+  await AuditLog.create({
+    adminId: new mongoose.Types.ObjectId(session.uid),
+    adminUsername: session.username,
+    action: "STATUS_CHANGE",
+    targetId: new mongoose.Types.ObjectId(id),
+    detail: { from: prevStatus, to: newStatus },
+    ip: getClientIp(req),
+  });
 
   return NextResponse.json({ ok: true, status: newStatus });
 }

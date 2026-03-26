@@ -27,7 +27,7 @@ function parseQrPayload(v: string) {
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
-  if (isRateLimited(`grant-req:${ip}`, 20, 60 * 1000)) {
+  if (await isRateLimited(`grant-req:${ip}`, 20, 60 * 1000)) {
     return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
   }
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   if (!session) {
     return NextResponse.json({ ok: false, message: "로그인이 필요합니다." }, { status: 401 });
   }
-  if (isRateLimited(`grant-req:${session.uid}`, 20, 60 * 1000)) {
+  if (await isRateLimited(`grant-req:${session.uid}`, 20, 60 * 1000)) {
     return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
   }
   if (session.role !== "PARTNER") {

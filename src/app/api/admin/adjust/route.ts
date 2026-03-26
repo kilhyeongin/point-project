@@ -8,7 +8,7 @@
 // ✔ Ledger.type = ADJUST
 // =======================================================
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
@@ -16,10 +16,11 @@ import { User } from "@/models/User";
 import { Ledger } from "@/models/Ledger";
 import { creditWallet, debitWallet } from "@/services/wallet";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { AuditLog } from "@/models/AuditLog";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (isRateLimited(`adjust:${ip}`, 30, 60 * 1000)) {
+  if (await isRateLimited(`adjust:${ip}`, 30, 60 * 1000)) {
     return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
   }
 
@@ -122,6 +123,17 @@ export async function POST(req: Request) {
         },
         amount: amountNum,
       };
+    });
+
+    // Audit log 기록 (트랜잭션 외부에서 별도 저장)
+    await AuditLog.create({
+      adminId: adminOid,
+      adminUsername: session.username,
+      action: "ADJUST",
+      targetId: targetOid,
+      targetUsername: target.username,
+      detail: { amount: amountNum, note },
+      ip,
     });
 
     return NextResponse.json(result);

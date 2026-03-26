@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`forgot-password:${getClientIp(req)}`, 3, 15 * 60 * 1000)) {
+  if (await isRateLimited(`forgot-password:${getClientIp(req)}`, 3, 15 * 60 * 1000)) {
     return NextResponse.json(
       { ok: false, error: "잠시 후 다시 시도해 주세요. (15분에 3회 제한)" },
       { status: 429 }
@@ -41,25 +41,16 @@ export async function POST(req: NextRequest) {
 
     const userByUsername = await User.findOne({ username }, { _id: 1, name: 1, email: 1, status: 1 }).lean();
 
-    if (!userByUsername) {
-      return NextResponse.json(
-        { ok: false, error: "존재하지 않는 아이디입니다." },
-        { status: 400 }
-      );
+    // 유저 존재 여부 노출 방지: 유저가 없거나 이메일 불일치여도 동일한 성공 응답 반환
+    if (!userByUsername || (userByUsername as any).email !== email) {
+      // 타이밍 공격 방지: 실제 처리와 유사한 시간 소모
+      await new Promise((r) => setTimeout(r, 200 + Math.random() * 100));
+      return NextResponse.json({ ok: true });
     }
 
     if ((userByUsername as any).status === "BLOCKED") {
-      return NextResponse.json(
-        { ok: false, error: "사용이 제한된 계정입니다." },
-        { status: 403 }
-      );
-    }
-
-    if ((userByUsername as any).email !== email) {
-      return NextResponse.json(
-        { ok: false, error: "아이디와 이메일이 일치하지 않습니다." },
-        { status: 400 }
-      );
+      await new Promise((r) => setTimeout(r, 200 + Math.random() * 100));
+      return NextResponse.json({ ok: true });
     }
 
     const user = userByUsername;

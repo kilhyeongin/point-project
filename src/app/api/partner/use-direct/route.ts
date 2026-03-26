@@ -25,7 +25,7 @@ const MAX_USE_AMOUNT = 1_000_000;
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
-  if (isRateLimited(`use-direct:${ip}`, 20, 60 * 1000)) {
+  if (await isRateLimited(`use-direct:${ip}`, 20, 60 * 1000)) {
     return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
   }
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     );
   }
 
-  if (isRateLimited(`use-direct:${session.uid}`, 20, 60 * 1000)) {
+  if (await isRateLimited(`use-direct:${session.uid}`, 20, 60 * 1000)) {
     return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
   }
 

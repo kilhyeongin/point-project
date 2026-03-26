@@ -18,8 +18,15 @@ import mongoose from "mongoose";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Settlement } from "@/models/Settlement";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { AuditLog } from "@/models/AuditLog";
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`admin-payout:${ip}`, 20, 60 * 1000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
+  }
+
   const session = await getSessionFromCookies();
 
   if (!session) {
@@ -118,6 +125,15 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Audit log
+    await AuditLog.create({
+      adminId: new mongoose.Types.ObjectId(session.uid),
+      adminUsername: session.username,
+      action: "PAYOUT",
+      detail: { periodKey, counterpartyId: counterpartyIdStr, payoutRef, note },
+      ip,
+    });
 
     return NextResponse.json(result);
   } catch (e: any) {

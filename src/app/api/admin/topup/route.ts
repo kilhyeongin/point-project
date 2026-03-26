@@ -13,8 +13,15 @@ import { connectDB } from "@/lib/db";
 import { Ledger } from "@/models/Ledger";
 import { User } from "@/models/User";
 import { creditWallet } from "@/services/wallet";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { AuditLog } from "@/models/AuditLog";
 
-export async function POST(req: Request) {
+export async function POST(req: Request & { ip?: string }) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`admin-topup:${ip}`, 20, 60 * 1000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
+  }
+
   const session = await getSessionFromCookies();
 
   if (!session) {
@@ -123,6 +130,17 @@ export async function POST(req: Request) {
           role: target.role,
         },
       };
+    });
+
+    // Audit log
+    await AuditLog.create({
+      adminId: adminId,
+      adminUsername: session.username,
+      action: "TOPUP",
+      targetId: targetOid,
+      targetUsername: target.username,
+      detail: { amount: amountNum, note },
+      ip,
     });
 
     return NextResponse.json(result);

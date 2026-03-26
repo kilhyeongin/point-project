@@ -69,8 +69,8 @@ export default function FavoritePartnerButton({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 40,
-        height: 40,
+        width: 28,
+        height: 28,
         borderRadius: "50%",
         border: "none",
         background: "transparent",
@@ -81,11 +81,11 @@ export default function FavoritePartnerButton({
       }}
     >
       <svg
-        width="26"
-        height="26"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
-        fill={favorite ? "#f59e0b" : "none"}
-        stroke={favorite ? "#f59e0b" : "#9ca3af"}
+        fill={favorite ? "#ef4444" : "none"}
+        stroke={favorite ? "#ef4444" : "#9ca3af"}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -93,7 +93,7 @@ export default function FavoritePartnerButton({
           transition: "fill 0.2s ease, stroke 0.2s ease",
         }}
       >
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
     </button>
   );

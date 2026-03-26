@@ -6,6 +6,8 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import mongoose from "mongoose";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { AuditLog } from "@/models/AuditLog";
 
 type AllowedRole = "PARTNER" | "CUSTOMER";
 
@@ -21,6 +23,11 @@ export async function PATCH(
   req: Request,
   ctx: { params: { id: string } } | { params: Promise<{ id: string }> } // ✅ 둘 다 대응
 ) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`admin-role:${ip}`, 20, 60 * 1000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다." }, { status: 429 });
+  }
+
   try {
     // 1) 세션 확인
     const session = await getSessionFromCookies();
@@ -63,8 +70,20 @@ export async function PATCH(
     }
 
     // 8) role 변경
+    const prevRole = target.role;
     target.role = nextRole;
     await target.save();
+
+    // Audit log
+    await AuditLog.create({
+      adminId: new mongoose.Types.ObjectId(session.uid),
+      adminUsername: session.username,
+      action: "ROLE_CHANGE",
+      targetId: target._id,
+      targetUsername: target.username,
+      detail: { from: prevRole, to: nextRole },
+      ip: getClientIp(req),
+    });
 
     // 9) 응답 (민감정보 제외)
     return NextResponse.json({

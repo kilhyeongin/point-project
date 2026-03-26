@@ -14,8 +14,15 @@ import bcrypt from "bcryptjs";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { validatePassword } from "@/lib/validatePassword";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function GET(req: Request) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`admin-users-get:${ip}`, 60, 60 * 1000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다." }, { status: 429 });
+  }
+
   const session = await getSessionFromCookies();
   if (!session) {
     return NextResponse.json({ ok: false, message: "로그인이 필요합니다." }, { status: 401 });
@@ -45,11 +52,13 @@ export async function GET(req: Request) {
     }
   }
 
-  // ✅ q 검색
+  // ✅ q 검색 (ReDoS 방지: 길이 제한 + null byte 제거 + regex 이스케이프)
   if (q) {
+    const safeQ = q.replace(/\0/g, "").slice(0, 50);
+    const escaped = safeQ.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     filter.$or = [
-      { username: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
-      { name: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
+      { username: { $regex: escaped, $options: "i" } },
+      { name: { $regex: escaped, $options: "i" } },
     ];
   }
 
@@ -74,6 +83,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`admin-users-post:${ip}`, 10, 60 * 1000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다." }, { status: 429 });
+  }
+
   const session = await getSessionFromCookies();
 
   if (!session) {
@@ -103,11 +117,9 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!password || password.length < 8) {
-    return NextResponse.json(
-      { ok: false, message: "비밀번호는 8자 이상이어야 합니다." },
-      { status: 400 }
-    );
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.ok) {
+    return NextResponse.json({ ok: false, message: pwCheck.error }, { status: 400 });
   }
 
   await connectDB();

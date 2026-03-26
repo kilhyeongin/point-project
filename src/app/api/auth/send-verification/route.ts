@@ -13,7 +13,7 @@ function generateCode() {
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (isRateLimited(`send-verification:${ip}`, 3, 10 * 60 * 1000)) {
+  if (await isRateLimited(`send-verification:${ip}`, 3, 10 * 60 * 1000)) {
     return NextResponse.json(
       { ok: false, error: "잠시 후 다시 시도해 주세요. (10분에 3회 제한)" },
       { status: 429 }

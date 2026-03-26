@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { validatePassword } from "@/lib/validatePassword";
 
 function text(value: unknown, max = 100) {
   return String(value ?? "").trim().slice(0, max);
@@ -21,7 +22,7 @@ function normalizePhone(value: unknown) {
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (isRateLimited(`signup:${ip}`, 3, 60 * 60 * 1000)) {
+  if (await isRateLimited(`signup:${ip}`, 3, 60 * 60 * 1000)) {
     return NextResponse.json(
       { ok: false, error: "잠시 후 다시 시도해 주세요. (1시간에 3회 제한)" },
       { status: 429 }
@@ -58,8 +59,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "아이디는 4자 이상 입력해 주세요." }, { status: 400 });
     }
 
-    if (!password || password.length < 8) {
-      return NextResponse.json({ ok: false, error: "비밀번호는 8자 이상 입력해 주세요." }, { status: 400 });
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.ok) {
+      return NextResponse.json({ ok: false, error: pwCheck.error }, { status: 400 });
     }
 
     if (password !== passwordConfirm) {
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
 
     await User.create({
       username,

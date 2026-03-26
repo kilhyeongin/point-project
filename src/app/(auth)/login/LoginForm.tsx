@@ -38,10 +38,10 @@ function LoginFormInner() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden">
       {/* ── Left panel: Brand hero ── */}
       <div
-        className="hidden lg:flex flex-col justify-between w-[520px] shrink-0 p-12 relative overflow-hidden"
+        className="hidden lg:flex flex-col justify-between w-[520px] shrink-0 p-12 relative overflow-hidden h-screen"
         style={{
           background: "linear-gradient(150deg, oklch(0.18 0.06 265) 0%, oklch(0.12 0.04 265) 100%)",
         }}
@@ -123,7 +123,7 @@ function LoginFormInner() {
       </div>
 
       {/* ── Right panel: Login form ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background overflow-y-auto">
         {/* Mobile brand */}
         <div className="lg:hidden flex items-center gap-2 mb-10">
           <div

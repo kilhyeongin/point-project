@@ -6,9 +6,10 @@ import { User } from "@/models/User";
 import { PasswordResetToken } from "@/models/PasswordResetToken";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { validatePassword } from "@/lib/validatePassword";
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`reset-password:${getClientIp(req)}`, 5, 15 * 60 * 1000)) {
+  if (await isRateLimited(`reset-password:${getClientIp(req)}`, 5, 15 * 60 * 1000)) {
     return NextResponse.json(
       { ok: false, error: "잠시 후 다시 시도해 주세요." },
       { status: 429 }
@@ -27,11 +28,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!password || password.length < 8) {
-      return NextResponse.json(
-        { ok: false, error: "비밀번호는 8자 이상이어야 합니다." },
-        { status: 400 }
-      );
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.ok) {
+      return NextResponse.json({ ok: false, error: pwCheck.error }, { status: 400 });
     }
 
     await connectDB();

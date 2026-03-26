@@ -4,7 +4,7 @@ import { User } from "@/models/User";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`check-username:${getClientIp(req)}`, 10, 60 * 1000)) {
+  if (await isRateLimited(`check-username:${getClientIp(req)}`, 10, 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
   }
 
