@@ -26,6 +26,7 @@ const securityHeaders = [
       "font-src 'self' cdn.jsdelivr.net",
       `img-src 'self' data: blob: ${s3ImageHost}`,
       `connect-src 'self' *.sentry.io ${s3ImageHost}`,
+      "frame-src 'self' https://postcode.map.daum.net",
       "frame-ancestors 'none'",
     ].join("; "),
   },
