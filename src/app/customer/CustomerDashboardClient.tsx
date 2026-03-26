@@ -61,6 +61,11 @@ type RecommendationResponse = {
   error?: string;
 };
 
+type CategoryOption = {
+  code: string;
+  name: string;
+};
+
 type Props = {
   session: SessionInfo;
 };
@@ -203,7 +208,11 @@ export default function CustomerDashboardClient({ session }: Props) {
   const [recommendItems, setRecommendItems] = useState<PartnerItem[]>([]);
   const [recommendLoading, setRecommendLoading] = useState(true);
   const [recommendError, setRecommendError] = useState("");
-  const [interestLabels, setInterestLabels] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [selectedRecommendCat, setSelectedRecommendCat] = useState("");
+
+  const [allCategories, setAllCategories] = useState<CategoryOption[]>([]);
+  const [selectedCat, setSelectedCat] = useState("");
 
   const [tab, setTab] = useState<"ALL" | "FAVORITES">("ALL");
   const [search, setSearch] = useState("");
@@ -237,15 +246,13 @@ export default function CustomerDashboardClient({ session }: Props) {
       const data: RecommendationResponse = await res.json();
       if (!res.ok || !data?.ok) {
         setRecommendItems([]);
-        setInterestLabels([]);
         setRecommendError(data?.error ?? data?.message ?? "추천 업체를 불러오지 못했습니다.");
         return;
       }
       setRecommendItems(data.items ?? []);
-      setInterestLabels(data.interestLabels ?? []);
+      setInterests(data.interests ?? []);
     } catch {
       setRecommendItems([]);
-      setInterestLabels([]);
       setRecommendError("추천 업체를 불러오지 못했습니다.");
     } finally {
       setRecommendLoading(false);
@@ -283,12 +290,22 @@ export default function CustomerDashboardClient({ session }: Props) {
     }
   }
 
+  async function loadCategories() {
+    try {
+      const res = await fetch("/api/customer/category-options", { cache: "no-store" });
+      const data = await res.json();
+      if (data?.ok) setAllCategories(data.items ?? []);
+    } catch {}
+  }
+
   useEffect(() => {
     loadBalance();
     loadRecommendations();
+    loadCategories();
   }, []);
 
   useEffect(() => {
+    setSelectedCat("");
     loadPartners(tab, submittedSearch);
   }, [tab, submittedSearch]);
 
@@ -313,6 +330,22 @@ export default function CustomerDashboardClient({ session }: Props) {
   }
 
   const favoriteCount = useMemo(() => items.filter((item) => item.isFavorite).length, [items]);
+
+  function matchesCat(item: PartnerItem, code: string) {
+    if (!code) return true;
+    if (item.categories && item.categories.length > 0) return item.categories.includes(code);
+    return item.category === code;
+  }
+
+  const filteredRecommendItems = useMemo(
+    () => recommendItems.filter((item) => matchesCat(item, selectedRecommendCat)),
+    [recommendItems, selectedRecommendCat]
+  );
+
+  const filteredItems = useMemo(
+    () => items.filter((item) => matchesCat(item, selectedCat)),
+    [items, selectedCat]
+  );
 
   const emptyText =
     tab === "FAVORITES"
@@ -367,10 +400,10 @@ export default function CustomerDashboardClient({ session }: Props) {
             )}
             <div className="mt-5 flex items-center gap-2 flex-wrap">
               <span className="text-xs opacity-50 font-medium">관심사</span>
-              {interestLabels.length > 0 ? (
-                interestLabels.map((label) => (
-                  <span key={label} className="text-xs bg-white/15 px-2.5 py-1 rounded-full font-semibold">
-                    {label}
+              {interests.length > 0 ? (
+                interests.map((code) => (
+                  <span key={code} className="text-xs bg-white/15 px-2.5 py-1 rounded-full font-semibold">
+                    {allCategories.find(c => c.code === code)?.name || code}
                   </span>
                 ))
               ) : (
@@ -392,10 +425,43 @@ export default function CustomerDashboardClient({ session }: Props) {
             <h2 className="text-base font-black text-foreground">추천 제휴사</h2>
             {!recommendLoading && (
               <span className="text-xs text-muted-foreground font-semibold">
-                {recommendItems.length}개
+                {filteredRecommendItems.length}개
               </span>
             )}
           </div>
+
+          {/* 관심사 카테고리 필터 */}
+          {!recommendLoading && interests.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setSelectedRecommendCat("")}
+                className={cn(
+                  "shrink-0 px-3.5 h-8 rounded-full text-sm font-bold transition-all border",
+                  !selectedRecommendCat
+                    ? "bg-primary text-white border-primary"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground"
+                )}
+              >
+                전체
+              </button>
+              {interests.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setSelectedRecommendCat(selectedRecommendCat === code ? "" : code)}
+                  className={cn(
+                    "shrink-0 px-3.5 h-8 rounded-full text-sm font-bold transition-all border",
+                    selectedRecommendCat === code
+                      ? "bg-primary text-white border-primary"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground"
+                  )}
+                >
+                  {allCategories.find(c => c.code === code)?.name || code}
+                </button>
+              ))}
+            </div>
+          )}
 
           {recommendError && (
             <div className="mb-3 p-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-semibold">
@@ -416,11 +482,11 @@ export default function CustomerDashboardClient({ session }: Props) {
                 </div>
               ))}
             </div>
-          ) : recommendItems.length === 0 ? (
-            <EmptyState text="선택한 관심사와 일치하는 추천 업체가 없습니다." />
+          ) : filteredRecommendItems.length === 0 ? (
+            <EmptyState text="선택한 카테고리의 추천 업체가 없습니다." />
           ) : (
             <div className="columns-1 sm:columns-2 gap-4">
-              {recommendItems.map((item) => (
+              {filteredRecommendItems.map((item) => (
                 <div key={item.id} className="break-inside-avoid mb-4">
                   <PartnerCard
                     item={item}
@@ -452,6 +518,39 @@ export default function CustomerDashboardClient({ session }: Props) {
             )}
             <Button type="submit" className="h-11 shrink-0">검색</Button>
           </form>
+
+          {/* 전체 카테고리 필터 */}
+          {allCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedCat("")}
+                className={cn(
+                  "shrink-0 px-3.5 h-8 rounded-full text-sm font-bold transition-all border",
+                  !selectedCat
+                    ? "bg-primary text-white border-primary"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground"
+                )}
+              >
+                전체
+              </button>
+              {allCategories.map((cat) => (
+                <button
+                  key={cat.code}
+                  type="button"
+                  onClick={() => setSelectedCat(selectedCat === cat.code ? "" : cat.code)}
+                  className={cn(
+                    "shrink-0 px-3.5 h-8 rounded-full text-sm font-bold transition-all border",
+                    selectedCat === cat.code
+                      ? "bg-primary text-white border-primary"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground"
+                  )}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-1.5 p-1 bg-muted/50 rounded-xl w-fit">
             <button
@@ -497,7 +596,7 @@ export default function CustomerDashboardClient({ session }: Props) {
             </h2>
             {!loading && (
               <span className="text-xs text-muted-foreground font-semibold">
-                {items.length}개
+                {filteredItems.length}개
               </span>
             )}
           </div>
@@ -521,11 +620,11 @@ export default function CustomerDashboardClient({ session }: Props) {
                 </div>
               ))}
             </div>
-          ) : items.length === 0 ? (
-            <EmptyState text={emptyText} />
+          ) : filteredItems.length === 0 ? (
+            <EmptyState text={selectedCat ? "선택한 카테고리의 업체가 없습니다." : emptyText} />
           ) : (
             <div className="columns-1 sm:columns-2 gap-4">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <div key={item.id} className="break-inside-avoid mb-4">
                   <PartnerCard
                     item={item}
