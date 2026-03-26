@@ -423,9 +423,7 @@ export default function AdminPartnerCategoriesPage() {
                       </div>
                     </td>
                     <td style={thtd}>{item.code}</td>
-                    <td style={thtd}>
-                      <strong>{item.name}</strong>
-                    </td>
+                    <td style={{ ...thtd, fontWeight: 700 }}>{item.name}</td>
                     <td style={thtd}>{item.isVisibleToPartner ? "노출" : "숨김"}</td>
                     <td style={thtd}>{item.isVisibleToCustomer ? "노출" : "숨김"}</td>
                     <td style={thtd}>{item.isActive ? "사용" : "중지"}</td>
@@ -514,7 +512,8 @@ const arrowButton: CSSProperties = {
 
 const thtd: CSSProperties = {
   borderBottom: "1px solid #e5e7eb",
-  padding: 12,
+  padding: "10px 12px",
   textAlign: "left",
-  verticalAlign: "top",
+  verticalAlign: "middle",
+  fontSize: 13,
 };
