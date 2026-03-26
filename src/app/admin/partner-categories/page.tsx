@@ -30,6 +30,7 @@ export default function AdminPartnerCategoriesPage() {
   const [items, setItems] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [isDirtyOrder, setIsDirtyOrder] = useState(false);
   const [msg, setMsg] = useState("");
@@ -138,6 +139,31 @@ export default function AdminPartnerCategoriesPage() {
       setMsg("네트워크 오류");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deleteItem(item: CategoryItem) {
+    if (!window.confirm(`"${item.name}" 카테고리를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+    setDeleting(item.id);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/partner-categories/${item.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        setMsg(data?.error ?? "삭제하지 못했습니다.");
+        return;
+      }
+      setItems(Array.isArray(data.items) ? data.items : []);
+      setIsDirtyOrder(false);
+      setMsg(data?.message ?? "삭제되었습니다.");
+      if (form.id === item.id) resetForm();
+    } catch {
+      setMsg("네트워크 오류");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -416,10 +442,19 @@ export default function AdminPartnerCategoriesPage() {
                     <td style={thtd}>{item.isVisibleToPartner ? "노출" : "숨김"}</td>
                     <td style={thtd}>{item.isVisibleToCustomer ? "노출" : "숨김"}</td>
                     <td style={thtd}>{item.isActive ? "사용" : "중지"}</td>
-                    <td style={thtd}>
-                      <button onClick={() => setForm(item)} style={secondaryButton}>
-                        수정
-                      </button>
+                    <td style={{ ...thtd, whiteSpace: "nowrap" }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => setForm(item)} style={secondaryButton}>
+                          수정
+                        </button>
+                        <button
+                          onClick={() => deleteItem(item)}
+                          disabled={deleting === item.id}
+                          style={dangerButton}
+                        >
+                          {deleting === item.id ? "삭제 중..." : "삭제"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -458,6 +493,17 @@ const secondaryButton: CSSProperties = {
   border: "1px solid #d1d5db",
   background: "#fff",
   color: "#111827",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const dangerButton: CSSProperties = {
+  height: 44,
+  padding: "0 16px",
+  borderRadius: 12,
+  border: "1px solid #ef4444",
+  background: "#fff",
+  color: "#ef4444",
   fontWeight: 800,
   cursor: "pointer",
 };

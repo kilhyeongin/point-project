@@ -46,6 +46,40 @@ type Context = {
   params: Promise<{ id: string }>;
 };
 
+export async function DELETE(_req: NextRequest, { params }: Context) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  try {
+    const { id } = await params;
+
+    await connectDB();
+
+    const deleted = await PartnerCategoryMaster.findByIdAndDelete(id).lean();
+
+    if (!deleted) {
+      return NextResponse.json(
+        { ok: false, error: "카테고리를 찾을 수 없습니다." },
+        { status: 404 }
+      );
+    }
+
+    const items = await getPartnerCategoryMasters();
+
+    return NextResponse.json({
+      ok: true,
+      message: "카테고리가 삭제되었습니다.",
+      items,
+    });
+  } catch (error) {
+    console.error("[ADMIN_PARTNER_CATEGORIES_DELETE_ERROR]", error);
+    return NextResponse.json(
+      { ok: false, error: "카테고리를 삭제하지 못했습니다." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(req: NextRequest, { params }: Context) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
