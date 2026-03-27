@@ -144,22 +144,6 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
         {/* Apply section */}
         <div className="bg-card shadow-card rounded-2xl p-5 space-y-3">
           <h2 className="text-base font-black text-foreground">신청 및 정보 공개</h2>
-          <div className={`p-3 rounded-xl border text-sm leading-relaxed ${
-            applied
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : liked
-              ? "bg-amber-50 border-amber-200 text-amber-800"
-              : "bg-muted border-border text-muted-foreground"
-          }`}>
-            <div className="font-bold mb-1">
-              {applied ? "신청 완료" : liked ? "관심업체 저장 상태" : "아직 신청 전"}
-            </div>
-            <div>
-              {applied
-                ? "이 제휴사에는 내 상세정보가 공개됩니다. 제휴사는 이제 이름, 연락처, 주소를 확인할 수 있습니다."
-                : "신청 전에는 제휴사에 최소 정보만 공개됩니다. 찜만 해도 잠재고객으로 들어가지만 연락처와 주소는 공개되지 않습니다."}
-            </div>
-          </div>
           <ApplyPartnerButton
             partnerId={String((doc as any)._id)}
             initialApplied={applied}
