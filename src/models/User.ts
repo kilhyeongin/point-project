@@ -173,6 +173,14 @@ const PartnerProfileSchema = new Schema(
   { _id: false }
 );
 
+const SocialAccountSchema = new Schema(
+  {
+    provider: { type: String, required: true }, // "naver" | "kakao"
+    providerId: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 const UserSchema = new Schema(
   {
     username: {
@@ -191,7 +199,11 @@ const UserSchema = new Schema(
     },
     passwordHash: {
       type: String,
-      required: true,
+      default: "",
+    },
+    socialAccounts: {
+      type: [SocialAccountSchema],
+      default: [],
     },
     name: {
       type: String,

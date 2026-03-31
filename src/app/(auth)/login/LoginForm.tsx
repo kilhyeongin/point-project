@@ -231,6 +231,18 @@ function LoginFormInner() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
+          {/* Social login */}
+          <a
+            href="/api/auth/naver"
+            className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl font-bold text-[15px] text-white transition-opacity hover:opacity-90 active:opacity-80"
+            style={{ background: "#03C75A" }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" />
+            </svg>
+            네이버로 로그인
+          </a>
+
           {/* Signup */}
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
