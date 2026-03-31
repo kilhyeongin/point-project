@@ -1,23 +1,31 @@
-// src/app/page.tsx
-// 홈 페이지 (정석)
-// - API 호출로 세션 확인하지 않고, 서버에서 쿠키를 직접 읽어서 세션 확인
-// - role에 따라 즉시 redirect()
-
 import { redirect } from "next/navigation";
 import { getSessionFromCookies } from "@/lib/auth";
+import { connectDB } from "@/lib/db";
+import { getPartnerCategoryMasters } from "@/lib/partnerCategories";
+import LandingClient from "./LandingClient";
+
+const EXCLUDED_CODES = new Set(["VIDEO", "BOUQUET", "MC", "GIFT"]);
 
 export default async function HomePage() {
   const session = await getSessionFromCookies();
 
-  // 로그인 안 되어 있으면 로그인으로
-  if (!session) {
-    redirect("/login");
+  // 로그인된 유저는 역할별 대시보드로 바로 이동
+  if (session) {
+    if (session.role === "ADMIN") redirect("/admin");
+    if (session.role === "PARTNER") redirect("/partner");
+    redirect("/customer");
   }
 
-  // 역할별 대시보드로 즉시 이동
-  if (session.role === "ADMIN") redirect("/admin");
-  if (session.role === "PARTNER") redirect("/partner");
+  // 비로그인 → 랜딩페이지 (카테고리 목록 표시)
+  await connectDB();
+  const allCategories = await getPartnerCategoryMasters({
+    activeOnly: true,
+    visibleToCustomerOnly: true,
+  });
 
-  // 기본은 CUSTOMER
-  redirect("/customer");
+  const categories = allCategories
+    .filter((cat) => !EXCLUDED_CODES.has(cat.code))
+    .map((cat) => ({ code: cat.code, name: cat.name }));
+
+  return <LandingClient categories={categories} />;
 }
