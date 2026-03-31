@@ -164,6 +164,11 @@ export default function AdminAccountsPage() {
   }, [page]);
 
   async function handleStatusChange(id: string, newStatus: "ACTIVE" | "BLOCKED") {
+    if (newStatus === "BLOCKED") {
+      const target = items.find((it) => it.id === id);
+      const name = target?.name || target?.username || "해당 계정";
+      if (!window.confirm(`${name}을(를) 차단하시겠습니까?\n차단 시 해당 계정은 로그인이 제한됩니다.`)) return;
+    }
     try {
       const res = await fetch(`/api/admin/users/${id}/status`, {
         method: "PATCH",

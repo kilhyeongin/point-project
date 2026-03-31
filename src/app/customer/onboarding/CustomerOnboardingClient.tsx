@@ -1,174 +1,135 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 
-type SessionInfo = {
-  uid: string;
-  username: string;
-  name: string;
-  role: string;
-};
+type SessionInfo = { uid: string; username: string; name: string; role: string };
+type InterestOption = { value: string; label: string };
+type Props = { session: SessionInfo; initialInterests: string[]; interestOptions: InterestOption[] };
 
-type InterestOption = {
-  value: string;
-  label: string;
-};
-
-type Props = {
-  session: SessionInfo;
-  initialInterests: string[];
-  interestOptions: InterestOption[];
-};
-
-export default function CustomerOnboardingClient({
-  session,
-  initialInterests,
-  interestOptions,
-}: Props) {
+export default function CustomerOnboardingClient({ session, initialInterests, interestOptions }: Props) {
   const [selected, setSelected] = useState<string[]>(initialInterests);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
-  const displayName = useMemo(() => {
-    return session.name?.trim() || session.username || "고객";
-  }, [session.name, session.username]);
+  const displayName = useMemo(() => session.name?.trim() || session.username || "고객", [session]);
 
   function toggleInterest(value: string) {
+    setError("");
     setSelected((prev) =>
-      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   }
 
   async function submit() {
-    if (selected.length === 0) {
-      setError("관심사를 1개 이상 선택해 주세요.");
-      setMsg("");
-      return;
-    }
-
+    if (selected.length === 0) { setError("관심사를 1개 이상 선택해 주세요."); return; }
     setLoading(true);
-    setMsg("");
     setError("");
-
     try {
       const res = await fetch("/api/customer/onboarding", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ interests: selected }),
       });
-
       const data = await res.json();
-
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "관심사 저장에 실패했습니다.");
-        return;
-      }
-
-      setMsg("관심사가 저장되었습니다.");
+      if (!res.ok || !data?.ok) { setError(data?.error ?? "저장에 실패했습니다."); return; }
       window.location.href = "/customer";
     } catch {
-      setError("관심사 저장 중 오류가 발생했습니다.");
+      setError("오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   }
 
-  const selectedLabels = selected
-    .map((value) => interestOptions.find((item) => item.value === value)?.label ?? value)
-    .join(", ");
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center">
-          <span className="text-base font-black text-foreground tracking-tight">포인트</span>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* 헤더 */}
+      <header
+        className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl"
+        style={{ boxShadow: "0 1px 0 oklch(0.918 0.008 250)" }}
+      >
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "oklch(0.52 0.27 264)" }}
+          >
+            <span className="text-white text-xs font-black">P</span>
+          </div>
+          <span className="text-sm font-black text-foreground tracking-tight">포인트</span>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
-        {/* Intro card */}
-        <div className="bg-primary rounded-2xl p-6 text-primary-foreground">
-          <div className="text-xs font-bold uppercase tracking-widest opacity-70 mb-3">
-            관심사 설정
-          </div>
-          <h1 className="text-2xl font-black tracking-tight leading-tight">
-            관심 있는 항목을 선택해 주세요
+      <div className="max-w-2xl mx-auto w-full px-4 pt-8 pb-36 flex-1">
+        {/* 타이틀 */}
+        <div className="mb-8">
+          <p className="text-sm font-semibold text-primary mb-1">{displayName}님, 환영해요!</p>
+          <h1 className="text-2xl font-black text-foreground tracking-tight leading-snug">
+            관심 있는 카테고리를<br />선택해 주세요
           </h1>
-          <p className="mt-2 text-sm opacity-80 leading-relaxed">
-            {displayName}님이 선택한 관심사를 바탕으로
-            <br />
-            맞춤 추천 제휴사를 먼저 보여드립니다.
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            선택한 카테고리의 제휴사를 모아서 보여드릴게요.<br />
+            나중에 설정에서 언제든지 변경할 수 있어요.
           </p>
-
-          {/* Selected preview */}
-          <div className="mt-4 bg-white/10 rounded-xl p-3">
-            <div className="text-xs font-bold opacity-70 mb-1">현재 선택</div>
-            <p className="text-sm font-semibold">
-              {selected.length > 0 ? selectedLabels : "아직 선택한 관심사가 없습니다."}
-            </p>
-          </div>
         </div>
 
-        {/* Options grid */}
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <h2 className="text-base font-black text-foreground mb-4">관심사 선택</h2>
+        {/* 카테고리 그리드 */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {interestOptions.map((item) => {
+            const active = selected.includes(item.value);
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => toggleInterest(item.value)}
+                className="relative flex items-center justify-center h-16 rounded-2xl text-sm font-bold transition-all duration-150 active:scale-95"
+                style={
+                  active
+                    ? { background: "oklch(0.52 0.27 264)", color: "white", boxShadow: "0 4px 14px oklch(0.52 0.27 264 / 0.35)" }
+                    : { background: "oklch(0.97 0.003 250)", color: "oklch(0.4 0.01 250)", border: "1.5px solid oklch(0.92 0.008 250)" }
+                }
+              >
+                {active && (
+                  <span className="absolute top-2 right-2">
+                    <Check className="w-3.5 h-3.5 text-white/80" />
+                  </span>
+                )}
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {interestOptions.map((item) => {
-              const active = selected.includes(item.value);
-              return (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => toggleInterest(item.value)}
-                  className={`relative flex flex-col items-center justify-center min-h-[80px] rounded-2xl border-2 font-bold text-sm transition-all cursor-pointer ${
-                    active
-                      ? "border-primary bg-primary/5 text-primary shadow-sm"
-                      : "border-border bg-background text-foreground hover:border-primary/40 hover:bg-accent"
-                  }`}
-                >
-                  {active && (
-                    <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-primary" />
-                  )}
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
+        {error && (
+          <p className="mt-4 text-sm font-semibold text-destructive">{error}</p>
+        )}
+      </div>
 
-          {error && (
-            <div className="mt-4 p-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-semibold">
-              {error}
-            </div>
-          )}
-
-          {msg && (
-            <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold">
-              {msg}
-            </div>
-          )}
-
-          <div className="mt-5 flex justify-end">
-            <Button
-              type="button"
-              onClick={submit}
-              disabled={loading}
-              className="h-11 px-6 font-bold"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  저장 중...
-                </span>
-              ) : (
-                "선택 완료"
-              )}
-            </Button>
-          </div>
+      {/* 하단 고정 버튼 */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-xl px-4 pb-8 pt-4"
+        style={{ boxShadow: "0 -1px 0 oklch(0.918 0.008 250)" }}
+      >
+        <div className="max-w-2xl mx-auto">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={loading || selected.length === 0}
+            className="w-full h-14 rounded-2xl text-base font-black text-white transition-all duration-150 disabled:opacity-40 active:scale-[0.98] flex items-center justify-center gap-2"
+            style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                {selected.length > 0 && (
+                  <span className="bg-white/20 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                    {selected.length}개
+                  </span>
+                )}
+                선택 완료
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

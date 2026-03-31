@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Check } from "lucide-react";
 
 type Option = { value: string; label: string };
 
@@ -34,11 +34,7 @@ export default function InterestsSettingForm() {
   }
 
   async function save() {
-    if (selected.length === 0) {
-      setMsg("관심사를 1개 이상 선택해 주세요.");
-      setIsError(true);
-      return;
-    }
+    if (selected.length === 0) { setMsg("관심사를 1개 이상 선택해 주세요."); setIsError(true); return; }
     setSaving(true);
     setMsg("");
     try {
@@ -48,54 +44,76 @@ export default function InterestsSettingForm() {
         body: JSON.stringify({ interests: selected }),
       });
       const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        setMsg(data?.error ?? "저장하지 못했습니다.");
-        setIsError(true);
-        return;
-      }
-      setMsg("관심사가 저장되었습니다.");
+      if (!res.ok || !data?.ok) { setMsg(data?.error ?? "저장하지 못했습니다."); setIsError(true); return; }
+      setMsg("저장되었습니다.");
       setIsError(false);
     } catch {
-      setMsg("네트워크 오류가 발생했습니다.");
-      setIsError(true);
+      setMsg("네트워크 오류가 발생했습니다."); setIsError(true);
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">불러오는 중...</p>;
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} className="h-14 rounded-2xl" />
+        ))}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => toggle(opt.value)}
-            className={cn(
-              "px-4 h-9 rounded-full text-sm font-bold border transition-all",
-              selected.includes(opt.value)
-                ? "bg-primary text-white border-primary"
-                : "bg-card text-muted-foreground border-border hover:text-foreground"
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          관심 카테고리를 선택하면 맞춤 제휴사를 보여드립니다.
+        </p>
+        <span className="text-xs font-black text-primary shrink-0 ml-2">{selected.length}개 선택</span>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        {options.map((opt) => {
+          const isSelected = selected.includes(opt.value);
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggle(opt.value)}
+              className="relative flex items-center justify-center h-14 rounded-2xl text-sm font-bold transition-all duration-150 active:scale-95"
+              style={
+                isSelected
+                  ? { background: "oklch(0.52 0.27 264)", color: "white", boxShadow: "0 4px 12px oklch(0.52 0.27 264 / 0.30)" }
+                  : { background: "oklch(0.97 0.003 250)", color: "oklch(0.4 0.01 250)", border: "1.5px solid oklch(0.92 0.008 250)" }
+              }
+            >
+              {isSelected && (
+                <span className="absolute top-2 right-2">
+                  <Check className="w-3 h-3 text-white/80" />
+                </span>
+              )}
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {msg && (
-        <p className={cn("text-sm font-semibold", isError ? "text-destructive" : "text-primary")}>
+        <p className={`text-sm font-semibold ${isError ? "text-destructive" : "text-primary"}`}>
           {msg}
         </p>
       )}
 
-      <Button onClick={save} disabled={saving} className="h-11 px-6">
-        {saving ? "저장 중..." : "저장"}
-      </Button>
+      <button
+        type="button"
+        onClick={save}
+        disabled={saving || selected.length === 0}
+        className="w-full h-12 rounded-2xl text-sm font-black text-white transition-all duration-150 disabled:opacity-40 active:scale-[0.98]"
+        style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}
+      >
+        {saving ? "저장 중..." : "저장하기"}
+      </button>
     </div>
   );
 }

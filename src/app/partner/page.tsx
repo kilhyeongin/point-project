@@ -439,112 +439,54 @@ export default function PartnerPage() {
   return (
     <main className="min-w-0 space-y-5">
 
-      {/* ── Hero / Summary Card ── */}
-      <section className="bg-card shadow-card rounded-2xl p-5 flex flex-wrap justify-between items-center gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground mb-1.5">운영 요약</p>
-          <h1 className="text-3xl font-black text-foreground leading-tight break-keep m-0">
-            제휴사 대시보드
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            잠재고객과 신청고객을 구분해서 확인하고, 신청고객에게만 포인트 지급 및 즉시 차감을 진행합니다.
+      {/* ── 1. 핵심 지표 ── */}
+      <div className="grid grid-cols-3 gap-3">
+        <div
+          className="rounded-2xl p-4 text-white col-span-3 sm:col-span-1"
+          style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}
+        >
+          <p className="text-xs font-semibold opacity-75 mb-1">내 포인트 잔액</p>
+          <p className="text-2xl font-black leading-none">
+            {balanceLoading ? "—" : `${formatNumber(myBalance)}`}
+            <span className="text-base ml-1 opacity-80">P</span>
           </p>
         </div>
-
-        <div className="bg-muted/50 rounded-2xl px-4 py-3.5 w-full max-w-[280px] min-w-[200px]">
-          <p className="text-xs text-muted-foreground mb-1.5">내 포인트 잔액</p>
-          <p className="text-3xl font-black text-foreground">
-            {balanceLoading ? "조회 중..." : `${formatNumber(myBalance)}P`}
+        <div className="rounded-2xl p-4 bg-card shadow-card">
+          <p className="text-xs font-semibold text-muted-foreground mb-1">신청고객</p>
+          <p className="text-2xl font-black text-foreground leading-none">
+            {loading ? "—" : appliedCount}
+            <span className="text-sm font-semibold text-muted-foreground ml-1">명</span>
           </p>
         </div>
-      </section>
-
-      {/* ── Top Grid: Topup Request + Topup History ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-
-        {/* Topup Request Form */}
-        <section className="bg-card shadow-card rounded-2xl p-5">
-          <h2 className="text-lg font-black text-foreground mb-4">포인트 충전 요청</h2>
-
-          <div className="flex gap-2.5 flex-wrap sm:flex-nowrap">
-            <Input
-              value={topupAmountText}
-              onChange={(e) => setTopupAmountText(String(onlyDigitsToNumber(e.target.value)))}
-              inputMode="numeric"
-              placeholder="충전 요청 금액"
-              className="min-w-0 flex-1 h-11"
-            />
-            <Button onClick={createTopupRequest} className="h-11 px-5 font-bold whitespace-nowrap">
-              충전 요청
-            </Button>
-          </div>
-
-          <Input
-            value={topupNote}
-            onChange={(e) => setTopupNote(e.target.value)}
-            placeholder="입금자명 / 메모"
-            className="mt-2.5 h-11"
-          />
-
-          {topupMsg && (
-            <p className="mt-3 text-sm font-bold leading-relaxed text-foreground">{topupMsg}</p>
-          )}
-        </section>
-
-        {/* Topup History */}
-        <section className="bg-card shadow-card rounded-2xl p-5">
-          <h2 className="text-lg font-black text-foreground mb-4">내 충전 요청 내역</h2>
-
-          {topupItems.length === 0 ? (
-            <EmptyText text="충전 요청 내역이 없습니다." />
-          ) : (
-            <div className="grid gap-2.5">
-              {topupItems.map((it) => (
-                <div
-                  key={it.id}
-                  className="border border-border rounded-xl p-3.5 grid gap-1.5"
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-foreground">{formatNumber(it.amount)}P</span>
-                    <StatusBadge status={it.status} />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    요청일: {formatDateText(it.createdAt)}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {it.decidedAt ? `처리일: ${formatDateText(it.decidedAt)}` : "처리 대기"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <div className="rounded-2xl p-4 bg-card shadow-card">
+          <p className="text-xs font-semibold text-muted-foreground mb-1">잠재고객</p>
+          <p className="text-2xl font-black text-foreground leading-none">
+            {loading ? "—" : likedCount}
+            <span className="text-sm font-semibold text-muted-foreground ml-1">명</span>
+          </p>
+        </div>
       </div>
 
-      {/* ── Customer Section ── */}
+      {/* ── 2. 고객 포인트 처리 (핵심) ── */}
       <section className="bg-card shadow-card rounded-2xl p-5">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-5">
+          <div className="flex-1">
+            <h2 className="text-lg font-black text-foreground">고객 포인트 처리</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">신청고객에게만 포인트 지급·차감이 가능합니다</p>
+          </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-4">
-          <h2 className="text-lg font-black text-foreground whitespace-nowrap shrink-0">
-            고객 포인트 처리
-          </h2>
-
-          {/* Filter chips */}
-          <div className="flex gap-2 flex-wrap min-w-0">
-            {(
-              [
-                { value: "ALL" as CustomerFilter, label: `전체 ${items.length}명` },
-                { value: "LIKED" as CustomerFilter, label: `잠재고객 ${likedCount}명` },
-                { value: "APPLIED" as CustomerFilter, label: `신청고객 ${appliedCount}명` },
-              ] as { value: CustomerFilter; label: string }[]
-            ).map(({ value, label }) => (
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { value: "ALL" as CustomerFilter, label: `전체 ${items.length}` },
+              { value: "APPLIED" as CustomerFilter, label: `신청 ${appliedCount}` },
+              { value: "LIKED" as CustomerFilter, label: `잠재 ${likedCount}` },
+            ] as { value: CustomerFilter; label: string }[]).map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setCustomerFilter(value)}
                 className={cn(
-                  "h-9 px-4 rounded-full border text-sm font-black whitespace-nowrap transition-colors",
+                  "h-8 px-3.5 rounded-full border text-xs font-black whitespace-nowrap transition-colors",
                   customerFilter === value
                     ? "bg-foreground text-background border-foreground"
                     : "bg-background text-foreground border-border hover:bg-muted"
@@ -555,164 +497,233 @@ export default function PartnerPage() {
             ))}
           </div>
 
-          {/* Search */}
-          <div className="flex gap-2 min-w-0 xl:ml-auto">
+          <div className="flex gap-2 min-w-0">
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="고객 검색 (아이디/이름)"
-              className="min-w-0 w-full xl:w-52 h-9"
+              placeholder="이름 / 아이디 검색"
+              className="min-w-0 w-full xl:w-48 h-9"
             />
-            <Button variant="outline" onClick={fetchCustomers} className="h-9 px-4 font-bold whitespace-nowrap">
+            <Button variant="outline" onClick={fetchCustomers} className="h-9 px-4 font-bold whitespace-nowrap shrink-0">
               검색
             </Button>
           </div>
         </div>
 
-        {/* Info banner */}
-        <div className="mb-4 p-3.5 rounded-xl bg-muted/50 text-sm text-muted-foreground leading-relaxed">
-          잠재고객은 고객이 업체를 찜한 상태이며 최소 정보만 확인할 수 있습니다. 신청고객은 고객이 상담/이용 신청을 완료한 상태이며 상세정보 확인과 포인트 지급, 즉시 차감이 가능합니다.
-        </div>
+        {error && <p className="mb-3 text-sm font-black text-destructive">{error}</p>}
 
-        {error && (
-          <p className="mb-2.5 text-sm font-black text-destructive">{error}</p>
-        )}
-
-        <p className="text-sm text-muted-foreground mb-3">
-          {loading ? "불러오는 중..." : `총 ${items.length}명`}
-        </p>
-
-        {/* ── Unified Customer Card Grid ── */}
+        {/* 신청고객 카드 */}
         <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
-          {items.map((c) => {
-            const isApplied = c.relationStatus === "APPLIED";
-
-            return (
-              <article
-                key={c.id}
-                className="border border-border rounded-2xl bg-background p-4 grid gap-3"
-              >
-                {/* Card top: badge + name + balance */}
-                <div className="flex justify-between items-start gap-3">
+          {items.filter(c => c.relationStatus === "APPLIED").map((c) => (
+            <article key={c.id} className="rounded-2xl border border-emerald-200 bg-background overflow-hidden">
+              <div className="h-1 bg-emerald-400" />
+              <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="mb-2">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-base font-black text-foreground">{c.name}</span>
                       <RelationBadge status={c.relationStatus} />
                     </div>
-                    <div className="text-base font-black text-foreground leading-tight">{c.name}</div>
-                    <div className="mt-0.5 text-sm text-muted-foreground">{c.username}</div>
+                    <span className="text-xs text-muted-foreground">{c.username}</span>
                   </div>
-                  <div className="text-lg font-black text-foreground whitespace-nowrap">
-                    {isApplied ? `${formatNumber(c.balance ?? 0)}P` : "-"}
-                  </div>
-                </div>
-
-                {/* Meta info */}
-                <div className="p-3 rounded-xl bg-muted/50 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div>
-                    <strong className="block text-xs font-black text-foreground mb-0.5">
-                      {isApplied ? "신청일" : "찜한 일시"}
-                    </strong>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDateText(isApplied ? c.appliedAt : c.likedAt ?? c.createdAt)}
-                    </span>
-                  </div>
-                  <div>
-                    <strong className="block text-xs font-black text-foreground mb-0.5">전화번호</strong>
-                    <span className="text-xs text-muted-foreground">
-                      {isApplied ? c.phone || "-" : "비공개"}
-                    </span>
-                  </div>
-                  <div>
-                    <strong className="block text-xs font-black text-foreground mb-0.5">주소</strong>
-                    <span className="text-xs text-muted-foreground">
-                      {isApplied
-                        ? [c.address, c.detailAddress].filter(Boolean).join(" ") || "-"
-                        : "비공개"}
-                    </span>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground mb-0.5">보유 포인트</p>
+                    <p className="text-lg font-black text-foreground leading-none">
+                      {formatNumber(c.balance ?? 0)}<span className="text-sm opacity-60 ml-0.5">P</span>
+                    </p>
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 flex-wrap">
-                  {isApplied ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setIssueAmountText("0");
-                          setIssueNote("");
-                          setIssueMsg("");
-                          setModal({ type: "issue", customer: c });
-                        }}
-                        className="font-bold"
-                      >
-                        포인트 지급
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setUseAmountText("0");
-                          setUseNote("");
-                          setUseMsg("");
-                          setModal({ type: "use", customer: c });
-                        }}
-                        className="font-bold"
-                      >
-                        즉시 차감
-                      </Button>
-                    </>
-                  ) : (
-                    <span className="text-sm font-bold text-muted-foreground">
-                      신청 완료 후 포인트 처리 가능
-                    </span>
-                  )}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">신청일</span>
+                    <p className="font-semibold text-foreground mt-0.5 truncate">{formatDateText(c.appliedAt)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">전화번호</span>
+                    <p className="font-semibold text-foreground mt-0.5">{c.phone || "-"}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">주소</span>
+                    <p className="font-semibold text-foreground mt-0.5">
+                      {[c.address, c.detailAddress].filter(Boolean).join(" ") || "-"}
+                    </p>
+                  </div>
                 </div>
-              </article>
-            );
-          })}
-
-          {!loading && items.length === 0 && (
-            <div className="col-span-full py-10 text-center text-sm text-muted-foreground">
-              {customerFilter === "LIKED"
-                ? "잠재고객이 없습니다."
-                : customerFilter === "APPLIED"
-                ? "신청고객이 없습니다."
-                : "고객이 없습니다."}
-            </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" className="flex-1 font-bold h-9"
+                    onClick={() => { setIssueAmountText("0"); setIssueNote(""); setIssueMsg(""); setModal({ type: "issue", customer: c }); }}>
+                    포인트 지급
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1 font-bold h-9"
+                    onClick={() => { setUseAmountText("0"); setUseNote(""); setUseMsg(""); setModal({ type: "use", customer: c }); }}>
+                    즉시 차감
+                  </Button>
+                </div>
+              </div>
+            </article>
+          ))}
+          {!loading && items.filter(c => c.relationStatus === "APPLIED").length === 0 && customerFilter !== "LIKED" && (
+            <div className="col-span-full py-6 text-center text-sm text-muted-foreground font-semibold">신청고객이 없습니다.</div>
           )}
         </div>
+
+        {/* 잠재고객 리스트 */}
+        {(customerFilter === "ALL" || customerFilter === "LIKED") && items.filter(c => c.relationStatus === "LIKED").length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-black text-muted-foreground mb-2 uppercase tracking-wide">잠재고객 ({likedCount}명)</p>
+            <div className="rounded-xl border border-border overflow-hidden">
+              {items.filter(c => c.relationStatus === "LIKED").map((c, i, arr) => (
+                <div key={c.id} className={cn("flex items-center justify-between px-4 py-2.5 bg-background", i < arr.length - 1 && "border-b border-border/60")}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <span className="text-xs font-black text-muted-foreground">{c.name?.[0] ?? "?"}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-sm font-bold text-foreground">{c.name}</span>
+                      <span className="text-xs text-muted-foreground ml-1.5">{c.username}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0 ml-2">{formatDateText(c.likedAt ?? c.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && items.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="text-sm text-muted-foreground font-semibold">등록된 고객이 없습니다.</p>
+          </div>
+        )}
+        {loading && (
+          <div className="py-8 text-center text-sm text-muted-foreground">불러오는 중...</div>
+        )}
+
       </section>
 
-      {/* ── Point Processing Modal ── */}
+      {/* ── 3. 충전 요청 + 충전 내역 ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <section className="bg-card shadow-card rounded-2xl p-5">
+          <h2 className="text-base font-black text-foreground mb-4">포인트 충전 요청</h2>
+          <div className="flex gap-2.5 flex-wrap sm:flex-nowrap">
+            <Input
+              value={topupAmountText}
+              onChange={(e) => setTopupAmountText(String(onlyDigitsToNumber(e.target.value)))}
+              inputMode="numeric"
+              placeholder="충전 요청 금액"
+              className="min-w-0 flex-1 h-11"
+            />
+            <Button onClick={createTopupRequest} className="h-11 px-5 font-bold whitespace-nowrap">
+              요청
+            </Button>
+          </div>
+          <Input
+            value={topupNote}
+            onChange={(e) => setTopupNote(e.target.value)}
+            placeholder="입금자명 / 메모"
+            className="mt-2.5 h-11"
+          />
+          {topupMsg && <p className="mt-3 text-sm font-bold text-foreground">{topupMsg}</p>}
+        </section>
+
+        <section className="bg-card shadow-card rounded-2xl p-5">
+          <h2 className="text-base font-black text-foreground mb-4">충전 요청 내역</h2>
+          {topupItems.length === 0 ? (
+            <EmptyText text="충전 요청 내역이 없습니다." />
+          ) : (
+            <div className="space-y-2">
+              {topupItems.map((it) => (
+                <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
+                  <div>
+                    <p className="text-sm font-black text-foreground">{formatNumber(it.amount)}P</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
+                  </div>
+                  <StatusBadge status={it.status} />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── 4. 이력 ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <section className="bg-card shadow-card rounded-2xl p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-base font-black text-foreground">고객 지급 이력</h2>
+            <Button variant="outline" size="sm" onClick={fetchMyIssueRequests} className="font-bold h-8 px-3 text-xs">
+              새로고침
+            </Button>
+          </div>
+          {reqLoading ? <EmptyText text="불러오는 중..." /> : reqItems.length === 0 ? <EmptyText text="지급 이력이 없습니다." /> : (
+            <div className="space-y-2">
+              {reqItems.map((it) => (
+                <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-foreground truncate">{it.to?.name} <span className="font-normal text-muted-foreground">({it.to?.username})</span></p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-black text-foreground">{formatNumber(it.amount)}P</span>
+                    <StatusBadge status={it.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="bg-card shadow-card rounded-2xl p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-base font-black text-foreground">포인트 처리 이력</h2>
+            <Button variant="outline" size="sm" onClick={fetchPointHistory} className="font-bold h-8 px-3 text-xs">
+              새로고침
+            </Button>
+          </div>
+          {historyLoading ? <EmptyText text="불러오는 중..." /> : historyItems.length === 0 ? <EmptyText text="처리 이력이 없습니다." /> : (
+            <div className="space-y-2">
+              {historyItems.map((it) => (
+                <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-foreground truncate">{it.customer?.name} <span className="font-normal text-muted-foreground">({it.customer?.username})</span></p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
+                    {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={cn("text-sm font-black", it.type === "ISSUE" ? "text-blue-600" : "text-orange-500")}>
+                      {it.type === "ISSUE" ? "+" : "-"}{formatNumber(Math.abs(it.amount))}P
+                    </span>
+                    <Badge
+                      variant={it.type === "ISSUE" ? "secondary" : "outline"}
+                      className={cn("font-bold text-xs", it.type === "ISSUE" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-orange-600 border-orange-200 bg-orange-50")}
+                    >
+                      {pointHistoryTypeLabel(it.type)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── 포인트 처리 모달 ── */}
       {modal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}
         >
           <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6 grid gap-4">
-            {/* Modal header */}
             <div className="flex justify-between items-start gap-2">
               <div>
                 <h3 className="text-lg font-black text-foreground">
                   {modal.type === "issue" ? "포인트 지급" : "즉시 차감"}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {modal.customer.name} ({modal.customer.username})
-                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">{modal.customer.name} ({modal.customer.username})</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setModal(null)}
-                className="text-muted-foreground hover:text-foreground text-xl leading-none"
-              >
-                ✕
-              </button>
+              <button type="button" onClick={() => setModal(null)} className="text-muted-foreground hover:text-foreground text-xl leading-none">✕</button>
             </div>
 
-            {/* Customer info summary */}
             <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-muted/50">
               <div>
                 <strong className="block text-xs font-black text-foreground mb-1">전화번호</strong>
@@ -720,171 +731,36 @@ export default function PartnerPage() {
               </div>
               <div>
                 <strong className="block text-xs font-black text-foreground mb-1">현재 잔액</strong>
-                <span className="text-sm font-black text-foreground">
-                  {formatNumber(modal.customer.balance ?? 0)}P
-                </span>
+                <span className="text-sm font-black text-foreground">{formatNumber(modal.customer.balance ?? 0)}P</span>
               </div>
               <div className="col-span-2">
                 <strong className="block text-xs font-black text-foreground mb-1">주소</strong>
-                <span className="text-sm text-muted-foreground">
-                  {[modal.customer.address, modal.customer.detailAddress].filter(Boolean).join(" ") || "-"}
-                </span>
+                <span className="text-sm text-muted-foreground">{[modal.customer.address, modal.customer.detailAddress].filter(Boolean).join(" ") || "-"}</span>
               </div>
             </div>
 
-            {/* Issue form */}
             {modal.type === "issue" ? (
               <>
                 <div className="flex gap-2.5">
-                  <Input
-                    value={issueAmountText}
-                    onChange={(e) => setIssueAmountText(formatNumber(onlyDigitsToNumber(e.target.value)))}
-                    inputMode="numeric"
-                    placeholder="지급 포인트"
-                    className="flex-1 min-w-0 h-11 text-right font-black"
-                  />
-                  <Button
-                    onClick={() => createIssueRequest(modal.customer)}
-                    className="h-11 px-5 font-bold whitespace-nowrap"
-                  >
-                    즉시 지급
-                  </Button>
+                  <Input value={issueAmountText} onChange={(e) => setIssueAmountText(formatNumber(onlyDigitsToNumber(e.target.value)))} inputMode="numeric" placeholder="지급 포인트" className="flex-1 min-w-0 h-11 text-right font-black" />
+                  <Button onClick={() => createIssueRequest(modal.customer)} className="h-11 px-5 font-bold whitespace-nowrap">즉시 지급</Button>
                 </div>
-                <Input
-                  value={issueNote}
-                  onChange={(e) => setIssueNote(e.target.value)}
-                  placeholder="메모(선택)"
-                  className="h-11"
-                />
-                {issueMsg && (
-                  <p className="text-sm font-bold text-foreground leading-relaxed">{issueMsg}</p>
-                )}
+                <Input value={issueNote} onChange={(e) => setIssueNote(e.target.value)} placeholder="메모(선택)" className="h-11" />
+                {issueMsg && <p className="text-sm font-bold text-foreground leading-relaxed">{issueMsg}</p>}
               </>
             ) : (
               <>
                 <div className="flex gap-2.5">
-                  <Input
-                    value={useAmountText}
-                    onChange={(e) => setUseAmountText(formatNumber(onlyDigitsToNumber(e.target.value)))}
-                    inputMode="numeric"
-                    placeholder="차감 포인트"
-                    className="flex-1 min-w-0 h-11 text-right font-black"
-                  />
-                  <Button
-                    onClick={() => useDirect(modal.customer)}
-                    className="h-11 px-5 font-bold whitespace-nowrap"
-                  >
-                    즉시 차감 실행
-                  </Button>
+                  <Input value={useAmountText} onChange={(e) => setUseAmountText(formatNumber(onlyDigitsToNumber(e.target.value)))} inputMode="numeric" placeholder="차감 포인트" className="flex-1 min-w-0 h-11 text-right font-black" />
+                  <Button onClick={() => useDirect(modal.customer)} className="h-11 px-5 font-bold whitespace-nowrap">즉시 차감</Button>
                 </div>
-                <Input
-                  value={useNote}
-                  onChange={(e) => setUseNote(e.target.value)}
-                  placeholder="사용처 / 주문번호 / 메모"
-                  className="h-11"
-                />
-                {useMsg && (
-                  <p className="text-sm font-bold text-foreground leading-relaxed">{useMsg}</p>
-                )}
+                <Input value={useNote} onChange={(e) => setUseNote(e.target.value)} placeholder="사용처 / 주문번호 / 메모" className="h-11" />
+                {useMsg && <p className="text-sm font-bold text-foreground leading-relaxed">{useMsg}</p>}
               </>
             )}
           </div>
         </div>
       )}
-
-      {/* ── Bottom Grid: Issue History + Point History ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-
-        {/* Issue Requests History */}
-        <section className="bg-card shadow-card rounded-2xl p-5">
-          <div className="flex justify-between items-center gap-2.5 flex-wrap mb-4">
-            <h2 className="text-lg font-black text-foreground">최근 고객 지급 이력</h2>
-            <Button variant="outline" size="sm" onClick={fetchMyIssueRequests} className="font-bold">
-              새로고침
-            </Button>
-          </div>
-
-          {reqLoading ? (
-            <EmptyText text="불러오는 중..." />
-          ) : reqItems.length === 0 ? (
-            <EmptyText text="지급 이력이 없습니다." />
-          ) : (
-            <div className="grid gap-2.5">
-              {reqItems.map((it) => (
-                <div
-                  key={it.id}
-                  className="border border-border rounded-xl p-3.5 grid gap-1.5"
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-sm text-foreground">
-                      {it.to?.name} ({it.to?.username})
-                    </span>
-                    <span className="font-black text-sm text-foreground">{formatNumber(it.amount)}P</span>
-                    <StatusBadge status={it.status} />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    실행일: {formatDateText(it.createdAt)}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {it.decidedAt ? `처리시각: ${formatDateText(it.decidedAt)}` : "-"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Point History */}
-        <section className="bg-card shadow-card rounded-2xl p-5">
-          <div className="flex justify-between items-center gap-2.5 flex-wrap mb-4">
-            <h2 className="text-lg font-black text-foreground">최근 포인트 처리 이력</h2>
-            <Button variant="outline" size="sm" onClick={fetchPointHistory} className="font-bold">
-              새로고침
-            </Button>
-          </div>
-
-          {historyLoading ? (
-            <EmptyText text="불러오는 중..." />
-          ) : historyItems.length === 0 ? (
-            <EmptyText text="처리 이력이 없습니다." />
-          ) : (
-            <div className="grid gap-2.5">
-              {historyItems.map((it) => (
-                <div
-                  key={it.id}
-                  className="border border-border rounded-xl p-3.5 grid gap-1.5"
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-sm text-foreground">
-                      {it.customer?.name} ({it.customer?.username})
-                    </span>
-                    <Badge
-                      variant={it.type === "ISSUE" ? "secondary" : "outline"}
-                      className={cn(
-                        "font-bold text-xs",
-                        it.type === "ISSUE"
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : "text-orange-600 border-orange-200 bg-orange-50"
-                      )}
-                    >
-                      {pointHistoryTypeLabel(it.type)}
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-black text-foreground leading-relaxed">
-                    {it.type === "ISSUE" ? "+" : "-"}{formatNumber(Math.abs(it.amount))}P
-                  </p>
-                  {it.note && (
-                    <p className="text-xs text-muted-foreground leading-relaxed">메모: {it.note}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    처리시각: {formatDateText(it.createdAt)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
     </main>
   );
 }

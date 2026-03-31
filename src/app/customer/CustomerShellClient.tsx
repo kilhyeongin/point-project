@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect } from "react";
-import { Home, Heart, QrCode, Clock, LogOut, Settings } from "lucide-react";
+import { Home, Heart, QrCode, Clock, LogOut, Settings, ArrowLeft } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 
 type SessionInfo = {
@@ -19,6 +19,9 @@ type Props = {
   title: string;
   description?: string;
   children: ReactNode;
+  backHref?: string;
+  headerRight?: ReactNode;
+  hideTitle?: boolean;
 };
 
 export default function CustomerShellClient({
@@ -26,6 +29,9 @@ export default function CustomerShellClient({
   title,
   description,
   children,
+  backHref,
+  headerRight,
+  hideTitle,
 }: Props) {
   const pathname = usePathname();
   const displayName = session.name?.trim() || session.username || "고객";
@@ -45,7 +51,7 @@ export default function CustomerShellClient({
     }
   }
 
-  const isHome = pathname === "/customer";
+  const isHome = pathname === "/customer" || pathname.startsWith("/customer/category/");
   const isFavorites = pathname === "/customer/favorites";
   const isQr = pathname === "/customer/qr";
   const isHistory = pathname === "/customer/history";
@@ -61,47 +67,70 @@ export default function CustomerShellClient({
         }}
       >
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "oklch(0.52 0.27 264)" }}
-            >
-              <span className="text-white text-xs font-black">P</span>
-            </div>
-            <span className="text-sm font-black text-foreground tracking-tight">
-              포인트
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-muted-foreground hidden sm:block">
-              {displayName}님
-            </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:block">로그아웃</span>
-            </button>
-          </div>
+          {backHref ? (
+            /* Sub-page header: back button + title + right action */
+            <>
+              <Link
+                href={backHref}
+                className="flex items-center justify-center w-9 h-9 -ml-1 rounded-xl text-foreground hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <span className="text-base font-black text-foreground tracking-tight flex-1 text-center">
+                {title}
+              </span>
+              <div className="w-9 h-9 flex items-center justify-center">
+                {headerRight ?? null}
+              </div>
+            </>
+          ) : (
+            /* Default header: logo + logout */
+            <>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ background: "oklch(0.52 0.27 264)" }}
+                >
+                  <span className="text-white text-xs font-black">P</span>
+                </div>
+                <span className="text-sm font-black text-foreground tracking-tight">
+                  포인트
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-muted-foreground hidden sm:block">
+                  {displayName}님
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:block">로그아웃</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
-      {/* Page Title */}
-      <div className="max-w-2xl mx-auto px-4 pt-6 pb-1">
-        <h1
-          className="text-foreground font-black"
-          style={{ fontSize: "1.625rem", letterSpacing: "-0.04em" }}
-        >
-          {title}
-        </h1>
-        {description && (
-          <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-            {description}
-          </p>
-        )}
-      </div>
+      {/* Page Title — only shown when not in sub-page mode and not hidden */}
+      {!backHref && !hideTitle && (
+        <div className="max-w-2xl mx-auto px-4 pt-6 pb-1">
+          <h1
+            className="text-foreground font-black"
+            style={{ fontSize: "1.625rem", letterSpacing: "-0.04em" }}
+          >
+            {title}
+          </h1>
+          {description && (
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              {description}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-28">{children}</main>

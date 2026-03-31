@@ -11,6 +11,7 @@ import mongoose, { Schema, model, models } from "mongoose";
 
 export type FavoritePartnerStatus = "LIKED" | "APPLIED";
 export type AppointmentHistoryAction = "APPLIED" | "CANCELLED" | "CHANGED";
+export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "NOSHOW" | "CANCELLED";
 
 export interface IAppointmentHistory {
   action: AppointmentHistoryAction;
@@ -30,6 +31,7 @@ export interface IFavoritePartner {
   appliedAt?: Date | null;
   appointmentAt?: Date | null;
   appointmentNote?: string;
+  appointmentStatus?: AppointmentStatus;
   appointmentHistory?: IAppointmentHistory[];
 }
 
@@ -79,6 +81,11 @@ const FavoritePartnerSchema = new Schema<IFavoritePartner>(
       type: String,
       default: "",
       trim: true,
+    },
+    appointmentStatus: {
+      type: String,
+      enum: ["PENDING", "CONFIRMED", "COMPLETED", "NOSHOW", "CANCELLED"],
+      default: "PENDING",
     },
 
     appointmentHistory: {

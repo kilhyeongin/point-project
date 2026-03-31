@@ -51,7 +51,14 @@
       "Bash(rm -f \"src/app/api/topup-requests/[id]/approve/route.ts\")",
       "Bash(rm -f \"src/app/api/admin/issue-requests/[id]/decide/route.ts\")",
       "Bash(npm test:*)",
-      "mcp__serena__find_symbol"
+      "mcp__serena__find_symbol",
+      "Bash(grep -l GET.*req.*Request C:UsersPLANIT_DESIGN4Desktoppoint-projectpoint-projectsrcappapi/**/*.ts)",
+      "Bash(git check-ignore:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(find /c/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/api/partner -type f -name *.ts -o -name *.js)",
+      "Bash(find /c/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/api -type d -name *customer*)",
+      "Bash(find /c/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/api -type f -name *route.ts)"
     ]
   }
 }

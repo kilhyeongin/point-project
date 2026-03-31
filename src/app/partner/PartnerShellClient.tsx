@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect } from "react";
-import { LayoutDashboard, User, LogOut, QrCode, FileText, Settings, CalendarDays } from "lucide-react";
+import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 
 type SessionInfo = {
@@ -21,10 +21,9 @@ type Props = {
 const MENU_ITEMS = [
   { href: "/partner", label: "대시보드", icon: LayoutDashboard },
   { href: "/partner/scan", label: "QR 스캔", icon: QrCode },
-  { href: "/partner/settlements", label: "정산 내역", icon: FileText },
-  { href: "/partner/profile", label: "내 정보 관리", icon: User },
-  { href: "/partner/schedule", label: "예약 설정", icon: CalendarDays },
-  { href: "/partner/settings", label: "설정", icon: Settings },
+  { href: "/partner/appointments", label: "예약", icon: CalendarCheck },
+  { href: "/partner/profile", label: "내 정보", icon: User },
+  { href: "/partner/settlements", label: "정산", icon: FileText },
 ];
 
 export default function PartnerShellClient({ session, children }: Props) {

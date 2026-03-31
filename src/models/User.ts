@@ -110,6 +110,10 @@ const PartnerProfileSchema = new Schema(
       default: "",
       trim: true,
     },
+    images: {
+      type: [String],
+      default: [],
+    },
     isPublished: {
       type: Boolean,
       default: false,

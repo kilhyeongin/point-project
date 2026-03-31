@@ -10,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { MapPin, Phone, Search, X, Star, Coins } from "lucide-react";
+import { MapPin, Phone, Search, X, Star, Coins, RefreshCw } from "lucide-react";
 
 type SessionInfo = {
   uid: string;
@@ -199,6 +199,7 @@ function PartnerCard({
 export default function CustomerDashboardClient({ session }: Props) {
   const [balance, setBalance] = useState(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceRefreshing, setBalanceRefreshing] = useState(false);
   const [balanceError, setBalanceError] = useState("");
 
   const [items, setItems] = useState<PartnerItem[]>([]);
@@ -218,23 +219,25 @@ export default function CustomerDashboardClient({ session }: Props) {
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
 
-  async function loadBalance() {
-    setBalanceLoading(true);
+  async function loadBalance(isRefresh = false) {
+    if (isRefresh) setBalanceRefreshing(true);
+    else setBalanceLoading(true);
     setBalanceError("");
     try {
       const res = await fetch("/api/me/balance", { cache: "no-store" });
       const data: BalanceResponse = await res.json();
       if (!res.ok || !data?.ok) {
-        setBalance(0);
+        if (!isRefresh) setBalance(0);
         setBalanceError(data?.error ?? data?.message ?? "불러오지 못했습니다.");
         return;
       }
       setBalance(Number(data.balance ?? 0));
     } catch {
-      setBalance(0);
+      if (!isRefresh) setBalance(0);
       setBalanceError("보유 포인트를 불러오지 못했습니다.");
     } finally {
-      setBalanceLoading(false);
+      if (isRefresh) setBalanceRefreshing(false);
+      else setBalanceLoading(false);
     }
   }
 
@@ -399,6 +402,15 @@ export default function CustomerDashboardClient({ session }: Props) {
               </div>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => loadBalance(true)}
+            disabled={balanceRefreshing || balanceLoading}
+            className="absolute bottom-4 right-5 z-10 flex items-center gap-1.5 text-white/60 hover:text-white/90 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={cn("w-4 h-4", balanceRefreshing && "animate-spin")} />
+            <span className="text-xs font-semibold">새로고침</span>
+          </button>
         </div>
 
         {/* Recommended */}

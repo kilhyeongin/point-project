@@ -3,13 +3,15 @@ import { type NextRequest, NextResponse } from "next/server";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
 const CRON_PATHS = ["/api/admin/settlements/auto-close"];
+const CSRF_BYPASS_PATHS = ["/api/auth/logout"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
   // ── CSRF: API 변경 요청의 Origin 검증 ──────────────────────────
-  if (pathname.startsWith("/api/") && MUTATION_METHODS.includes(method)) {
+  const isBypassPath = CSRF_BYPASS_PATHS.some((p) => pathname === p);
+  if (!isBypassPath && pathname.startsWith("/api/") && MUTATION_METHODS.includes(method)) {
     const origin = request.headers.get("origin");
     const referer = request.headers.get("referer");
 

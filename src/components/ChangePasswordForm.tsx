@@ -47,7 +47,7 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 max-w-md">
+    <form onSubmit={submit} className="space-y-4">
       <div>
         <label className="block text-sm font-bold text-foreground mb-1.5">
           현재 비밀번호

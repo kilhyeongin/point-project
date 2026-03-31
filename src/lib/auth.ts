@@ -85,13 +85,7 @@ export async function setSessionCookie(token: string) {
 // 쿠키 삭제 (로그아웃)
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
+  cookieStore.delete(COOKIE_NAME);
 }
 
 // 서버에서 현재 세션 읽기 (블랙리스트 포함 검증)

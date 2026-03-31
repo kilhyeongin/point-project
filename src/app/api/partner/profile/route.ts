@@ -96,6 +96,7 @@ export async function GET() {
         applyUrl: String(profile.applyUrl ?? ""),
         kakaoChannelUrl: String(profile.kakaoChannelUrl ?? ""),
         coverImageUrl: String(profile.coverImageUrl ?? ""),
+        images: Array.isArray(profile.images) ? profile.images.map(String) : [],
         isPublished: Boolean(profile.isPublished),
       },
     });
@@ -148,6 +149,9 @@ export async function PUT(req: NextRequest) {
     const applyUrl = normalizeUrl(body?.applyUrl);
     const kakaoChannelUrl = normalizeUrl(body?.kakaoChannelUrl);
     const coverImageUrl = normalizeUrl(body?.coverImageUrl);
+    const images = Array.isArray(body?.images)
+      ? body.images.map((u: unknown) => normalizeUrl(u)).filter((u: string | null) => u) as string[]
+      : [];
 
     if (body?.applyUrl && applyUrl === null) {
       return NextResponse.json(
@@ -213,6 +217,7 @@ export async function PUT(req: NextRequest) {
           "partnerProfile.applyUrl": applyUrl || "",
           "partnerProfile.kakaoChannelUrl": kakaoChannelUrl || "",
           "partnerProfile.coverImageUrl": coverImageUrl || "",
+          "partnerProfile.images": images,
           "partnerProfile.isPublished": isPublished,
         },
       },
@@ -256,6 +261,7 @@ export async function PUT(req: NextRequest) {
         applyUrl: String(profile.applyUrl ?? ""),
         kakaoChannelUrl: String(profile.kakaoChannelUrl ?? ""),
         coverImageUrl: String(profile.coverImageUrl ?? ""),
+        images: Array.isArray(profile.images) ? profile.images.map(String) : [],
         isPublished: Boolean(profile.isPublished),
       },
     });
