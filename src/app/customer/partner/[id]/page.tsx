@@ -10,6 +10,7 @@ import {
 import ApplyPartnerButton from "@/app/customer/ApplyPartnerButton";
 import BackButton from "./BackButton";
 import ImageCarousel from "./ImageCarousel";
+import BottomNav from "./BottomNav";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -93,7 +94,7 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto pb-12">
+      <div className="max-w-2xl mx-auto pb-28">
         {/* 이미지 캐러셀 */}
         <ImageCarousel images={carouselImages} />
 
@@ -192,6 +193,7 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }
