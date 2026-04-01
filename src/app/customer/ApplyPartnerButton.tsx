@@ -41,6 +41,7 @@ type Props = {
   initialAppointmentNote?: string | null;
   initialAppointmentHistory?: AppointmentHistoryItem[];
   externalApplyUrl?: string;
+  kakaoChannelUrl?: string;
   scheduleConfig?: ScheduleConfig | null;
 };
 
@@ -276,6 +277,7 @@ export default function ApplyPartnerButton({
   initialAppointmentNote,
   initialAppointmentHistory,
   externalApplyUrl,
+  kakaoChannelUrl,
   scheduleConfig,
 }: Props) {
   const [applied, setApplied] = useState(Boolean(initialApplied));
@@ -626,6 +628,22 @@ export default function ApplyPartnerButton({
         >
           바로 신청하기
         </button>
+      )}
+
+      {/* 카카오채널 버튼 — 신청 폼 열릴 때 숨김 */}
+      {!showForm && kakaoChannelUrl && (
+        <a
+          href={kakaoChannelUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-center gap-2 w-full h-12 rounded-xl font-bold text-[15px] text-foreground transition-opacity hover:opacity-80 active:opacity-70"
+          style={{ background: "#FEE500" }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.552 1.515 4.797 3.813 6.18-.168.63-.607 2.285-.695 2.64-.109.427.156.42.33.306.135-.089 2.145-1.457 3.012-2.044A11.3 11.3 0 0 0 12 18c5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
+          </svg>
+          카카오채널로 신청하기
+        </a>
       )}
 
       {externalApplyUrl && !showForm && (
