@@ -624,7 +624,7 @@ export default function ApplyPartnerButton({
           style={{ background: "oklch(0.52 0.27 264)" }}
           className="w-full h-12 rounded-xl text-white text-sm font-bold transition-opacity hover:opacity-90"
         >
-          신청하기
+          바로 신청하기
         </button>
       )}
 
