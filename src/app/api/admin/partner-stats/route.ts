@@ -6,20 +6,32 @@ import { User } from "@/models/User";
 import { FavoritePartner } from "@/models/FavoritePartner";
 import { Ledger } from "@/models/Ledger";
 
-export async function GET() {
+function parseDateStart(value: string | null) {
+  if (!value) return null;
+  const d = new Date(`${value}T00:00:00.000`);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function parseDateEnd(value: string | null) {
+  if (!value) return null;
+  const d = new Date(`${value}T23:59:59.999`);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export async function GET(req: Request) {
   await connectDB();
 
   const session = await getSessionFromCookies();
-
   if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ ok: false, message: "권한 없음" }, { status: 403 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const startDate = parseDateStart(searchParams.get("startDate"));
+  const endDate = parseDateEnd(searchParams.get("endDate"));
+
   try {
-    const partners = await User.find({
-      role: "PARTNER",
-      status: "ACTIVE",
-    })
+    const partners = await User.find({ role: "PARTNER", status: "ACTIVE" })
       .select("_id username name")
       .lean();
 
@@ -27,47 +39,32 @@ export async function GET() {
       partners.map(async (partner: any) => {
         const partnerId = new mongoose.Types.ObjectId(String(partner._id));
 
-        const likedCount = await FavoritePartner.countDocuments({
-          partnerId,
-          status: "LIKED",
-        });
+        const likedCount = await FavoritePartner.countDocuments({ partnerId, status: "LIKED" });
+        const appliedCount = await FavoritePartner.countDocuments({ partnerId, status: "APPLIED" });
 
-        const appliedCount = await FavoritePartner.countDocuments({
-          partnerId,
-          status: "APPLIED",
-        });
+        const dateFilter = startDate && endDate ? { $gte: startDate, $lte: endDate } : undefined;
+        const issueMatch: any = { actorId: partnerId, type: "ISSUE" };
+        const useMatch: any = { actorId: partnerId, type: "USE" };
+        if (dateFilter) {
+          issueMatch.createdAt = dateFilter;
+          useMatch.createdAt = dateFilter;
+        }
 
         const issueAgg = await Ledger.aggregate([
-          {
-            $match: {
-              actorId: partnerId,
-              type: "ISSUE",
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              count: { $sum: 1 },
-              total: { $sum: "$amount" },
-            },
-          },
+          { $match: issueMatch },
+          { $group: { _id: null, count: { $sum: 1 }, total: { $sum: "$amount" } } },
         ]);
 
         const useAgg = await Ledger.aggregate([
-          {
-            $match: {
-              actorId: partnerId,
-              type: "USE",
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              count: { $sum: 1 },
-              total: { $sum: { $abs: "$amount" } },
-            },
-          },
+          { $match: useMatch },
+          { $group: { _id: null, count: { $sum: 1 }, total: { $sum: { $abs: "$amount" } } } },
         ]);
+
+        const uniqueCustomerIds = await Ledger.distinct("userId", {
+          actorId: partnerId,
+          type: { $in: ["ISSUE", "USE"] },
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
+        });
 
         return {
           partnerId: String(partner._id),
@@ -79,16 +76,16 @@ export async function GET() {
           issueTotal: issueAgg[0]?.total ?? 0,
           useCount: useAgg[0]?.count ?? 0,
           useTotal: useAgg[0]?.total ?? 0,
+          uniqueCustomers: uniqueCustomerIds.filter(Boolean).length,
         };
       })
     );
 
+    items.sort((a, b) => b.issueTotal - a.issueTotal);
+
     return NextResponse.json({ ok: true, items });
   } catch (error) {
     console.error("[ADMIN_PARTNER_STATS_GET_ERROR]", error);
-    return NextResponse.json(
-      { ok: false, message: "제휴사 운영 현황 조회 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message: "조회 실패" }, { status: 500 });
   }
 }
