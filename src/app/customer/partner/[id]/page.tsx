@@ -152,15 +152,6 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
                   <a href={`tel:${phone}`} className="text-sm text-foreground font-semibold hover:text-primary transition-colors">{phone}</a>
                 </div>
               )}
-              {kakaoChannelUrl && (
-                <div className="flex items-center gap-3 py-3">
-                  <span className="text-xs font-bold text-muted-foreground w-14 shrink-0">카카오채널</span>
-                  <a href={kakaoChannelUrl} target="_blank" rel="noreferrer"
-                    className="text-sm text-primary font-bold hover:underline underline-offset-2">
-                    채널 바로가기 →
-                  </a>
-                </div>
-              )}
               {!address && !phone && !kakaoChannelUrl && (
                 <p className="py-3 text-sm text-muted-foreground">등록된 업체 정보가 없습니다.</p>
               )}
