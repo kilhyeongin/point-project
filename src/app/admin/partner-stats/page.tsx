@@ -387,28 +387,6 @@ export default function PartnerStatsPage() {
                   </button>
                 </div>
 
-                {/* 요약 지표 */}
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: "잠재고객", value: `${fmt(detail.partner.likedCount)}명` },
-                    { label: "신청고객", value: `${fmt(detail.partner.appliedCount)}명` },
-                    { label: "이용고객", value: `${fmt(detail.summary.uniqueCustomers)}명`, highlight: true },
-                    { label: "지급 포인트", value: `${fmt(detail.summary.issueTotal)}P`, highlight: true },
-                    { label: "지급 건수", value: `${fmt(detail.summary.issueCount)}건` },
-                    { label: "차감 포인트", value: `${fmt(detail.summary.useTotal)}P` },
-                  ].map((c) => (
-                    <div key={c.label} className="bg-muted/50 rounded-xl p-3">
-                      <div className="text-xs font-bold text-muted-foreground mb-1">{c.label}</div>
-                      <div
-                        className="text-base font-black"
-                        style={c.highlight ? { color: "oklch(0.52 0.27 264)" } : undefined}
-                      >
-                        {c.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
                 {/* 월별 내역 */}
                 <div>
                   <div className="text-xs font-black text-muted-foreground mb-2">월별 내역</div>
@@ -467,24 +445,6 @@ export default function PartnerStatsPage() {
               >
                 ✕
               </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "이용고객", value: `${fmt(detail.summary.uniqueCustomers)}명`, highlight: true },
-                { label: "지급 포인트", value: `${fmt(detail.summary.issueTotal)}P`, highlight: true },
-                { label: "차감 포인트", value: `${fmt(detail.summary.useTotal)}P` },
-                { label: "잠재고객", value: `${fmt(detail.partner.likedCount)}명` },
-                { label: "신청고객", value: `${fmt(detail.partner.appliedCount)}명` },
-                { label: "지급 건수", value: `${fmt(detail.summary.issueCount)}건` },
-              ].map((c) => (
-                <div key={c.label} className="bg-muted/50 rounded-xl p-3">
-                  <div className="text-xs font-bold text-muted-foreground mb-1">{c.label}</div>
-                  <div className="text-sm font-black" style={c.highlight ? { color: "oklch(0.52 0.27 264)" } : undefined}>
-                    {c.value}
-                  </div>
-                </div>
-              ))}
             </div>
 
             <div>
