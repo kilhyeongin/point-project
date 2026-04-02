@@ -46,13 +46,17 @@ async function getNaverProfile(accessToken: string): Promise<NaverProfile | null
 }
 
 export async function GET(req: Request) {
+  // 프록시 환경에서 req.url이 localhost로 잡히는 문제 방지
+  const callbackUrl = process.env.NAVER_CALLBACK_URL!;
+  const baseUrl = new URL(callbackUrl).origin; // "https://uppoint.kr"
+
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
   if (error || !code || !state) {
-    return NextResponse.redirect(new URL("/login?error=naver_denied", req.url));
+    return NextResponse.redirect(new URL("/login?error=naver_denied", baseUrl));
   }
 
   // CSRF state 검증
@@ -61,18 +65,18 @@ export async function GET(req: Request) {
   cookieStore.delete("naver_oauth_state");
 
   if (!savedState || savedState !== state) {
-    return NextResponse.redirect(new URL("/login?error=naver_state", req.url));
+    return NextResponse.redirect(new URL("/login?error=naver_state", baseUrl));
   }
 
   try {
     const accessToken = await getNaverToken(code, state);
     if (!accessToken) {
-      return NextResponse.redirect(new URL("/login?error=naver_token", req.url));
+      return NextResponse.redirect(new URL("/login?error=naver_token", baseUrl));
     }
 
     const profile = await getNaverProfile(accessToken);
     if (!profile) {
-      return NextResponse.redirect(new URL("/login?error=naver_profile", req.url));
+      return NextResponse.redirect(new URL("/login?error=naver_profile", baseUrl));
     }
 
     await connectDB();
@@ -117,7 +121,7 @@ export async function GET(req: Request) {
     }
 
     if (user.status === "BLOCKED") {
-      return NextResponse.redirect(new URL("/login?error=blocked", req.url));
+      return NextResponse.redirect(new URL("/login?error=blocked", baseUrl));
     }
 
     const token = signSession({
@@ -129,9 +133,9 @@ export async function GET(req: Request) {
 
     await setSessionCookie(token);
 
-    return NextResponse.redirect(new URL("/customer", req.url));
+    return NextResponse.redirect(new URL("/customer", baseUrl));
   } catch (err) {
     console.error("[NAVER_CALLBACK_ERROR]", err);
-    return NextResponse.redirect(new URL("/login?error=server", req.url));
+    return NextResponse.redirect(new URL("/login?error=server", baseUrl));
   }
 }
