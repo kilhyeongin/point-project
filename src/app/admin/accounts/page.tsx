@@ -14,6 +14,7 @@ type AccountItem = {
   role: string;
   status: string;
   balance: number;
+  socialProviders: string[];
 };
 
 type UserDetail = AccountItem & {
@@ -326,9 +327,8 @@ export default function AdminAccountsPage() {
       <div className="hidden md:block bg-card shadow-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <div className="min-w-[680px]">
-            <div className="grid grid-cols-[1fr_1fr_90px_80px_120px_120px] gap-2 px-4 py-2 text-xs font-bold text-muted-foreground border-b border-border bg-muted/30">
-              <div>아이디</div>
-              <div>이름</div>
+            <div className="grid grid-cols-[1.5fr_90px_80px_120px_120px] gap-2 px-4 py-2 text-xs font-bold text-muted-foreground border-b border-border bg-muted/30">
+              <div>이름 / 아이디</div>
               <div>역할</div>
               <div>상태</div>
               <div className="text-right">잔액</div>
@@ -338,16 +338,25 @@ export default function AdminAccountsPage() {
             {items.map((it) => (
               <div
                 key={it.id}
-                className="grid grid-cols-[1fr_1fr_90px_80px_120px_120px] gap-2 px-4 py-3 border-b border-border last:border-0 text-sm items-center"
+                className="grid grid-cols-[1.5fr_90px_80px_120px_120px] gap-2 px-4 py-3 border-b border-border last:border-0 text-sm items-center"
               >
-                <button
-                  type="button"
-                  onClick={() => openDetail(it.id)}
-                  className="text-left font-semibold text-foreground hover:text-primary hover:underline transition-colors"
-                >
-                  {it.username}
-                </button>
-                <div>{it.name}</div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openDetail(it.id)}
+                      className="text-left font-bold text-foreground hover:text-primary hover:underline transition-colors"
+                    >
+                      {it.name}
+                    </button>
+                    {it.socialProviders.includes("naver") && (
+                      <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-black text-white shrink-0" style={{ background: "#03C75A" }}>네이버</span>
+                    )}
+                  </div>
+                  {!it.socialProviders.includes("naver") && (
+                    <div className="text-xs text-muted-foreground mt-0.5">{it.username}</div>
+                  )}
+                </div>
                 <div>{roleLabel(it.role)}</div>
                 <div>
                   <StatusBadge status={it.status} />
@@ -396,8 +405,15 @@ export default function AdminAccountsPage() {
                 onClick={() => openDetail(it.id)}
                 className="text-left"
               >
-                <div className="text-base font-black text-foreground hover:text-primary hover:underline transition-colors">{it.name}</div>
-                <div className="text-sm text-muted-foreground mt-1">{it.username}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base font-black text-foreground hover:text-primary hover:underline transition-colors">{it.name}</span>
+                  {it.socialProviders.includes("naver") && (
+                    <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-black text-white shrink-0" style={{ background: "#03C75A" }}>네이버</span>
+                  )}
+                </div>
+                {!it.socialProviders.includes("naver") && (
+                  <div className="text-sm text-muted-foreground mt-1">{it.username}</div>
+                )}
               </button>
               <div className="text-lg font-black text-foreground whitespace-nowrap">
                 {formatNumber(it.balance)}P

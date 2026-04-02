@@ -108,8 +108,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
     }
 
-    const existsEmail = await User.findOne({ email }, { _id: 1 }).lean();
+    const existsEmail = await User.findOne({ email }, { _id: 1, socialAccounts: 1 }).lean() as any;
     if (existsEmail) {
+      const hasSocial = Array.isArray(existsEmail.socialAccounts) && existsEmail.socialAccounts.length > 0;
+      const provider = hasSocial ? existsEmail.socialAccounts[0].provider : null;
+      if (provider === "naver") {
+        return NextResponse.json({ ok: false, error: "이 이메일은 네이버 로그인으로 가입되어 있습니다. 네이버로 로그인해 주세요." }, { status: 409 });
+      }
       return NextResponse.json({ ok: false, error: "이미 사용 중인 이메일입니다." }, { status: 409 });
     }
 

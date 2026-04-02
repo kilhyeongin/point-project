@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
   await connectDB();
 
   const [users, total] = await Promise.all([
-    User.find(filter, { username: 1, name: 1, role: 1, status: 1, createdAt: 1 })
+    User.find(filter, { username: 1, name: 1, role: 1, status: 1, createdAt: 1, socialAccounts: 1 })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(PAGE_SIZE)
@@ -72,13 +72,16 @@ export async function GET(req: NextRequest) {
   const userIds = users.map((u) => new mongoose.Types.ObjectId(String(u._id)));
   const balanceMap = await getWalletBalancesMap(userIds);
 
-  const items = users.map((u) => ({
+  const items = users.map((u: any) => ({
     id: String(u._id),
     username: u.username,
     name: u.name,
     role: u.role,
     status: u.status,
     balance: balanceMap.get(String(u._id)) ?? 0,
+    socialProviders: Array.isArray(u.socialAccounts)
+      ? u.socialAccounts.map((s: any) => s.provider)
+      : [],
   }));
 
   return NextResponse.json({
