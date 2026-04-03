@@ -176,7 +176,7 @@ export default function SignupSelectPage() {
             </Link>
           </p>
 
-          <BusinessFooter />
+          <BusinessFooter compact />
         </div>
       </div>
     </div>

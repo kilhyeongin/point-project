@@ -258,7 +258,7 @@ function LoginFormInner() {
             </p>
           </div>
 
-          <BusinessFooter />
+          <BusinessFooter compact />
         </div>
       </div>
     </div>
