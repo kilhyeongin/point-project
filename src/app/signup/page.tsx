@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BusinessFooter from "@/components/BusinessFooter";
 
 export default function SignupSelectPage() {
   return (
@@ -174,6 +175,8 @@ export default function SignupSelectPage() {
               로그인
             </Link>
           </p>
+
+          <BusinessFooter />
         </div>
       </div>
     </div>

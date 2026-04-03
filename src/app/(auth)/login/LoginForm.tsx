@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import BusinessFooter from "@/components/BusinessFooter";
 
 function LoginFormInner() {
   const searchParams = useSearchParams();
@@ -256,6 +257,8 @@ function LoginFormInner() {
               </a>
             </p>
           </div>
+
+          <BusinessFooter />
         </div>
       </div>
     </div>
