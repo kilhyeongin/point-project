@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect } from "react";
+import BusinessFooter from "@/components/BusinessFooter";
 import { Home, Heart, QrCode, Clock, LogOut, Settings, ArrowLeft } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 
@@ -135,12 +136,7 @@ export default function CustomerShellClient({
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-28">
         {children}
-        <footer className="mt-12 pt-6 border-t border-border/50 text-xs text-muted-foreground space-y-1 leading-relaxed">
-          <div className="font-bold text-foreground/70">(주)기술의숲</div>
-          <div>대표자: 심규남 · 사업자등록번호: 444-87-03436</div>
-          <div>주소: 대전광역시 서구 둔지로 60 3층</div>
-          <div>이메일: techforest@naver.com</div>
-        </footer>
+        <BusinessFooter />
       </main>
 
       {/* Bottom Tab Bar */}

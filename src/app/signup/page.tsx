@@ -3,10 +3,11 @@ import BusinessFooter from "@/components/BusinessFooter";
 
 export default function SignupSelectPage() {
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-1">
       {/* ── Left panel: Brand hero ── */}
       <div
-        className="hidden lg:flex flex-col justify-between w-[520px] shrink-0 p-12 relative overflow-hidden h-screen"
+        className="hidden lg:flex flex-col justify-between w-[520px] shrink-0 p-12 relative overflow-y-auto"
         style={{
           background: "linear-gradient(150deg, oklch(0.18 0.06 265) 0%, oklch(0.12 0.04 265) 100%)",
         }}
@@ -89,6 +90,7 @@ export default function SignupSelectPage() {
 
       {/* ── Right panel: Signup selection ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background overflow-y-auto">
+        <div className="flex-1 flex flex-col items-center justify-center w-full">
         {/* Mobile brand */}
         <div className="lg:hidden flex items-center gap-2 mb-10">
           <div
@@ -176,8 +178,10 @@ export default function SignupSelectPage() {
             </Link>
           </p>
 
-          <BusinessFooter compact />
         </div>
+        </div>
+        <BusinessFooter compact />
+      </div>
       </div>
     </div>
   );

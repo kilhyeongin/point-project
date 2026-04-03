@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import BusinessFooter from "@/components/BusinessFooter";
 
 declare global {
   interface Window {
@@ -576,6 +577,7 @@ export default function CustomerSignupPage() {
         </p>
 
         </div>
+        <BusinessFooter compact />
       </div>
     </div>
   );
