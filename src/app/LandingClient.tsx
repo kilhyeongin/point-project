@@ -46,6 +46,7 @@ export default function LandingClient({ categories }: { categories: Category[] }
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-28">
+
         <div className="space-y-5">
           {/* Balance Card */}
           <div
@@ -87,6 +88,12 @@ export default function LandingClient({ categories }: { categories: Category[] }
             </div>
           </section>
         </div>
+        <footer className="mt-12 pt-6 border-t border-border/50 text-xs text-muted-foreground space-y-1 leading-relaxed">
+          <div className="font-bold text-foreground/70">(주)기술의숲</div>
+          <div>대표자: 심규남 · 사업자등록번호: 444-87-03436</div>
+          <div>주소: 대전광역시 서구 둔지로 60 3층</div>
+          <div>이메일: techforest@naver.com</div>
+        </footer>
       </main>
 
       {/* Bottom Tab Bar */}
