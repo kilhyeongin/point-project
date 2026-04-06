@@ -45,6 +45,7 @@ export async function GET(_req: NextRequest, { params }: Context) {
     createdAt: 1,
     customerProfile: 1,
     partnerProfile: 1,
+    socialAccounts: 1,
   }).lean();
 
   if (!user) {
@@ -65,6 +66,9 @@ export async function GET(_req: NextRequest, { params }: Context) {
       status: u.status,
       balance: balanceMap.get(id) ?? 0,
       createdAt: u.createdAt,
+      socialProviders: Array.isArray(u.socialAccounts)
+        ? u.socialAccounts.map((s: { provider: string }) => s.provider)
+        : [],
       customerProfile: u.customerProfile
         ? {
             ...u.customerProfile,

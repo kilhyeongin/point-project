@@ -20,6 +20,7 @@ type AccountItem = {
 type UserDetail = AccountItem & {
   email: string;
   createdAt: string;
+  socialProviders: string[];
   customerProfile?: {
     phone: string;
     address: string;
