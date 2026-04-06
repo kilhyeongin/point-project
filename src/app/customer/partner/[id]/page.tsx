@@ -11,7 +11,6 @@ import ApplyPartnerButton from "@/app/customer/ApplyPartnerButton";
 import BackButton from "./BackButton";
 import ImageCarousel from "./ImageCarousel";
 import BottomNav from "./BottomNav";
-import BusinessFooter from "@/components/BusinessFooter";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -192,7 +191,6 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
             }}
           />
           </div>
-          <BusinessFooter />
         </div>
       </div>
       <BottomNav />

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { MapPin, Phone, Search, X, Star, Coins, RefreshCw } from "lucide-react";
+import BusinessFooter from "@/components/BusinessFooter";
 
 type SessionInfo = {
   uid: string;
@@ -629,6 +630,7 @@ export default function CustomerDashboardClient({ session }: Props) {
             </div>
           )}
         </section>
+        <BusinessFooter />
       </div>
     </CustomerShellClient>
   );

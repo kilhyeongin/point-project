@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect } from "react";
-import BusinessFooter from "@/components/BusinessFooter";
 import { Home, Heart, QrCode, Clock, LogOut, Settings, ArrowLeft } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 
@@ -136,7 +135,6 @@ export default function CustomerShellClient({
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-28">
         {children}
-        <BusinessFooter />
       </main>
 
       {/* Bottom Tab Bar */}

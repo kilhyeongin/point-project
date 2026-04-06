@@ -1,7 +1,6 @@
 "use client";
 
 import { Home, Heart, QrCode, Clock, Settings, Coins } from "lucide-react";
-import BusinessFooter from "@/components/BusinessFooter";
 import { useRouter } from "next/navigation";
 
 type Category = { code: string; name: string };
@@ -89,7 +88,6 @@ export default function LandingClient({ categories }: { categories: Category[] }
             </div>
           </section>
         </div>
-        <BusinessFooter />
       </main>
 
       {/* Bottom Tab Bar */}

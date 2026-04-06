@@ -1,5 +1,4 @@
 import Link from "next/link";
-import BusinessFooter from "@/components/BusinessFooter";
 
 export default function SignupSelectPage() {
   return (
@@ -116,17 +115,29 @@ export default function SignupSelectPage() {
             </p>
           </div>
 
-          {/* Naver signup */}
-          <a
-            href="/api/auth/naver"
-            className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl font-bold text-[15px] text-white transition-opacity hover:opacity-90 active:opacity-80"
-            style={{ background: "#03C75A" }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" />
-            </svg>
-            네이버로 시작하기
-          </a>
+          {/* Social signup */}
+          <div className="flex flex-col gap-3">
+            <a
+              href="/api/auth/naver"
+              className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl font-bold text-[15px] text-white transition-opacity hover:opacity-90 active:opacity-80"
+              style={{ background: "#03C75A" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" />
+              </svg>
+              네이버로 시작하기
+            </a>
+            <a
+              href="/api/auth/kakao"
+              className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl font-bold text-[15px] transition-opacity hover:opacity-90 active:opacity-80"
+              style={{ background: "#FEE500", color: "#191919" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#191919" aria-hidden="true">
+                <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.7 1.612 5.074 4.063 6.518L5.07 21l4.382-2.88C10.237 18.37 11.1 18.5 12 18.5c5.523 0 10-3.477 10-7.7S17.523 3 12 3z" />
+              </svg>
+              카카오로 시작하기
+            </a>
+          </div>
 
           {/* Divider */}
           <div className="flex items-center gap-4">
@@ -180,7 +191,6 @@ export default function SignupSelectPage() {
 
         </div>
         </div>
-        <BusinessFooter compact />
       </div>
       </div>
     </div>
