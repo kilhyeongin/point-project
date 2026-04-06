@@ -352,8 +352,11 @@ export default function AdminAccountsPage() {
                     {it.socialProviders.includes("naver") && (
                       <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-black text-white shrink-0" style={{ background: "#03C75A" }}>네이버</span>
                     )}
+                    {it.socialProviders.includes("kakao") && (
+                      <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-black shrink-0" style={{ background: "#FEE500", color: "#191919" }}>카카오</span>
+                    )}
                   </div>
-                  {!it.socialProviders.includes("naver") && (
+                  {!it.socialProviders.includes("naver") && !it.socialProviders.includes("kakao") && (
                     <div className="text-xs text-muted-foreground mt-0.5">{it.username}</div>
                   )}
                 </div>
@@ -410,8 +413,11 @@ export default function AdminAccountsPage() {
                   {it.socialProviders.includes("naver") && (
                     <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-black text-white shrink-0" style={{ background: "#03C75A" }}>네이버</span>
                   )}
+                  {it.socialProviders.includes("kakao") && (
+                    <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-black shrink-0" style={{ background: "#FEE500", color: "#191919" }}>카카오</span>
+                  )}
                 </div>
-                {!it.socialProviders.includes("naver") && (
+                {!it.socialProviders.includes("naver") && !it.socialProviders.includes("kakao") && (
                   <div className="text-sm text-muted-foreground mt-1">{it.username}</div>
                 )}
               </button>
@@ -512,8 +518,18 @@ export default function AdminAccountsPage() {
                 {/* 헤더 */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-xl font-black text-foreground">{detail.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">@{detail.username}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-black text-foreground">{detail.name}</span>
+                      {detail.socialProviders.includes("naver") && (
+                        <span className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-black text-white shrink-0" style={{ background: "#03C75A" }}>네이버</span>
+                      )}
+                      {detail.socialProviders.includes("kakao") && (
+                        <span className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-black shrink-0" style={{ background: "#FEE500", color: "#191919" }}>카카오</span>
+                      )}
+                    </div>
+                    {!detail.socialProviders.includes("naver") && !detail.socialProviders.includes("kakao") && (
+                      <div className="text-sm text-muted-foreground mt-1">@{detail.username}</div>
+                    )}
                   </div>
                   <button
                     type="button"
