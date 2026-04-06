@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { formatUsername } from "@/lib/utils";
 
 type ApprovalItem = {
   id: string;
@@ -194,7 +195,7 @@ export default function AdminPartnerApprovalsPage() {
                     <div>
                       <div className="text-lg font-black text-foreground">{businessName}</div>
                       <div className="mt-1 text-muted-foreground font-bold text-xs">
-                        아이디: {item.username}
+                        아이디: {formatUsername(item.username)}
                       </div>
                     </div>
                     <Badge className="bg-orange-50 text-orange-800 border border-orange-200 rounded-full text-xs font-extrabold whitespace-nowrap">

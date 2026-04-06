@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { formatUsername } from "@/lib/utils";
 
 type Item = {
   partnerId: string;
@@ -292,7 +293,7 @@ export default function PartnerStatsPage() {
                           <td className="py-3 px-3 text-xs text-muted-foreground font-bold">{idx + 1}</td>
                           <td className="py-3 px-3">
                             <div className="font-black text-foreground">{it.name}</div>
-                            <div className="text-xs text-muted-foreground">{it.username}</div>
+                            <div className="text-xs text-muted-foreground">{formatUsername(it.username)}</div>
                           </td>
                           <td className="py-3 px-3 text-right font-semibold">{fmt(it.likedCount)}명</td>
                           <td className="py-3 px-3 text-right font-semibold">{fmt(it.appliedCount)}명</td>
@@ -376,7 +377,7 @@ export default function PartnerStatsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-black text-lg text-foreground">{detail.partner.name}</div>
-                    <div className="text-xs text-muted-foreground">{detail.partner.username}</div>
+                    <div className="text-xs text-muted-foreground">{formatUsername(detail.partner.username)}</div>
                   </div>
                   <button
                     type="button"

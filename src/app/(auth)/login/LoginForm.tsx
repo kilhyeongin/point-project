@@ -6,9 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 
+const SOCIAL_ERROR_MESSAGES: Record<string, string> = {
+  naver_denied: "네이버 로그인을 취소했습니다.",
+  naver_state: "보안 검증에 실패했습니다. 다시 시도해 주세요.",
+  naver_token: "네이버 인증에 실패했습니다. 다시 시도해 주세요.",
+  naver_profile: "네이버 프로필 조회에 실패했습니다.",
+  kakao_denied: "카카오 로그인을 취소했습니다.",
+  kakao_state: "보안 검증에 실패했습니다. 다시 시도해 주세요.",
+  kakao_token: "카카오 인증에 실패했습니다. 다시 시도해 주세요.",
+  kakao_profile: "카카오 프로필 조회에 실패했습니다.",
+  blocked: "차단된 계정입니다. 관리자에게 문의해 주세요.",
+  server: "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+};
+
 function LoginFormInner() {
   const searchParams = useSearchParams();
   const isExpired = searchParams.get("expired") === "1";
+  const socialError = searchParams.get("error");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -156,6 +170,14 @@ function LoginFormInner() {
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-medium">
               <span className="text-base leading-none">⏱</span>
               세션이 만료되었습니다. 다시 로그인해 주세요.
+            </div>
+          )}
+
+          {/* Social login error banner */}
+          {socialError && SOCIAL_ERROR_MESSAGES[socialError] && (
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-medium">
+              <span className="text-base leading-none">⚠</span>
+              {SOCIAL_ERROR_MESSAGES[socialError]}
             </div>
           )}
 

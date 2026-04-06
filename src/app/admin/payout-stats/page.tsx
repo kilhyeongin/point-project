@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatUsername } from "@/lib/utils";
 
 type Item = {
   partnerId: string;
@@ -301,7 +302,7 @@ export default function PayoutStatsPage() {
                 {filteredItems.map((it) => (
                   <div key={it.partnerId} className="payout-stats__row">
                     <div style={{ fontWeight: 800 }}>{it.name}</div>
-                    <div>{it.username}</div>
+                    <div>{formatUsername(it.username)}</div>
                     <div>{format(it.issueCount)}건</div>
                     <div style={{ fontWeight: 800 }}>
                       {format(it.issueTotal)}P
@@ -322,7 +323,7 @@ export default function PayoutStatsPage() {
                 <article key={it.partnerId} className="payout-stats__mobile-card">
                   <div className="payout-stats__mobile-title">
                     <div className="payout-stats__mobile-name">{it.name}</div>
-                    <div className="payout-stats__mobile-username">{it.username}</div>
+                    <div className="payout-stats__mobile-username">{formatUsername(it.username)}</div>
                   </div>
 
                   <div className="payout-stats__mobile-grid">
