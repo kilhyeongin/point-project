@@ -72,7 +72,6 @@ export async function GET(_req: NextRequest, { params }: Context) {
       customerProfile: u.customerProfile
         ? {
             ...u.customerProfile,
-            phone: maskPhone(u.customerProfile.phone),
             address: u.customerProfile.address ?? "",
             detailAddress: u.customerProfile.detailAddress ?? "",
           }
@@ -80,9 +79,6 @@ export async function GET(_req: NextRequest, { params }: Context) {
       partnerProfile: u.partnerProfile
         ? {
             ...u.partnerProfile,
-            businessNumber: maskBusinessNumber(u.partnerProfile.businessNumber),
-            contactPhone: maskPhone(u.partnerProfile.contactPhone),
-            phone: maskPhone(u.partnerProfile.phone),
           }
         : null,
     },
