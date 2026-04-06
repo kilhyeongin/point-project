@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatUsername } from "@/lib/utils";
 
 type Item = {
   id: string;
@@ -175,7 +176,7 @@ export default function UseRequestsPage() {
               <div className="flex justify-between items-start gap-4">
                 <div>
                   <div className="text-base font-black text-foreground">
-                    대상 고객: {it.to?.name ?? "-"} ({it.to?.username ?? "-"})
+                    대상 고객: {it.to?.name ?? "-"} ({it.to ? formatUsername(it.to.username) : "-"})
                   </div>
                 </div>
                 <div className="text-2xl font-black text-foreground whitespace-nowrap tracking-tight">
@@ -188,7 +189,7 @@ export default function UseRequestsPage() {
                   <div className="text-xs text-muted-foreground">요청자(제휴사)</div>
                   <div className="mt-1 text-sm font-bold leading-snug break-words">
                     {it.requester
-                      ? `${it.requester.name} (${it.requester.username})`
+                      ? `${it.requester.name} (${formatUsername(it.requester.username)})`
                       : "-"}
                   </div>
                 </div>

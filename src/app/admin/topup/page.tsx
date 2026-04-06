@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatUsername } from "@/lib/utils";
 
 type UserItem = {
   id: string;
@@ -132,7 +133,7 @@ export default function AdminTopupPage() {
       }
 
       setMsg(
-        `✅ ${selected.name} (${selected.username}) 계정에 ${formatNumber(
+        `✅ ${selected.name} (${formatUsername(selected.username)}) 계정에 ${formatNumber(
           amountNum
         )}P 충전 완료`
       );
@@ -518,7 +519,7 @@ export default function AdminTopupPage() {
             {selected ? selected.name : "-"}
           </div>
           <div className="summary-sub">
-            {selected ? `${selected.username} / ${roleLabel(selected.role)}` : "대상 미선택"}
+            {selected ? `${formatUsername(selected.username)} / ${roleLabel(selected.role)}` : "대상 미선택"}
           </div>
         </div>
 
@@ -568,7 +569,7 @@ export default function AdminTopupPage() {
                   <div className="user-top">
                     <div>
                       <div className="user-name">
-                        {item.name} ({item.username})
+                        {item.name} ({formatUsername(item.username)})
                       </div>
                       <div className="user-sub">
                         역할: {roleLabel(item.role)}
@@ -604,7 +605,7 @@ export default function AdminTopupPage() {
               {selected ? (
                 <>
                   <div>
-                    <b>{selected.name}</b> ({selected.username})
+                    <b>{selected.name}</b> ({formatUsername(selected.username)})
                   </div>
                   <div>역할: {roleLabel(selected.role)}</div>
                   <div>상태: {statusLabel(selected.status)}</div>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatUsername } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 type Item = {
@@ -222,12 +223,12 @@ export default function AdminIssueRequestsPage() {
                   <div key={it.id} className="flex items-center gap-3 py-3 px-4 border-b border-border last:border-0 text-sm">
                     <div className="w-[180px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap">
                       {it.requester
-                        ? `${it.requester.name} (${it.requester.username})`
+                        ? `${it.requester.name} (${formatUsername(it.requester.username)})`
                         : "-"}
                     </div>
                     <div className="w-[180px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap">
                       {it.customer
-                        ? `${it.customer.name} (${it.customer.username})`
+                        ? `${it.customer.name} (${formatUsername(it.customer.username)})`
                         : "-"}
                     </div>
                     <div className="w-[110px] shrink-0 text-right font-black">
@@ -255,13 +256,13 @@ export default function AdminIssueRequestsPage() {
                     <div>
                       <div className="text-sm font-black text-foreground">
                         {it.customer
-                          ? `${it.customer.name} (${it.customer.username})`
+                          ? `${it.customer.name} (${formatUsername(it.customer.username)})`
                           : "고객 정보 없음"}
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
                         지급자:{" "}
                         {it.requester
-                          ? `${it.requester.name} (${it.requester.username})`
+                          ? `${it.requester.name} (${formatUsername(it.requester.username)})`
                           : "-"}
                         <br />
                         지급자 역할: {roleLabel(it.requester?.role)}

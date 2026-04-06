@@ -20,7 +20,7 @@ import { TopupRequest } from "@/models/TopupRequest";
 import { IssueRequest } from "@/models/IssueRequest";
 import { UseRequest } from "@/models/UseRequest";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatUsername } from "@/lib/utils";
 
 type Role = "CUSTOMER" | "PARTNER" | "ADMIN";
 type Status = "ACTIVE" | "PENDING" | "BLOCKED";
@@ -458,15 +458,15 @@ export default async function AdminDashboard({
                       </Badge>
                       <span className="text-sm font-bold text-foreground truncate">
                         {r.account
-                          ? `${r.account.name} (${r.account.username})`
+                          ? `${r.account.name} (${formatUsername(r.account.username)})`
                           : "계정 정보 없음"}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {r.counterparty
-                        ? `상대: ${r.counterparty.name} (${r.counterparty.username})`
+                        ? `상대: ${r.counterparty.name} (${formatUsername(r.counterparty.username)})`
                         : r.actor
-                        ? `실행자: ${r.actor.name} (${r.actor.username})`
+                        ? `실행자: ${r.actor.name} (${formatUsername(r.actor.username)})`
                         : "상대 정보 없음"}
                       {" · "}
                       {r.createdAt ? new Date(r.createdAt).toLocaleString() : "-"}
@@ -632,7 +632,7 @@ export default async function AdminDashboard({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground truncate">{row.name}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {row.username} · {ROLE_LABEL[row.role]} · {formatNumber(row.useCount)}건
+                      {formatUsername(row.username)} · {ROLE_LABEL[row.role]} · {formatNumber(row.useCount)}건
                     </p>
                   </div>
                   <span className="text-base font-black text-foreground whitespace-nowrap shrink-0">
@@ -727,7 +727,7 @@ export default async function AdminDashboard({
                   key={u.id}
                   className="grid grid-cols-[180px_140px_100px_100px_220px_120px_160px] gap-3 items-center px-4 py-3.5 border-b border-border last:border-0 text-sm hover:bg-muted/30 transition-colors"
                 >
-                  <div className="truncate font-medium text-foreground">{u.username}</div>
+                  <div className="truncate font-medium text-foreground">{formatUsername(u.username)}</div>
                   <div className="truncate text-foreground">{u.name}</div>
                   <div>
                     <Badge
@@ -805,7 +805,7 @@ export default async function AdminDashboard({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-base font-black text-foreground">{u.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{u.username}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatUsername(u.username)}</p>
                   </div>
                   <p className="text-lg font-black text-foreground whitespace-nowrap shrink-0">
                     {formatNumber(u.balance)}P

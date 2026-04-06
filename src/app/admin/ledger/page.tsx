@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatUsername } from "@/lib/utils";
 
 type UserBrief = {
   id: string;
@@ -47,12 +47,12 @@ function roleLabel(role?: string) {
 
 function renderUser(user: UserBrief) {
   if (!user) return "-";
-  return `${user.name} (${user.username})`;
+  return `${user.name} (${formatUsername(user.username)})`;
 }
 
 function renderUserWithRole(user: UserBrief) {
   if (!user) return "-";
-  return `${user.name} (${user.username}) / ${roleLabel(user.role)}`;
+  return `${user.name} (${formatUsername(user.username)}) / ${roleLabel(user.role)}`;
 }
 
 function amountText(amount: number) {

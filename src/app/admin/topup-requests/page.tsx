@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatUsername } from "@/lib/utils";
 
 type Item = {
   id: string;
@@ -183,7 +184,7 @@ export default function Page() {
               <div className="flex justify-between items-start gap-4">
                 <div>
                   <div className="text-base font-black text-foreground">
-                    {it.account?.name ?? "-"} ({it.account?.username ?? "-"})
+                    {it.account?.name ?? "-"} ({it.account ? formatUsername(it.account.username) : "-"})
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     대상 역할: {roleLabel(it.account?.role)}
@@ -211,7 +212,7 @@ export default function Page() {
                   <div className="text-xs text-muted-foreground">요청자</div>
                   <div className="mt-1 text-sm font-bold leading-snug break-words">
                     {it.requestedBy
-                      ? `${it.requestedBy.name} (${it.requestedBy.username})`
+                      ? `${it.requestedBy.name} (${formatUsername(it.requestedBy.username)})`
                       : "-"}
                   </div>
                 </div>
@@ -219,7 +220,7 @@ export default function Page() {
                   <div className="text-xs text-muted-foreground">승인자 / 처리일</div>
                   <div className="mt-1 text-sm font-bold leading-snug break-words">
                     {it.approvedBy
-                      ? `${it.approvedBy.name} (${it.approvedBy.username})`
+                      ? `${it.approvedBy.name} (${formatUsername(it.approvedBy.username)})`
                       : "-"}
                     <br />
                     {it.decidedAt ? new Date(it.decidedAt).toLocaleString() : "-"}

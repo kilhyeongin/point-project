@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatUsername } from "@/lib/utils";
 
 type PreviewItem = {
   counterpartyId: string | null;
@@ -564,7 +564,7 @@ export default function AdminSettlementsPage() {
                         <div>
                           <div className="font-black text-foreground">
                             {it.counterparty
-                              ? `${it.counterparty.name} (${it.counterparty.username})`
+                              ? `${it.counterparty.name} (${formatUsername(it.counterparty.username)})`
                               : "-"}
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground">
@@ -598,7 +598,7 @@ export default function AdminSettlementsPage() {
                         <div>
                           <div className="text-sm font-black text-foreground">
                             {it.counterparty
-                              ? `${it.counterparty.name} (${it.counterparty.username})`
+                              ? `${it.counterparty.name} (${formatUsername(it.counterparty.username)})`
                               : "-"}
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
@@ -758,7 +758,7 @@ export default function AdminSettlementsPage() {
                         <div>
                           <div className="font-black text-foreground">
                             {l.counterparty
-                              ? `${l.counterparty.name} (${l.counterparty.username})`
+                              ? `${l.counterparty.name} (${formatUsername(l.counterparty.username)})`
                               : "-"}
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground">
@@ -820,7 +820,7 @@ export default function AdminSettlementsPage() {
                         <div>
                           <div className="text-sm font-black text-foreground">
                             {l.counterparty
-                              ? `${l.counterparty.name} (${l.counterparty.username})`
+                              ? `${l.counterparty.name} (${formatUsername(l.counterparty.username)})`
                               : "-"}
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
