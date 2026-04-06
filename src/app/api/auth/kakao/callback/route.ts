@@ -14,6 +14,7 @@ interface KakaoProfile {
   kakao_account?: {
     email?: string;
     phone_number?: string; // "+82 10-1234-5678" 형식
+    name?: string;
     profile?: {
       nickname?: string;
     };
@@ -85,7 +86,7 @@ export async function GET(req: Request) {
 
     const kakaoId = String(profile.id);
     const kakaoEmail = profile.kakao_account?.email?.toLowerCase() ?? "";
-    const kakaoName = profile.kakao_account?.profile?.nickname ?? "카카오 사용자";
+    const kakaoName = profile.kakao_account?.name ?? profile.kakao_account?.profile?.nickname ?? "카카오 사용자";
     // "+82 10-1234-5678" → "01012345678"
     const rawPhone = profile.kakao_account?.phone_number ?? "";
     const kakaoPhone = rawPhone
