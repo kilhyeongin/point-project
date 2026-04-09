@@ -12,6 +12,20 @@ import { Organization } from "@/models/Organization";
 import { User } from "@/models/User";
 import { validatePassword } from "@/lib/validatePassword";
 
+function generateSlug(length = 8): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
+async function uniqueSlug(): Promise<string> {
+  for (let i = 0; i < 10; i++) {
+    const slug = generateSlug(8);
+    const exists = await Organization.findOne({ slug }, { _id: 1 }).lean();
+    if (!exists) return slug;
+  }
+  return generateSlug(12);
+}
+
 function getPlatformSecret() {
   return process.env.PLATFORM_SECRET ?? "";
 }
@@ -64,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const slug = String(body?.slug ?? "")
+    const rawSlug = String(body?.slug ?? "")
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, "")
@@ -79,13 +93,10 @@ export async function POST(req: NextRequest) {
     const adminPassword = String(body?.adminPassword ?? "");
     const adminName = String(body?.adminName ?? name + " 관리자").trim().slice(0, 50);
 
-    // 입력값 검증
-    if (!slug || slug.length < 2) {
-      return NextResponse.json(
-        { ok: false, error: "slug는 영문 소문자·숫자·하이픈, 2자 이상이어야 합니다." },
-        { status: 400 }
-      );
-    }
+    await connectDB();
+
+    // slug 미입력 시 자동 생성
+    const slug = rawSlug.length >= 2 ? rawSlug : await uniqueSlug();
 
     if (!name) {
       return NextResponse.json({ ok: false, error: "조직 이름을 입력해 주세요." }, { status: 400 });
@@ -102,8 +113,6 @@ export async function POST(req: NextRequest) {
     if (!pwCheck.ok) {
       return NextResponse.json({ ok: false, error: pwCheck.error }, { status: 400 });
     }
-
-    await connectDB();
 
     // slug 중복 확인
     const existingOrg = await Organization.findOne({ slug }).lean();
