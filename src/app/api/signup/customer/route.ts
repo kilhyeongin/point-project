@@ -102,6 +102,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
+
+    // 중복 확인 (org 범위)
+    const existsUsername = await User.findOne({ username, organizationId }, { _id: 1 }).lean();
+    if (existsUsername) {
+      return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
+    }
+
     const existsEmail = await User.findOne({ email, organizationId }, { _id: 1, socialAccounts: 1 }).lean() as any;
     if (existsEmail) {
       const hasSocial = Array.isArray(existsEmail.socialAccounts) && existsEmail.socialAccounts.length > 0;
@@ -113,14 +121,6 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-
-    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
-
-    // 중복 확인 (org 범위)
-    const existsUsername = await User.findOne({ username, organizationId }, { _id: 1 }).lean();
-    if (existsUsername) {
-      return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
-    }
 
     await User.create({
       organizationId,
