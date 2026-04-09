@@ -20,6 +20,7 @@ export type SessionPayload = {
   username: string;
   name: string;
   jti: string; // 토큰 고유 ID (블랙리스트용)
+  orgId: string; // 소속 단체 slug
 };
 
 // JWT 생성 (1일 유효)

@@ -7,6 +7,14 @@ type Params = { params: Promise<{ id: string }> };
 
 const ALLOWED_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED", "NOSHOW", "CANCELLED"];
 
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: "대기중",
+  CONFIRMED: "확정",
+  COMPLETED: "완료",
+  NOSHOW: "노쇼",
+  CANCELLED: "취소",
+};
+
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const session = await getSessionFromCookies();
@@ -15,17 +23,46 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const { id } = await params;
     const body = await req.json();
-    const appointmentStatus = String(body?.appointmentStatus ?? "");
 
+    await connectDB();
+
+    const orgId = session.orgId ?? "default";
+
+    // 직원 메모 저장
+    if (typeof body?.staffMemo === "string") {
+      const updated = await FavoritePartner.findOneAndUpdate(
+        { _id: id, organizationId: orgId, partnerId: session.uid },
+        { $set: { staffMemo: body.staffMemo.slice(0, 500) } },
+        { new: true }
+      ).lean();
+      if (!updated) return NextResponse.json({ ok: false, error: "예약을 찾을 수 없습니다." }, { status: 404 });
+      return NextResponse.json({ ok: true });
+    }
+
+    // 상태 변경
+    const appointmentStatus = String(body?.appointmentStatus ?? "");
     if (!ALLOWED_STATUSES.includes(appointmentStatus)) {
       return NextResponse.json({ ok: false, error: "올바르지 않은 상태값입니다." }, { status: 400 });
     }
 
-    await connectDB();
+    const now = new Date();
+    const statusUpdate: Record<string, unknown> = { appointmentStatus };
+    if (appointmentStatus === "CONFIRMED") statusUpdate.confirmedAt = now;
+    if (appointmentStatus === "CANCELLED" || appointmentStatus === "NOSHOW") statusUpdate.cancelledAt = now;
+
+    const historyEntry = {
+      status: appointmentStatus,
+      label: STATUS_LABEL[appointmentStatus] ?? appointmentStatus,
+      note: "파트너센터",
+      at: now,
+    };
 
     const updated = await FavoritePartner.findOneAndUpdate(
-      { _id: id, partnerId: session.uid },
-      { $set: { appointmentStatus } },
+      { _id: id, organizationId: orgId, partnerId: session.uid },
+      {
+        $set: statusUpdate,
+        $push: { statusHistory: { $each: [historyEntry], $position: 0 } },
+      },
       { new: true }
     ).lean();
 

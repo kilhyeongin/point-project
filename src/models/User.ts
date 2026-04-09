@@ -183,6 +183,11 @@ const SocialAccountSchema = new Schema(
 
 const UserSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
     username: {
       type: String,
       required: true,
@@ -242,8 +247,8 @@ const UserSchema = new Schema(
   }
 );
 
-UserSchema.index({ role: 1, status: 1 });
-UserSchema.index({ role: 1, "partnerProfile.isPublished": 1 });
-UserSchema.index({ role: 1, "partnerProfile.categories": 1 });
+UserSchema.index({ organizationId: 1, role: 1, status: 1 });
+UserSchema.index({ organizationId: 1, role: 1, "partnerProfile.isPublished": 1 });
+UserSchema.index({ organizationId: 1, role: 1, "partnerProfile.categories": 1 });
 
 export const User = models.User || model("User", UserSchema);

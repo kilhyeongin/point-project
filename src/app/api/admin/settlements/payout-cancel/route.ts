@@ -56,12 +56,14 @@ export async function POST(req: Request) {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
   const counterpartyId = new mongoose.Types.ObjectId(counterpartyIdStr);
   const dbSession = await mongoose.startSession();
 
   try {
     const result = await dbSession.withTransaction(async () => {
       const line = await Settlement.findOne({
+        organizationId: orgId,
         periodKey,
         counterpartyId,
       }).session(dbSession);

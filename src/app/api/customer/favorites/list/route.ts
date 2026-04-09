@@ -28,8 +28,10 @@ export async function GET() {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   const favorites = await FavoritePartner.find(
-    { customerId: session.uid, likedByCustomer: true },
+    { organizationId: orgId, customerId: session.uid, likedByCustomer: true },
     { partnerId: 1, createdAt: 1, status: 1, appliedAt: 1 }
   )
     .sort({ createdAt: -1 })
@@ -44,6 +46,7 @@ export async function GET() {
   const partnerDocs = await User.find(
     {
       _id: { $in: partnerIds },
+      organizationId: orgId,
       role: "PARTNER",
       status: "ACTIVE",
       "partnerProfile.isPublished": true,

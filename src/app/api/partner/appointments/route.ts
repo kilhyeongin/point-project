@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
       dateFilter.$lte = endDate;
     }
 
+    const orgId = session.orgId ?? "default";
+
     const query: Record<string, unknown> = {
+      organizationId: orgId,
       partnerId: session.uid,
       status: "APPLIED",
       appointmentAt: { $ne: null, ...(Object.keys(dateFilter).length ? dateFilter : {}) },
@@ -37,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     const customerIds = relations.map((r) => (r as any).customerId);
     const customers = await User.find(
-      { _id: { $in: customerIds } },
+      { organizationId: orgId, _id: { $in: customerIds } },
       { name: 1, username: 1, "customerProfile.phone": 1 }
     ).lean();
 
@@ -55,7 +58,18 @@ export async function GET(req: NextRequest) {
         appointmentNote: String(r.appointmentNote ?? ""),
         appointmentStatus: String(r.appointmentStatus ?? "PENDING"),
         appliedAt: r.appliedAt ? new Date(r.appliedAt).toISOString() : null,
+        confirmedAt: r.confirmedAt ? new Date(r.confirmedAt).toISOString() : null,
+        cancelledAt: r.cancelledAt ? new Date(r.cancelledAt).toISOString() : null,
         updatedAt: r.updatedAt ? new Date(r.updatedAt).toISOString() : null,
+        staffMemo: r.staffMemo ?? "",
+        statusHistory: Array.isArray(r.statusHistory)
+          ? r.statusHistory.map((h: any) => ({
+              status: h.status,
+              label: h.label,
+              note: h.note ?? "",
+              at: h.at ? new Date(h.at).toISOString() : null,
+            }))
+          : [],
       };
     });
 

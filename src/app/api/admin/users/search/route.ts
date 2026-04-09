@@ -36,8 +36,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = String(searchParams.get("q") ?? "").trim();
   const role = String(searchParams.get("role") ?? "ALL").toUpperCase();
+  const orgId = session.orgId ?? "default";
 
-  const filter: any = {};
+  const filter: any = { organizationId: orgId };
 
   if (role === "CHARGEABLE") {
     filter.role = "PARTNER";

@@ -70,7 +70,9 @@ export async function POST(req: NextRequest) {
   const targetOid = new mongoose.Types.ObjectId(targetUserId);
   const adminOid = new mongoose.Types.ObjectId(session.uid);
 
-  const target = await User.findById(targetOid, {
+  const orgId = session.orgId ?? "default";
+
+  const target = await User.findOne({ _id: targetOid, organizationId: orgId }, {
     _id: 1,
     username: 1,
     name: 1,
@@ -98,6 +100,7 @@ export async function POST(req: NextRequest) {
       const ledger = await Ledger.create(
         [
           {
+            organizationId: orgId,
             accountId: targetOid,
             userId: null,
             actorId: adminOid,

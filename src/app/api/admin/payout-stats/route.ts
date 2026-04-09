@@ -51,8 +51,10 @@ export async function GET(req: Request) {
       );
     }
 
+    const orgId = session.orgId ?? "default";
+
     const partners = await User.find(
-      { role: "PARTNER" },
+      { organizationId: orgId, role: "PARTNER" },
       { _id: 1, username: 1, name: 1, status: 1 }
     ).lean();
 
@@ -60,6 +62,7 @@ export async function GET(req: Request) {
       partners.map(async (partner: any) => {
         const rows = await Ledger.find(
           {
+            organizationId: orgId,
             type: "ISSUE",
             actorId: partner._id,
             createdAt: {

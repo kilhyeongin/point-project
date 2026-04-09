@@ -44,7 +44,7 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const filter: any = { partnerId: new mongoose.Types.ObjectId(session.uid) };
+  const filter: any = { organizationId: session.orgId ?? "default", partnerId: new mongoose.Types.ObjectId(session.uid) };
   if (["PENDING", "APPROVED", "REJECTED"].includes(statusParam)) {
     filter.status = statusParam;
   }
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
 
   if (toUsername) {
     targetUser = await User.findOne(
-      { username: toUsername },
+      { username: toUsername, organizationId: session.orgId ?? "default" },
       { _id: 1, role: 1, status: 1, username: 1, name: 1 }
     );
   } else {
@@ -146,8 +146,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, message: "QR에 고객 정보가 없습니다." }, { status: 400 });
       }
 
-      targetUser = await User.findById(
-        new mongoose.Types.ObjectId(customerId),
+      targetUser = await User.findOne(
+        { _id: new mongoose.Types.ObjectId(customerId), organizationId: session.orgId ?? "default" },
         { _id: 1, role: 1, status: 1, username: 1, name: 1 }
       );
     } catch (e: any) {
@@ -175,6 +175,7 @@ export async function POST(req: Request) {
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
   const relation = await FavoritePartner.findOne({
+    organizationId: session.orgId ?? "default",
     customerId: userId,
     partnerId,
     status: "APPLIED",
@@ -201,7 +202,7 @@ export async function POST(req: Request) {
     try {
       const result = await dbSession.withTransaction(async () => {
         const doc = await UseRequest.create(
-          [{ userId, partnerId, amount: Math.abs(amount), status: "PENDING", note }],
+          [{ organizationId: session.orgId ?? "default", userId, partnerId, amount: Math.abs(amount), status: "PENDING", note }],
           { session: dbSession }
         );
         const req = doc[0];
@@ -213,6 +214,7 @@ export async function POST(req: Request) {
         const ledgerDocs = await Ledger.create(
           [
             {
+              organizationId: session.orgId ?? "default",
               accountId: userId,
               userId,
               actorId: partnerId,
@@ -267,6 +269,7 @@ export async function POST(req: Request) {
 
   // ── username 수동입력: PENDING (관리자 승인 필요) ────────
   const doc = await UseRequest.create({
+    organizationId: session.orgId ?? "default",
     userId,
     partnerId,
     amount: Math.abs(amount),

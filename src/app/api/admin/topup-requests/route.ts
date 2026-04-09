@@ -16,7 +16,9 @@ export async function GET() {
 
   await connectDB();
 
-  const docs = await TopupRequest.find()
+  const orgId = session.orgId ?? "default";
+
+  const docs = await TopupRequest.find({ organizationId: orgId })
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("accountId", "username name role")

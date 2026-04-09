@@ -11,6 +11,11 @@ import { Schema, model, models } from "mongoose";
 
 const WalletSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
     accountId: {
       type: Schema.Types.ObjectId,
       ref: "User",

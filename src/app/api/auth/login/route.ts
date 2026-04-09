@@ -87,6 +87,7 @@ export async function POST(req: Request) {
       role: user.role,
       username: user.username,
       name: user.name,
+      orgId: user.organizationId ?? "default",
     });
 
     await setSessionCookie(token);

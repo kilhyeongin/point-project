@@ -58,28 +58,30 @@ export async function GET(req: Request) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  if (error || !code || !state) {
-    return NextResponse.redirect(new URL("/login?error=kakao_denied", baseUrl));
-  }
-
   // CSRF state 검증
   const cookieStore = await cookies();
   const savedState = cookieStore.get("kakao_oauth_state")?.value;
+  const orgSlug = cookieStore.get("kakao_oauth_org")?.value ?? "default";
   cookieStore.delete("kakao_oauth_state");
+  cookieStore.delete("kakao_oauth_org");
+
+  if (error || !code || !state) {
+    return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_denied`, baseUrl));
+  }
 
   if (!savedState || savedState !== state) {
-    return NextResponse.redirect(new URL("/login?error=kakao_state", baseUrl));
+    return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_state`, baseUrl));
   }
 
   try {
     const accessToken = await getKakaoToken(code);
     if (!accessToken) {
-      return NextResponse.redirect(new URL("/login?error=kakao_token", baseUrl));
+      return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_token`, baseUrl));
     }
 
     const profile = await getKakaoProfile(accessToken);
     if (!profile) {
-      return NextResponse.redirect(new URL("/login?error=kakao_profile", baseUrl));
+      return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_profile`, baseUrl));
     }
 
     await connectDB();
@@ -129,7 +131,7 @@ export async function GET(req: Request) {
     }
 
     if (user.status === "BLOCKED") {
-      return NextResponse.redirect(new URL("/login?error=blocked", baseUrl));
+      return NextResponse.redirect(new URL(`/${orgSlug}/login?error=blocked`, baseUrl));
     }
 
     const token = signSession({
@@ -137,13 +139,14 @@ export async function GET(req: Request) {
       role: user.role,
       username: user.username,
       name: user.name,
+      orgId: user.organizationId ?? "default",
     });
 
     await setSessionCookie(token);
 
-    return NextResponse.redirect(new URL("/customer", baseUrl));
+    return NextResponse.redirect(new URL(`/${user.organizationId ?? orgSlug}/customer`, baseUrl));
   } catch (err) {
     console.error("[KAKAO_CALLBACK_ERROR]", err);
-    return NextResponse.redirect(new URL("/login?error=server", baseUrl));
+    return NextResponse.redirect(new URL(`/${orgSlug}/login?error=server`, baseUrl));
   }
 }

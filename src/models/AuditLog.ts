@@ -4,6 +4,8 @@ import { Schema, model, models } from "mongoose";
 
 const AuditLogSchema = new Schema(
   {
+    organizationId: { type: String, default: "default", index: true },
+
     // 작업을 수행한 관리자 ID
     adminId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     adminUsername: { type: String, required: true },
@@ -27,8 +29,8 @@ const AuditLogSchema = new Schema(
   }
 );
 
-AuditLogSchema.index({ adminId: 1, createdAt: -1 });
-AuditLogSchema.index({ action: 1, createdAt: -1 });
+AuditLogSchema.index({ organizationId: 1, adminId: 1, createdAt: -1 });
+AuditLogSchema.index({ organizationId: 1, action: 1, createdAt: -1 });
 
 export const AuditLog = models.AuditLog || model("AuditLog", AuditLogSchema);
 export default AuditLog;

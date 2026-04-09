@@ -37,9 +37,12 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
+    const orgId = session.orgId ?? "default";
+
     const [docs, favoriteDocs] = await Promise.all([
       User.find(
         {
+          organizationId: orgId,
           role: "PARTNER",
           status: "ACTIVE",
           "partnerProfile.isPublished": true,
@@ -53,7 +56,7 @@ export async function GET(req: NextRequest) {
         .sort({ createdAt: -1 })
         .lean(),
       FavoritePartner.find(
-        { customerId: session.uid, likedByCustomer: true },
+        { organizationId: orgId, customerId: session.uid, likedByCustomer: true },
         { partnerId: 1 }
       ).lean(),
     ]);

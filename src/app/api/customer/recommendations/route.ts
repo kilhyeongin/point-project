@@ -55,8 +55,10 @@ export async function GET() {
 
     await connectDB();
 
-    const me = await User.findById(
-      session.uid,
+    const orgId = session.orgId ?? "default";
+
+    const me = await User.findOne(
+      { _id: session.uid, organizationId: orgId },
       {
         customerProfile: 1,
       }
@@ -83,6 +85,7 @@ export async function GET() {
     const [partnerDocs, favoriteDocs] = await Promise.all([
       User.find(
         {
+          organizationId: orgId,
           role: "PARTNER",
           status: "ACTIVE",
           "partnerProfile.isPublished": true,
@@ -96,7 +99,7 @@ export async function GET() {
         .sort({ createdAt: -1 })
         .lean(),
       FavoritePartner.find(
-        { customerId: session.uid, likedByCustomer: true },
+        { organizationId: orgId, customerId: session.uid, likedByCustomer: true },
         { partnerId: 1 }
       ).lean(),
     ]);

@@ -14,6 +14,12 @@ export type IssueRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 const IssueRequestSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
+
     // 지급 받는 고객
     userId: {
       type: Schema.Types.ObjectId,

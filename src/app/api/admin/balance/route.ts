@@ -43,8 +43,9 @@ export async function GET(req: Request) {
   await connectDB();
 
   const oid = new mongoose.Types.ObjectId(userId);
+  const orgId = session.orgId ?? "default";
 
-  const user = await User.findById(oid, {
+  const user = await User.findOne({ _id: oid, organizationId: orgId }, {
     _id: 1,
     username: 1,
     name: 1,

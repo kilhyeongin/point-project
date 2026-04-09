@@ -63,8 +63,10 @@ export async function PATCH(
     // 6) DB 연결
     await connectDB();
 
+    const orgId = session.orgId ?? "default";
+
     // 7) 대상 사용자 조회
-    const target = await User.findById(userId);
+    const target = await User.findOne({ _id: userId, organizationId: orgId });
     if (!target) {
       return NextResponse.json({ ok: false, message: "사용자를 찾을 수 없습니다." }, { status: 404 });
     }

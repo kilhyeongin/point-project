@@ -23,6 +23,7 @@ export async function GET(req: Request) {
   await connectDB();
 
   const filter: any = {
+    organizationId: session.orgId ?? "default",
     requesterId: new mongoose.Types.ObjectId(session.uid),
   };
   if (["PENDING", "APPROVED", "REJECTED"].includes(statusParam)) {
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
   const docs = await IssueRequest.find(filter)
     .sort({ createdAt: -1 })
     .limit(100)
-    .populate("userId", "username name")
+    .populate("userId", "username name socialAccounts")
     .lean();
 
   const items = docs.map((d: any) => ({
@@ -43,7 +44,11 @@ export async function GET(req: Request) {
     createdAt: d.createdAt,
     decidedAt: d.decidedAt ?? null,
     ledgerId: d.ledgerId ? String(d.ledgerId) : null,
-    to: d.userId ? { username: d.userId.username, name: d.userId.name } : null,
+    to: d.userId ? {
+      username: d.userId.username,
+      name: d.userId.name,
+      socialProvider: d.userId.socialAccounts?.[0]?.provider ?? null,
+    } : null,
   }));
 
   return NextResponse.json({ ok: true, items });

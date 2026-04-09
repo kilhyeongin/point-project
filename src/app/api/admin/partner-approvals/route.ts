@@ -22,8 +22,11 @@ export async function GET() {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   const users = await User.find(
     {
+      organizationId: orgId,
       role: "PARTNER",
       status: "PENDING",
     },

@@ -78,14 +78,17 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const exists = await User.findOne({ username }, { _id: 1 }).lean();
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
+
+    const exists = await User.findOne({ username, organizationId }, { _id: 1 }).lean();
     if (exists) {
       return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
-
     await User.create({
+      organizationId,
       username,
       passwordHash,
       name: businessName,

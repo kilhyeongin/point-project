@@ -43,7 +43,10 @@ export async function GET(req: Request) {
 
   const USERS_COLLECTION = "users";
 
+  const orgId = session.orgId ?? "default";
+
   const match: any = {
+    organizationId: orgId,
     type: "USE",
     counterpartyId: { $ne: null },
   };

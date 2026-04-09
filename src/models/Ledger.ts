@@ -3,6 +3,12 @@ import mongoose, { Schema, model, models } from "mongoose";
 
 const LedgerSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
+
     // 실제 잔액 주인(지갑 소유자)
     accountId: {
       type: Schema.Types.ObjectId,
@@ -74,15 +80,15 @@ const LedgerSchema = new Schema(
   }
 );
 
-LedgerSchema.index({ accountId: 1, createdAt: -1 });
-LedgerSchema.index({ type: 1, createdAt: -1 });
-LedgerSchema.index({ counterpartyId: 1, createdAt: -1 });
+LedgerSchema.index({ organizationId: 1, accountId: 1, createdAt: -1 });
+LedgerSchema.index({ organizationId: 1, type: 1, createdAt: -1 });
+LedgerSchema.index({ organizationId: 1, counterpartyId: 1, createdAt: -1 });
 // 사용자 내역 조회용 복합 인덱스
-LedgerSchema.index({ userId: 1, createdAt: -1 });
+LedgerSchema.index({ organizationId: 1, userId: 1, createdAt: -1 });
 // 관리자 실행자 조회용
-LedgerSchema.index({ actorId: 1, createdAt: -1 });
+LedgerSchema.index({ organizationId: 1, actorId: 1, createdAt: -1 });
 // 정산 집계용: type + createdAt
-LedgerSchema.index({ type: 1, counterpartyId: 1, createdAt: -1 });
+LedgerSchema.index({ organizationId: 1, type: 1, counterpartyId: 1, createdAt: -1 });
 
 export const Ledger =
   models.Ledger || model("Ledger", LedgerSchema);

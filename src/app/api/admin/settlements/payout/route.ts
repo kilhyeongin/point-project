@@ -71,12 +71,14 @@ export async function POST(req: Request) {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
   const counterpartyId = new mongoose.Types.ObjectId(counterpartyIdStr);
   const dbSession = await mongoose.startSession();
 
   try {
     const result = await dbSession.withTransaction(async () => {
       const line = await Settlement.findOne({
+        organizationId: orgId,
         periodKey,
         counterpartyId,
       }).session(dbSession);
@@ -90,6 +92,7 @@ export async function POST(req: Request) {
 
       if (line.status === "PAID") {
         const remaining = await Settlement.countDocuments({
+          organizationId: orgId,
           periodKey,
           status: { $ne: "PAID" },
         }).session(dbSession);
@@ -109,6 +112,7 @@ export async function POST(req: Request) {
       await line.save({ session: dbSession });
 
       const remaining = await Settlement.countDocuments({
+        organizationId: orgId,
         periodKey,
         status: { $ne: "PAID" },
       }).session(dbSession);

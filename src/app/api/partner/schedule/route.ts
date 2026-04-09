@@ -17,7 +17,7 @@ export async function GET() {
 
   await connectDB();
 
-  const user = await User.findById(session.uid, { partnerProfile: 1 }).lean();
+  const user = await User.findOne({ _id: session.uid, organizationId: session.orgId ?? "default" }, { partnerProfile: 1 }).lean();
   const p = (user as any)?.partnerProfile ?? {};
 
   return NextResponse.json({
@@ -79,7 +79,7 @@ export async function PUT(req: NextRequest) {
   await connectDB();
 
   await User.updateOne(
-    { _id: session.uid },
+    { _id: session.uid, organizationId: session.orgId ?? "default" },
     {
       $set: {
         "partnerProfile.scheduleEnabled": scheduleEnabled,

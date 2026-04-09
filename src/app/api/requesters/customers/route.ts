@@ -13,6 +13,7 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { FavoritePartner } from "@/models/FavoritePartner";
 import { User } from "@/models/User";
+import { Wallet } from "@/models/Wallet";
 
 function maskName(name: string) {
   const value = String(name ?? "").trim();
@@ -61,7 +62,10 @@ export async function GET(req: Request) {
 
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
+  const orgId = session.orgId ?? "default";
+
   const filter: Record<string, any> = {
+    organizationId: orgId,
     partnerId,
   };
 
@@ -77,6 +81,7 @@ export async function GET(req: Request) {
       createdAt: 1,
       updatedAt: 1,
       appliedAt: 1,
+      appointmentAt: 1,
     }
   )
     .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
@@ -104,6 +109,7 @@ export async function GET(req: Request) {
   const customers = await User.find(
     {
       _id: { $in: customerIds },
+      organizationId: orgId,
       role: "CUSTOMER",
     },
     {
@@ -112,12 +118,24 @@ export async function GET(req: Request) {
       status: 1,
       createdAt: 1,
       customerProfile: 1,
+      socialAccounts: 1,
     }
   ).lean();
 
   const customerMap = new Map<string, any>();
   for (const customer of customers as any[]) {
     customerMap.set(String(customer._id), customer);
+  }
+
+  // 고객 잔액 조회
+  const wallets = await Wallet.find(
+    { accountId: { $in: customerIds } },
+    { accountId: 1, balance: 1 }
+  ).lean();
+
+  const walletMap = new Map<string, number>();
+  for (const w of wallets as any[]) {
+    walletMap.set(String(w.accountId), Number(w.balance ?? 0));
   }
 
   const items = relations
@@ -134,18 +152,24 @@ export async function GET(req: Request) {
         relationStatus,
         likedAt: relation.createdAt,
         appliedAt: relation.appliedAt ?? null,
+        appointmentAt: relation.appointmentAt ?? null,
         createdAt: customer.createdAt,
       };
+
+      const socialAccounts: { provider: string }[] = customer.socialAccounts ?? [];
+      const socialProvider = socialAccounts.length > 0 ? socialAccounts[0].provider : null;
 
       if (relationStatus === "APPLIED") {
         return {
           ...base,
           username: String(customer.username ?? ""),
           name: String(customer.name ?? ""),
+          socialProvider,
           phone: String(profile.phone ?? "").trim(),
           address: String(profile.address ?? "").trim(),
           detailAddress: String(profile.detailAddress ?? "").trim(),
           status: String(customer.status ?? ""),
+          balance: walletMap.get(String(customer._id)) ?? 0,
           isMasked: false,
         };
       }
@@ -154,6 +178,7 @@ export async function GET(req: Request) {
         ...base,
         username: maskUsername(String(customer.username ?? "")),
         name: maskName(String(customer.name ?? "")),
+        socialProvider,
         phone: "비공개",
         address: "비공개",
         detailAddress: "비공개",

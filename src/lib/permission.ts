@@ -5,9 +5,11 @@ import { FavoritePartner } from "@/models/FavoritePartner";
 export async function validatePartnerCustomerRelation({
   partnerId,
   customerId,
+  orgId = "default",
 }: {
   partnerId: string;
   customerId: string;
+  orgId?: string;
 }) {
   if (
     !mongoose.Types.ObjectId.isValid(partnerId) ||
@@ -21,6 +23,7 @@ export async function validatePartnerCustomerRelation({
   }
 
   const relation = await FavoritePartner.findOne({
+    organizationId: orgId,
     partnerId: new mongoose.Types.ObjectId(partnerId),
     customerId: new mongoose.Types.ObjectId(customerId),
   }).lean();

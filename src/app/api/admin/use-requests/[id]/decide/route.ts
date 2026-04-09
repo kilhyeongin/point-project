@@ -55,6 +55,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
   const _id = new mongoose.Types.ObjectId(id);
   const adminId = new mongoose.Types.ObjectId(session.uid);
 
@@ -63,7 +64,7 @@ export async function PATCH(req: Request, { params }: Params) {
   try {
     const result = await dbSession.withTransaction(async () => {
       const locked = await UseRequest.findOneAndUpdate(
-        { _id, status: "PENDING" },
+        { _id, organizationId: orgId, status: "PENDING" },
         { $set: { decidedAt: new Date(), adminId } },
         { returnDocument: "after", session: dbSession }
       );
@@ -106,6 +107,7 @@ export async function PATCH(req: Request, { params }: Params) {
       const created = await Ledger.create(
         [
           {
+            organizationId: orgId,
             accountId: customerAccountId,
             userId: customerAccountId,
             actorId: adminId,

@@ -14,6 +14,12 @@ const CounterpartySnapshotSchema = new Schema(
 
 const SettlementSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
+
     // 정산 기준 월
     periodKey: {
       type: String,
@@ -54,6 +60,32 @@ const SettlementSchema = new Schema(
     usedPoints: {
       type: Number,
       required: true,
+      default: 0,
+    },
+
+    // 지급 포인트 집계
+    issuedPoints: {
+      type: Number,
+      default: 0,
+    },
+    issueCount: {
+      type: Number,
+      default: 0,
+    },
+
+    // 방문 고객 수 (unique userId)
+    visitorCount: {
+      type: Number,
+      default: 0,
+    },
+
+    // 계약 완료/취소 건수
+    completedCount: {
+      type: Number,
+      default: 0,
+    },
+    cancelledCount: {
+      type: Number,
       default: 0,
     },
 
@@ -124,12 +156,12 @@ const SettlementSchema = new Schema(
 
 // 한 기간에 한 업체당 정산 라인 1개
 SettlementSchema.index(
-  { periodKey: 1, counterpartyId: 1 },
+  { organizationId: 1, periodKey: 1, counterpartyId: 1 },
   { unique: true }
 );
 
-SettlementSchema.index({ periodKey: 1, status: 1 });
-SettlementSchema.index({ counterpartyId: 1, status: 1 });
+SettlementSchema.index({ organizationId: 1, periodKey: 1, status: 1 });
+SettlementSchema.index({ organizationId: 1, counterpartyId: 1, status: 1 });
 
 export const Settlement =
   models.Settlement || model("Settlement", SettlementSchema);

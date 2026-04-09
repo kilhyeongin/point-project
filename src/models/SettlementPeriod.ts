@@ -12,8 +12,10 @@ export type SettlementPeriodStatus = "OPEN" | "CLOSED" | "PAID";
 
 const SettlementPeriodSchema = new Schema(
   {
+    organizationId: { type: String, default: "default", index: true },
+
     // 예: "2026-03"
-    periodKey: { type: String, required: true, unique: true, index: true },
+    periodKey: { type: String, required: true, index: true },
 
     // 정산 범위(UTC 기준 저장 권장)
     from: { type: Date, required: true },
@@ -41,6 +43,9 @@ const SettlementPeriodSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// organizationId + periodKey 복합 유니크
+SettlementPeriodSchema.index({ organizationId: 1, periodKey: 1 }, { unique: true });
 
 export const SettlementPeriod =
   models.SettlementPeriod || model("SettlementPeriod", SettlementPeriodSchema);

@@ -3,8 +3,7 @@
 // ADMIN: 마감된 정산 라인 조회
 // -------------------------------------------------------
 // - periodKey 필수
-// - 수수료 없음
-// - netPayable = usedPoints
+// - 새 필드 포함: issuedPoints, issueCount, visitorCount, completedCount, cancelledCount
 // =======================================================
 
 import { NextResponse } from "next/server";
@@ -36,9 +35,11 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const docs = await Settlement.find({ periodKey })
+  const orgId = session.orgId ?? "default";
+
+  const docs = await Settlement.find({ organizationId: orgId, periodKey })
     .sort({ createdAt: -1 })
-    .lean();
+    .lean() as any[];
 
   const counterpartyIds = Array.from(
     new Set(
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
   const counterparties =
     counterpartyIds.length > 0
       ? await User.find(
-          { _id: { $in: counterpartyIds } },
+          { organizationId: orgId, _id: { $in: counterpartyIds } },
           { username: 1, name: 1, role: 1, status: 1 }
         ).lean()
       : [];
@@ -74,6 +75,11 @@ export async function GET(req: Request) {
         status: doc.status,
         useCount: Number(doc.useCount ?? 0),
         usedPoints: Number(doc.usedPoints ?? 0),
+        issuedPoints: Number(doc.issuedPoints ?? 0),
+        issueCount: Number(doc.issueCount ?? 0),
+        visitorCount: Number(doc.visitorCount ?? 0),
+        completedCount: Number(doc.completedCount ?? 0),
+        cancelledCount: Number(doc.cancelledCount ?? 0),
         netPayable: Number(doc.netPayable ?? doc.usedPoints ?? 0),
         paidAt: doc.paidAt ?? null,
         payoutRef: doc.payoutRef ?? "",

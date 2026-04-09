@@ -46,6 +46,7 @@ export async function PATCH(_req: Request, { params }: Params) {
     );
   }
 
+  const orgId = session.orgId ?? "default";
   const topupId = new mongoose.Types.ObjectId(id);
   const adminId = new mongoose.Types.ObjectId(session.uid);
 
@@ -54,7 +55,7 @@ export async function PATCH(_req: Request, { params }: Params) {
   try {
     const result = await dbSession.withTransaction(async () => {
       const locked = await TopupRequest.findOneAndUpdate(
-        { _id: topupId, status: "PENDING" },
+        { _id: topupId, organizationId: orgId, status: "PENDING" },
         {
           $set: {
             status: "APPROVED",
@@ -86,6 +87,7 @@ export async function PATCH(_req: Request, { params }: Params) {
       const ledger = await Ledger.create(
         [
           {
+            organizationId: orgId,
             accountId: locked.accountId,
             actorId: adminId,
             type: "TOPUP",

@@ -2,6 +2,12 @@ import mongoose, { Schema, model, models } from "mongoose";
 
 const TopupRequestSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
+
     accountId: {
       type: Schema.Types.ObjectId,
       ref: "User",

@@ -36,7 +36,8 @@ export async function GET(req: Request) {
   const q = String(searchParams.get("q") ?? "").trim();
   const status = String(searchParams.get("status") ?? "ALL").toUpperCase();
 
-  const filter: any = {};
+  const orgId = session.orgId ?? "default";
+  const filter: any = { organizationId: orgId };
 
   if (["PENDING", "APPROVED", "REJECTED"].includes(status)) {
     filter.status = status;
@@ -45,6 +46,7 @@ export async function GET(req: Request) {
   if (q) {
     const matchedUsers = await User.find(
       {
+        organizationId: orgId,
         $or: [
           { username: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
           { name: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
@@ -84,7 +86,7 @@ export async function GET(req: Request) {
     .map((id) => new mongoose.Types.ObjectId(id));
 
   const users = await User.find(
-    { _id: { $in: uniqueIds } },
+    { organizationId: orgId, _id: { $in: uniqueIds } },
     { username: 1, name: 1, role: 1 }
   );
 

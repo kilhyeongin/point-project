@@ -69,7 +69,9 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const docs = await Settlement.find({ periodKey }).sort({ createdAt: 1 }).lean();
+  const orgId = session.orgId ?? "default";
+
+  const docs = await Settlement.find({ organizationId: orgId, periodKey }).sort({ createdAt: 1 }).lean();
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "point-platform";

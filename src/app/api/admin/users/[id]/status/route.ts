@@ -41,7 +41,9 @@ export async function PATCH(
 
   await connectDB();
 
-  const user = await User.findById(id, { role: 1, status: 1 }).lean();
+  const orgId = session.orgId ?? "default";
+
+  const user = await User.findOne({ _id: id, organizationId: orgId }, { role: 1, status: 1 }).lean();
 
   if (!user) {
     return NextResponse.json({ ok: false, message: "사용자를 찾을 수 없습니다." }, { status: 404 });
@@ -56,7 +58,7 @@ export async function PATCH(
   }
 
   const prevStatus = (user as any).status;
-  await User.updateOne({ _id: id }, { $set: { status: newStatus } });
+  await User.updateOne({ _id: id, organizationId: orgId }, { $set: { status: newStatus } });
 
   // Audit log
   await AuditLog.create({

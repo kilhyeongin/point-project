@@ -32,6 +32,7 @@ export async function GET(req: Request) {
   await connectDB();
 
   const filter: any = {
+    organizationId: session.orgId ?? "default",
     accountId: new mongoose.Types.ObjectId(session.uid),
   };
 
@@ -104,6 +105,7 @@ export async function POST(req: Request) {
   const accountId = new mongoose.Types.ObjectId(session.uid);
 
   const doc = await TopupRequest.create({
+    organizationId: session.orgId ?? "default",
     accountId,
     amount,
     status: "PENDING",

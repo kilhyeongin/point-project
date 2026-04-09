@@ -11,9 +11,10 @@ export default async function HomePage() {
 
   // 로그인된 유저는 역할별 대시보드로 바로 이동
   if (session) {
-    if (session.role === "ADMIN") redirect("/admin");
-    if (session.role === "PARTNER") redirect("/partner");
-    redirect("/customer");
+    const orgId = session.orgId ?? "default";
+    if (session.role === "ADMIN") redirect(`/${orgId}/admin`);
+    if (session.role === "PARTNER") redirect(`/${orgId}/partner`);
+    redirect(`/${orgId}/customer`);
   }
 
   // 비로그인 → 랜딩페이지 (카테고리 목록 표시)

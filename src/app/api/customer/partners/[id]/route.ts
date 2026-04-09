@@ -52,6 +52,7 @@ export async function GET(
   const doc = await User.findOne(
     {
       _id: id,
+      organizationId: session.orgId ?? "default",
       role: "PARTNER",
       status: "ACTIVE",
       "partnerProfile.isPublished": true,

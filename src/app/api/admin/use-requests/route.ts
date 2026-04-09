@@ -18,7 +18,8 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const filter: any = {};
+  const orgId = session.orgId ?? "default";
+  const filter: any = { organizationId: orgId };
   if (["PENDING", "APPROVED", "REJECTED"].includes(statusParam)) {
     filter.status = statusParam;
   }

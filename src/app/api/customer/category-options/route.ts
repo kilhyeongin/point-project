@@ -26,6 +26,7 @@ export async function GET() {
     const items = await getPartnerCategoryMasters({
       activeOnly: true,
       visibleToCustomerOnly: true,
+      orgId: session.orgId ?? "default",
     });
 
     return NextResponse.json({

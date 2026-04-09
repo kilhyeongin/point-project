@@ -35,7 +35,8 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const filter: any = {};
+  const orgId = session.orgId ?? "default";
+  const filter: any = { organizationId: orgId };
 
   if (["TOPUP", "ISSUE", "USE", "ADJUST"].includes(typeParam)) {
     filter.type = typeParam;
@@ -44,6 +45,7 @@ export async function GET(req: Request) {
   if (q) {
     const users = await User.find(
       {
+        organizationId: orgId,
         $or: [
           { username: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
           { name: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },

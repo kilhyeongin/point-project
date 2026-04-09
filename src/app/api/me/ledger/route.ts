@@ -26,20 +26,29 @@ export async function GET() {
 
   const accountId = new mongoose.Types.ObjectId(session.uid);
 
-  const docs = await Ledger.find({ accountId })
+  const docs = await Ledger.find({ organizationId: session.orgId ?? "default", accountId })
     .sort({ createdAt: -1 })
     .limit(100)
+    .populate("actorId", "name partnerProfile.businessName")
     .lean();
 
-  const items = (docs as any[]).map((d) => ({
-    id: String(d._id),
-    type: d.type,
-    amount: d.amount,
-    note: d.note ?? "",
-    refType: d.refType ?? null,
-    refId: d.refId ? String(d.refId) : null,
-    createdAt: d.createdAt,
-  }));
+  const items = (docs as any[]).map((d) => {
+    const actor = d.actorId as any;
+    const partnerName =
+      actor?.partnerProfile?.businessName?.trim() ||
+      actor?.name?.trim() ||
+      null;
+    return {
+      id: String(d._id),
+      type: d.type,
+      amount: d.amount,
+      note: d.note ?? "",
+      refType: d.refType ?? null,
+      refId: d.refId ? String(d.refId) : null,
+      partnerName,
+      createdAt: d.createdAt,
+    };
+  });
 
   return NextResponse.json({
     ok: true,

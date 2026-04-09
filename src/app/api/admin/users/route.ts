@@ -38,7 +38,8 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const filter: any = {};
+  const orgId = session.orgId ?? "default";
+  const filter: any = { organizationId: orgId };
 
   // ✅ role 필터
   if (roleParam) {
@@ -124,7 +125,9 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  const exists = await User.findOne({ username }, { _id: 1 }).lean();
+  const postOrgId = session.orgId ?? "default";
+
+  const exists = await User.findOne({ organizationId: postOrgId, username }, { _id: 1 }).lean();
   if (exists) {
     return NextResponse.json(
       { ok: false, message: "이미 사용 중인 아이디입니다." },
@@ -135,6 +138,7 @@ export async function POST(req: Request) {
   const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await User.create({
+    organizationId: postOrgId,
     username,
     name,
     passwordHash,

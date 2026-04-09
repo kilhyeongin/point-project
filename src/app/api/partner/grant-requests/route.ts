@@ -80,8 +80,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "QR에 고객 정보가 없습니다." }, { status: 400 });
     }
     await connectDB();
-    targetUser = await User.findById(
-      new mongoose.Types.ObjectId(customerId),
+    targetUser = await User.findOne(
+      { _id: new mongoose.Types.ObjectId(customerId), organizationId: session.orgId ?? "default" },
       { _id: 1, role: 1, status: 1, username: 1, name: 1 }
     );
   } catch (e: any) {
@@ -106,6 +106,7 @@ export async function POST(req: Request) {
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
   const relation = await FavoritePartner.findOne({
+    organizationId: session.orgId ?? "default",
     customerId,
     partnerId,
     status: "APPLIED",
@@ -131,6 +132,7 @@ export async function POST(req: Request) {
       const ledgerDocs = await Ledger.create(
         [
           {
+            organizationId: session.orgId ?? "default",
             accountId: partnerId,
             userId: customerId,
             actorId: partnerId,
@@ -140,6 +142,7 @@ export async function POST(req: Request) {
             note: note ? `포인트 지급 - ${note}` : "QR 적립 지급",
           },
           {
+            organizationId: session.orgId ?? "default",
             accountId: customerId,
             userId: customerId,
             actorId: partnerId,

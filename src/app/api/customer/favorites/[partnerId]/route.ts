@@ -33,7 +33,7 @@ function notFound(message: string) {
   return NextResponse.json({ ok: false, error: message }, { status: 404 });
 }
 
-async function validatePartner(partnerId: string) {
+async function validatePartner(partnerId: string, orgId: string) {
   if (!partnerId || !mongoose.Types.ObjectId.isValid(partnerId)) {
     return {
       ok: false as const,
@@ -44,6 +44,7 @@ async function validatePartner(partnerId: string) {
   const partner = await User.findOne(
     {
       _id: new mongoose.Types.ObjectId(partnerId),
+      organizationId: orgId,
       role: "PARTNER",
       status: "ACTIVE",
       "partnerProfile.isPublished": true,
@@ -71,10 +72,11 @@ export async function POST(_req: Request, { params }: Params) {
     if (session.role !== "CUSTOMER") return forbidden();
 
     const { partnerId } = await params;
+    const orgId = session.orgId ?? "default";
 
     await connectDB();
 
-    const valid = await validatePartner(partnerId);
+    const valid = await validatePartner(partnerId, orgId);
     if (!valid.ok) return valid.response;
 
     const customerId = new mongoose.Types.ObjectId(session.uid);
@@ -82,6 +84,7 @@ export async function POST(_req: Request, { params }: Params) {
 
     const existing = await FavoritePartner.findOne(
       {
+        organizationId: orgId,
         customerId,
         partnerId: partnerObjectId,
       },
@@ -95,12 +98,14 @@ export async function POST(_req: Request, { params }: Params) {
     // 없으면 LIKED 레코드 신규 생성
     await FavoritePartner.updateOne(
       {
+        organizationId: orgId,
         customerId,
         partnerId: partnerObjectId,
       },
       {
         $set: { likedByCustomer: true },
         $setOnInsert: {
+          organizationId: orgId,
           customerId,
           partnerId: partnerObjectId,
           status: "LIKED",
@@ -151,21 +156,22 @@ export async function DELETE(_req: Request, { params }: Params) {
 
     const customerId = new mongoose.Types.ObjectId(session.uid);
     const partnerObjectId = new mongoose.Types.ObjectId(partnerId);
+    const orgId = session.orgId ?? "default";
 
     const existing = await FavoritePartner.findOne(
-      { customerId, partnerId: partnerObjectId },
+      { organizationId: orgId, customerId, partnerId: partnerObjectId },
       { status: 1 }
     ).lean();
 
     if (existing && (existing as any).status === "APPLIED") {
       // 신청 기록이 있으면 레코드 유지, 찜 표시만 해제
       await FavoritePartner.updateOne(
-        { customerId, partnerId: partnerObjectId },
+        { organizationId: orgId, customerId, partnerId: partnerObjectId },
         { $set: { likedByCustomer: false } }
       );
     } else {
       // 찜만 한 경우 레코드 삭제
-      await FavoritePartner.findOneAndDelete({ customerId, partnerId: partnerObjectId });
+      await FavoritePartner.findOneAndDelete({ organizationId: orgId, customerId, partnerId: partnerObjectId });
     }
 
     return NextResponse.json(

@@ -36,7 +36,9 @@ export async function GET(_req: NextRequest, { params }: Context) {
 
   await connectDB();
 
-  const user = await User.findById(id, {
+  const orgId = session.orgId ?? "default";
+
+  const user = await User.findOne({ _id: id, organizationId: orgId }, {
     username: 1,
     name: 1,
     email: 1,

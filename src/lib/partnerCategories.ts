@@ -40,13 +40,14 @@ const LEGACY_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
   DEFAULT_PARTNER_CATEGORY_SEEDS.map((item) => [item.name, item.code])
 );
 
-export async function ensureDefaultPartnerCategories() {
-  const count = await PartnerCategoryMaster.countDocuments({});
+export async function ensureDefaultPartnerCategories(orgId = "default") {
+  const count = await PartnerCategoryMaster.countDocuments({ organizationId: orgId });
   if (count > 0) return;
 
   await PartnerCategoryMaster.insertMany(
     DEFAULT_PARTNER_CATEGORY_SEEDS.map((item) => ({
       ...item,
+      organizationId: orgId,
       createdBy: "SYSTEM",
       updatedBy: "SYSTEM",
     })),
@@ -58,10 +59,12 @@ export async function getPartnerCategoryMasters(options?: {
   activeOnly?: boolean;
   visibleToPartnerOnly?: boolean;
   visibleToCustomerOnly?: boolean;
+  orgId?: string;
 }) {
-  await ensureDefaultPartnerCategories();
+  const orgId = options?.orgId ?? "default";
+  await ensureDefaultPartnerCategories(orgId);
 
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { organizationId: orgId };
 
   if (options?.activeOnly) filter.isActive = true;
   if (options?.visibleToPartnerOnly) filter.isVisibleToPartner = true;

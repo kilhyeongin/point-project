@@ -17,7 +17,7 @@ export default function LandingClient({ categories }: { categories: Category[] }
   const router = useRouter();
 
   function goLogin() {
-    router.push("/login");
+    router.push("/default/login");
   }
 
   return (

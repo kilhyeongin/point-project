@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   await connectDB();
 
   const partner = await User.findOne(
-    { _id: partnerId, role: "PARTNER", status: "ACTIVE", "partnerProfile.isPublished": true },
+    { _id: partnerId, organizationId: session.orgId ?? "default", role: "PARTNER", status: "ACTIVE", "partnerProfile.isPublished": true },
     { partnerProfile: 1 }
   ).lean();
 
@@ -106,6 +106,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const existing = await FavoritePartner.find(
     {
+      organizationId: session.orgId ?? "default",
       partnerId: new mongoose.Types.ObjectId(partnerId),
       status: "APPLIED",
       appointmentAt: { $gte: kstDayStart, $lte: kstDayEnd },

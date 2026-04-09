@@ -68,7 +68,9 @@ export async function POST(req: Request & { ip?: string }) {
   const adminId = new mongoose.Types.ObjectId(session.uid);
   const targetOid = new mongoose.Types.ObjectId(targetUserId);
 
-  const target = await User.findById(targetOid, {
+  const orgId = session.orgId ?? "default";
+
+  const target = await User.findOne({ _id: targetOid, organizationId: orgId }, {
     role: 1,
     username: 1,
     name: 1,
@@ -107,6 +109,7 @@ export async function POST(req: Request & { ip?: string }) {
       const ledger = await Ledger.create(
         [
           {
+            organizationId: orgId,
             accountId: targetOid,
             actorId: adminId,
             type: "TOPUP",

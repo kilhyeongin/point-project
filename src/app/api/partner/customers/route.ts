@@ -19,22 +19,29 @@ export async function GET() {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   const docs = await FavoritePartner.find(
-    { partnerId: session.uid, status: "APPLIED" },
+    { organizationId: orgId, partnerId: session.uid, status: "APPLIED" },
     { customerId: 1, createdAt: 1, appliedAt: 1 }
   )
-    .populate("customerId", "username name")
+    .populate("customerId", "username name socialAccounts")
     .sort({ appliedAt: -1, createdAt: -1 })
     .limit(200)
     .lean();
 
-  const items = (docs as any[]).map((d) => ({
-    id: String(d._id),
-    customerId: String(d.customerId?._id ?? d.customerId),
-    username: d.customerId?.username ?? "",
-    name: d.customerId?.name ?? "",
-    appliedAt: d.appliedAt ?? d.createdAt,
-  }));
+  const items = (docs as any[]).map((d) => {
+    const socialAccounts: { provider: string }[] = d.customerId?.socialAccounts ?? [];
+    const socialProvider = socialAccounts.length > 0 ? socialAccounts[0].provider : null;
+    return {
+      id: String(d._id),
+      customerId: String(d.customerId?._id ?? d.customerId),
+      username: d.customerId?.username ?? "",
+      name: d.customerId?.name ?? "",
+      socialProvider,
+      appliedAt: d.appliedAt ?? d.createdAt,
+    };
+  });
 
   return NextResponse.json({ ok: true, items });
 }

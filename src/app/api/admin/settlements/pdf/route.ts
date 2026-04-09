@@ -44,7 +44,10 @@ export async function GET(req: Request) {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   const doc = await Settlement.findOne({
+    organizationId: orgId,
     periodKey,
     counterpartyId: new mongoose.Types.ObjectId(counterpartyId),
   }).lean();
@@ -56,7 +59,10 @@ export async function GET(req: Request) {
     );
   }
 
-  const counterparty = await User.findById(counterpartyId, {
+  const counterparty = await User.findOne({
+    _id: counterpartyId,
+    organizationId: orgId,
+  }, {
     username: 1,
     name: 1,
   }).lean();

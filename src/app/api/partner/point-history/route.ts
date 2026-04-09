@@ -20,12 +20,14 @@ export async function GET() {
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
   const rows = await Ledger.find({
+    organizationId: session.orgId ?? "default",
     actorId: partnerId,
+    userId: { $ne: partnerId },
     type: { $in: ["ISSUE", "USE"] },
   })
     .sort({ createdAt: -1 })
     .limit(50)
-    .populate("userId", "username name")
+    .populate("userId", "username name socialAccounts")
     .lean();
 
   const items = rows.map((r: any) => ({
@@ -35,7 +37,11 @@ export async function GET() {
     note: r.note ?? "",
     createdAt: r.createdAt,
     customer: r.userId
-      ? { username: r.userId.username, name: r.userId.name }
+      ? {
+          username: r.userId.username,
+          name: r.userId.name,
+          socialProvider: r.userId.socialAccounts?.[0]?.provider ?? null,
+        }
       : null,
   }));
 

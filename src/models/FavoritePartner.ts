@@ -21,7 +21,15 @@ export interface IAppointmentHistory {
   createdAt: Date;
 }
 
+export interface IStatusHistory {
+  status: string;
+  label: string;
+  note?: string;
+  at: Date;
+}
+
 export interface IFavoritePartner {
+  organizationId: string;
   customerId: mongoose.Types.ObjectId;
   partnerId: mongoose.Types.ObjectId;
   status: FavoritePartnerStatus;
@@ -29,14 +37,24 @@ export interface IFavoritePartner {
   createdAt: Date;
   updatedAt: Date;
   appliedAt?: Date | null;
+  confirmedAt?: Date | null;
+  cancelledAt?: Date | null;
   appointmentAt?: Date | null;
   appointmentNote?: string;
   appointmentStatus?: AppointmentStatus;
   appointmentHistory?: IAppointmentHistory[];
+  statusHistory?: IStatusHistory[];
+  staffMemo?: string;
 }
 
 const FavoritePartnerSchema = new Schema<IFavoritePartner>(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
+
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -73,6 +91,16 @@ const FavoritePartnerSchema = new Schema<IFavoritePartner>(
       default: null,
     },
 
+    confirmedAt: {
+      type: Date,
+      default: null,
+    },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+
     appointmentAt: {
       type: Date,
       default: null,
@@ -86,6 +114,26 @@ const FavoritePartnerSchema = new Schema<IFavoritePartner>(
       type: String,
       enum: ["PENDING", "CONFIRMED", "COMPLETED", "NOSHOW", "CANCELLED"],
       default: "PENDING",
+    },
+
+    staffMemo: {
+      type: String,
+      default: "",
+    },
+
+    statusHistory: {
+      type: [
+        new Schema(
+          {
+            status: { type: String, required: true },
+            label: { type: String, required: true },
+            note: { type: String, default: "" },
+            at: { type: Date, required: true },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
     },
 
     appointmentHistory: {
@@ -112,9 +160,9 @@ const FavoritePartnerSchema = new Schema<IFavoritePartner>(
   }
 );
 
-FavoritePartnerSchema.index({ customerId: 1, partnerId: 1 }, { unique: true });
-FavoritePartnerSchema.index({ partnerId: 1, status: 1, createdAt: -1 });
-FavoritePartnerSchema.index({ customerId: 1, status: 1, createdAt: -1 });
+FavoritePartnerSchema.index({ organizationId: 1, customerId: 1, partnerId: 1 }, { unique: true });
+FavoritePartnerSchema.index({ organizationId: 1, partnerId: 1, status: 1, createdAt: -1 });
+FavoritePartnerSchema.index({ organizationId: 1, customerId: 1, status: 1, createdAt: -1 });
 
 export const FavoritePartner =
   models.FavoritePartner ||

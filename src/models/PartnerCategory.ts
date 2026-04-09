@@ -2,10 +2,14 @@ import { Schema, models, model } from "mongoose";
 
 const PartnerCategorySchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
     code: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       uppercase: true,
       maxlength: 50,
@@ -60,9 +64,12 @@ const PartnerCategorySchema = new Schema(
   }
 );
 
-PartnerCategorySchema.index({ isActive: 1, sortOrder: 1, name: 1 });
-PartnerCategorySchema.index({ isVisibleToPartner: 1, isActive: 1, sortOrder: 1 });
-PartnerCategorySchema.index({ isVisibleToCustomer: 1, isActive: 1, sortOrder: 1 });
+// organizationId + code 복합 유니크
+PartnerCategorySchema.index({ organizationId: 1, code: 1 }, { unique: true });
+
+PartnerCategorySchema.index({ organizationId: 1, isActive: 1, sortOrder: 1, name: 1 });
+PartnerCategorySchema.index({ organizationId: 1, isVisibleToPartner: 1, isActive: 1, sortOrder: 1 });
+PartnerCategorySchema.index({ organizationId: 1, isVisibleToCustomer: 1, isActive: 1, sortOrder: 1 });
 
 export const PartnerCategoryMaster =
   models.PartnerCategoryMaster || model("PartnerCategoryMaster", PartnerCategorySchema);

@@ -105,6 +105,7 @@ export async function POST(req: Request) {
   const partnerOid = new mongoose.Types.ObjectId(session.uid);
 
   const relation = await FavoritePartner.findOne({
+    organizationId: session.orgId ?? "default",
     customerId: customerOid,
     partnerId: partnerOid,
     status: "APPLIED",
@@ -117,7 +118,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const customer = await User.findById(customerOid, {
+  const customer = await User.findOne({ _id: customerOid, organizationId: session.orgId ?? "default" }, {
     _id: 1,
     username: 1,
     name: 1,
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
       const row = await Ledger.create(
         [
           {
+            organizationId: session.orgId ?? "default",
             accountId: customerOid,
             userId: customerOid,
             actorId: partnerOid,

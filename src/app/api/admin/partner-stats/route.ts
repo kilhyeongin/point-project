@@ -30,8 +30,10 @@ export async function GET(req: Request) {
   const startDate = parseDateStart(searchParams.get("startDate"));
   const endDate = parseDateEnd(searchParams.get("endDate"));
 
+  const orgId = session.orgId ?? "default";
+
   try {
-    const partners = await User.find({ role: "PARTNER", status: "ACTIVE" })
+    const partners = await User.find({ organizationId: orgId, role: "PARTNER", status: "ACTIVE" })
       .select("_id username name")
       .lean();
 
@@ -39,12 +41,12 @@ export async function GET(req: Request) {
       partners.map(async (partner: any) => {
         const partnerId = new mongoose.Types.ObjectId(String(partner._id));
 
-        const likedCount = await FavoritePartner.countDocuments({ partnerId, status: "LIKED" });
-        const appliedCount = await FavoritePartner.countDocuments({ partnerId, status: "APPLIED" });
+        const likedCount = await FavoritePartner.countDocuments({ organizationId: orgId, partnerId, status: "LIKED" });
+        const appliedCount = await FavoritePartner.countDocuments({ organizationId: orgId, partnerId, status: "APPLIED" });
 
         const dateFilter = startDate && endDate ? { $gte: startDate, $lte: endDate } : undefined;
-        const issueMatch: any = { actorId: partnerId, type: "ISSUE" };
-        const useMatch: any = { actorId: partnerId, type: "USE" };
+        const issueMatch: any = { organizationId: orgId, actorId: partnerId, type: "ISSUE" };
+        const useMatch: any = { organizationId: orgId, actorId: partnerId, type: "USE" };
         if (dateFilter) {
           issueMatch.createdAt = dateFilter;
           useMatch.createdAt = dateFilter;
@@ -61,6 +63,7 @@ export async function GET(req: Request) {
         ]);
 
         const uniqueCustomerIds = await Ledger.distinct("userId", {
+          organizationId: orgId,
           actorId: partnerId,
           type: { $in: ["ISSUE", "USE"] },
           ...(dateFilter ? { createdAt: dateFilter } : {}),

@@ -67,7 +67,9 @@ export async function PATCH(
 
     await connectDB();
 
-    const user = await User.findById(userId);
+    const orgId = session.orgId ?? "default";
+
+    const user = await User.findOne({ _id: userId, organizationId: orgId });
 
     if (!user) {
       return NextResponse.json(

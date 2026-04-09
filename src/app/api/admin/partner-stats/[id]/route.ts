@@ -34,19 +34,21 @@ export async function GET(
   const startDate = parseDateStart(searchParams.get("startDate"));
   const endDate = parseDateEnd(searchParams.get("endDate"));
 
+  const orgId = session.orgId ?? "default";
+
   try {
     const partnerId = new mongoose.Types.ObjectId(id);
-    const partner = await User.findById(partnerId).select("_id username name").lean() as any;
+    const partner = await User.findOne({ _id: partnerId, organizationId: orgId }).select("_id username name").lean() as any;
     if (!partner) {
       return NextResponse.json({ ok: false, message: "제휴사 없음" }, { status: 404 });
     }
 
-    const likedCount = await FavoritePartner.countDocuments({ partnerId, status: "LIKED" });
-    const appliedCount = await FavoritePartner.countDocuments({ partnerId, status: "APPLIED" });
+    const likedCount = await FavoritePartner.countDocuments({ organizationId: orgId, partnerId, status: "LIKED" });
+    const appliedCount = await FavoritePartner.countDocuments({ organizationId: orgId, partnerId, status: "APPLIED" });
 
     const dateFilter = startDate && endDate ? { $gte: startDate, $lte: endDate } : undefined;
-    const issueMatch: any = { actorId: partnerId, type: "ISSUE" };
-    const useMatch: any = { actorId: partnerId, type: "USE" };
+    const issueMatch: any = { organizationId: orgId, actorId: partnerId, type: "ISSUE" };
+    const useMatch: any = { organizationId: orgId, actorId: partnerId, type: "USE" };
     if (dateFilter) {
       issueMatch.createdAt = dateFilter;
       useMatch.createdAt = dateFilter;
@@ -99,6 +101,7 @@ export async function GET(
 
     // 이용 고객 수 (기간 내 거래 있는 유니크 고객)
     const uniqueCustomerIds = await Ledger.distinct("userId", {
+      organizationId: orgId,
       actorId: partnerId,
       type: { $in: ["ISSUE", "USE"] },
       ...(dateFilter ? { createdAt: dateFilter } : {}),

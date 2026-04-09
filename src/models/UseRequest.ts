@@ -13,6 +13,12 @@ export type UseRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 const UseRequestSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      default: "default",
+      index: true,
+    },
+
     // 포인트를 사용하는 고객
     userId: {
       type: Schema.Types.ObjectId,

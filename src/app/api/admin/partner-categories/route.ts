@@ -61,9 +61,11 @@ export async function PATCH(req: NextRequest) {
 
     await connectDB();
 
+    const orgId = auth.session!.orgId ?? "default";
+
     await Promise.all(
       orders.map(({ id, sortOrder }) =>
-        PartnerCategoryMaster.findByIdAndUpdate(id, { $set: { sortOrder } })
+        PartnerCategoryMaster.findOneAndUpdate({ _id: id, organizationId: orgId }, { $set: { sortOrder } })
       )
     );
 
@@ -130,7 +132,9 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const exists = await PartnerCategoryMaster.findOne({ code }, { _id: 1 }).lean();
+    const orgId = auth.session!.orgId ?? "default";
+
+    const exists = await PartnerCategoryMaster.findOne({ organizationId: orgId, code }, { _id: 1 }).lean();
     if (exists) {
       return NextResponse.json(
         { ok: false, error: "이미 존재하는 카테고리 코드입니다." },
@@ -139,6 +143,7 @@ export async function POST(req: NextRequest) {
     }
 
     await PartnerCategoryMaster.create({
+      organizationId: orgId,
       code,
       name,
       description,

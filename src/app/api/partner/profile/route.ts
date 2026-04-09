@@ -57,8 +57,8 @@ export async function GET() {
 
     await connectDB();
 
-    const me = await User.findById(
-      session.uid,
+    const me = await User.findOne(
+      { _id: session.uid, organizationId: session.orgId ?? "default" },
       {
         username: 1,
         name: 1,
@@ -201,6 +201,7 @@ export async function PUT(req: NextRequest) {
     const updated = await User.findOneAndUpdate(
       {
         _id: session.uid,
+        organizationId: session.orgId ?? "default",
         role: "PARTNER",
       },
       {

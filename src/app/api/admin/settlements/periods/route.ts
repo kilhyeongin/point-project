@@ -45,8 +45,10 @@ export async function GET() {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   // 모든 정산 라인 조회
-  const docs = await Settlement.find({})
+  const docs = await Settlement.find({ organizationId: orgId })
     .sort({ periodKey: -1 })
     .lean();
 
