@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
 const CRON_PATHS = ["/api/admin/settlements/auto-close"];
-const CSRF_BYPASS_PATHS = ["/api/auth/logout"];
+const CSRF_BYPASS_PATHS = ["/api/auth/logout", "/api/platform/setup", "/api/platform/organizations"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -36,7 +36,7 @@ export function proxy(request: NextRequest) {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  const isScanPage = pathname.startsWith("/partner/scan");
+  const isScanPage = pathname.includes("/partner/scan");
   response.headers.set(
     "Permissions-Policy",
     isScanPage
