@@ -70,6 +70,7 @@ export type AccountItemDto = UserBriefDto & {
 
 // MongoDB 쿼리 필터 타입
 export type UserFilter = {
+  organizationId?: string;
   role?: UserRole | { $in: UserRole[] };
   status?: UserStatus | { $in: UserStatus[] };
   $or?: Array<Record<string, unknown>>;
