@@ -53,7 +53,7 @@ type PointHistoryItem = {
   customer: { username: string; name: string; socialProvider?: string | null } | null;
 };
 
-type CustomerFilter = "APPLIED" | "LIKED" | "COMPLETED";
+type CustomerFilter = "ALL" | "APPLIED" | "LIKED" | "COMPLETED";
 
 function onlyDigitsToNumber(v: string) {
   const digits = String(v ?? "").replace(/[^\d]/g, "");
