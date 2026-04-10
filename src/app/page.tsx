@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionFromCookies } from "@/lib/auth";
-import { connectDB } from "@/lib/db";
-import { getPartnerCategoryMasters } from "@/lib/partnerCategories";
+import { DEFAULT_PARTNER_CATEGORY_SEEDS } from "@/lib/partnerCategories";
 import LandingClient from "./LandingClient";
 
 const EXCLUDED_CODES = new Set(["VIDEO", "BOUQUET", "MC", "GIFT"]);
@@ -17,14 +16,8 @@ export default async function HomePage() {
     redirect(`/${orgId}/customer`);
   }
 
-  // 비로그인 → 랜딩페이지 (카테고리 목록 표시)
-  await connectDB();
-  const allCategories = await getPartnerCategoryMasters({
-    activeOnly: true,
-    visibleToCustomerOnly: true,
-  });
-
-  const categories = allCategories
+  // 비로그인 → 랜딩페이지 (기본 카테고리 목록 표시)
+  const categories = DEFAULT_PARTNER_CATEGORY_SEEDS
     .filter((cat) => !EXCLUDED_CODES.has(cat.code))
     .map((cat) => ({ code: cat.code, name: cat.name }));
 
