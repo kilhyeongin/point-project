@@ -12,18 +12,18 @@ import { Organization } from "@/models/Organization";
 import { User } from "@/models/User";
 import { validatePassword } from "@/lib/validatePassword";
 
-function generateSlug(length = 8): string {
+function generateSlug(length = 4): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
 async function uniqueSlug(): Promise<string> {
   for (let i = 0; i < 10; i++) {
-    const slug = generateSlug(8);
+    const slug = generateSlug(4);
     const exists = await Organization.findOne({ slug }, { _id: 1 }).lean();
     if (!exists) return slug;
   }
-  return generateSlug(12);
+  return generateSlug(6);
 }
 
 function getPlatformSecret() {
