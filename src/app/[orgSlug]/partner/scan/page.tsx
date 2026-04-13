@@ -45,8 +45,28 @@ export default function PartnerScanPage() {
     stopCamera();
     setCameraState("loading");
     setCameraError("");
+
+    async function tryGetStream(): Promise<MediaStream> {
+      // 안드로이드 크롬 첫 시도 실패 버그 대응 - 권한 허용 직후 첫 호출이 실패하는 known issue
+      // 최대 3회 시도 (즉시 → 500ms 후 → 1200ms 후)
+      const retryDelays = [500, 1200];
+      try {
+        return await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+      } catch (firstErr) {
+        for (const delay of retryDelays) {
+          await new Promise(r => setTimeout(r, delay));
+          try {
+            return await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+          } catch {
+            // 이번 시도 실패, 다음 시도로
+          }
+        }
+        throw firstErr;
+      }
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+      const stream = await tryGetStream();
       streamRef.current = stream;
       const video = videoRef.current;
       if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -106,8 +126,6 @@ export default function PartnerScanPage() {
         errorMsg = "카메라가 다른 앱에서 사용 중입니다. 다른 앱을 닫고 다시 시도해주세요.";
       } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
         errorMsg = "카메라를 찾을 수 없습니다. 기기에 카메라가 있는지 확인해주세요.";
-      } else if (name === "OverconstrainedError") {
-        errorMsg = "후면 카메라를 찾을 수 없습니다. 다시 시도해주세요.";
       } else {
         errorMsg = `카메라를 시작할 수 없습니다. (${name || msg}) 다시 시도해주세요.`;
       }
