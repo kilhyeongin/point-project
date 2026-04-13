@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { cn, formatUsername } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 
@@ -644,9 +644,6 @@ export default function AdminSettlementsPage() {
                           <div className="font-black text-foreground">
                             {l.counterparty?.name ?? "-"}
                           </div>
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            {l.counterparty ? formatUsername(l.counterparty.username) : ""}
-                          </div>
                           {(l.payoutRef || l.note) && (
                             <div className="mt-1 flex gap-2 flex-wrap">
                               {l.payoutRef && (
@@ -730,9 +727,6 @@ export default function AdminSettlementsPage() {
                           <div>
                             <div className="text-sm font-black text-foreground">
                               {l.counterparty?.name ?? "-"}
-                            </div>
-                            <div className="mt-0.5 text-xs text-muted-foreground">
-                              {l.counterparty ? formatUsername(l.counterparty.username) : ""}
                             </div>
                           </div>
                         </div>
@@ -895,9 +889,6 @@ export default function AdminSettlementsPage() {
                         <div>
                           <div className="font-black text-foreground">
                             {it.counterparty ? it.counterparty.name : "-"}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {it.counterparty ? formatUsername(it.counterparty.username) : ""}
                           </div>
                         </div>
                         <div className="text-right font-bold">{formatNumber(it.usedPoints)}P</div>
