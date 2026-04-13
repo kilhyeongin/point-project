@@ -25,7 +25,7 @@ export default function PartnerShellClient({ session, children }: Props) {
 
   const MENU_ITEMS = [
     { href: `/${orgSlug}/partner`, label: "대시보드", icon: LayoutDashboard },
-    { href: `/${orgSlug}/partner/scan`, label: "QR 스캔", icon: QrCode, mobileOnly: true },
+    { href: `/${orgSlug}/partner/scan`, label: "QR 스캔", icon: QrCode, mobileOnly: true, hardNav: true },
     { href: `/${orgSlug}/partner/appointments`, label: "예약", icon: CalendarCheck },
     { href: `/${orgSlug}/partner/profile`, label: "내 정보", icon: User },
     { href: `/${orgSlug}/partner/settlements`, label: "정산", icon: FileText },
@@ -199,16 +199,11 @@ export default function PartnerShellClient({ session, children }: Props) {
             {MENU_ITEMS.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
-                    active
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
+              const tabClass = `flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`;
+              const inner = (
+                <>
                   {active && (
                     <span
                       className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
@@ -217,7 +212,13 @@ export default function PartnerShellClient({ session, children }: Props) {
                   )}
                   <Icon className="w-5 h-5" />
                   <span className="text-[10px] font-bold">{item.label}</span>
-                </Link>
+                </>
+              );
+              // QR 스캔은 하드 네비게이션 (삼성 인터넷 카메라 권한 버그 대응)
+              return item.hardNav ? (
+                <a key={item.href} href={item.href} className={tabClass}>{inner}</a>
+              ) : (
+                <Link key={item.href} href={item.href} className={tabClass}>{inner}</Link>
               );
             })}
           </div>
