@@ -252,20 +252,20 @@ export default function AdminLedgerPage() {
             {/* 데스크탑 테이블 */}
             <div className="hidden md:block overflow-x-auto">
               <div className="min-w-[1300px]">
-                <div className="grid grid-cols-[90px_110px_170px_170px_170px_minmax(180px,1fr)_150px] gap-x-3 px-5 py-2.5 text-xs font-bold text-muted-foreground border-b border-border bg-muted/30">
+                <div className="grid grid-cols-[90px_110px_170px_170px_170px_150px_minmax(180px,1fr)] gap-x-3 px-5 py-2.5 text-xs font-bold text-muted-foreground border-b border-border bg-muted/30">
                   <div>유형</div>
                   <div>금액</div>
                   <div>지갑 주인</div>
                   <div>직접 대상</div>
                   <div>실행자</div>
-                  <div>메모</div>
                   <div>생성시각</div>
+                  <div>메모</div>
                 </div>
 
                 {items.map((it) => (
                   <div
                     key={it.id}
-                    className="grid grid-cols-[90px_110px_170px_170px_170px_minmax(180px,1fr)_150px] gap-x-3 px-5 py-3.5 border-b border-border last:border-0 text-sm items-start"
+                    className="grid grid-cols-[90px_110px_170px_170px_170px_150px_minmax(180px,1fr)] gap-x-3 px-5 py-3.5 border-b border-border last:border-0 text-sm items-start"
                   >
                     <div className="pt-0.5">
                       <Badge className={cn(
@@ -293,11 +293,11 @@ export default function AdminLedgerPage() {
                     <div className="overflow-hidden text-ellipsis whitespace-nowrap text-foreground">
                       {renderUserWithRole(it.actor)}
                     </div>
-                    <div className="text-foreground break-words leading-relaxed">
-                      {it.note || "-"}
-                    </div>
                     <div className="text-muted-foreground whitespace-nowrap">
                       {it.createdAt ? new Date(it.createdAt).toLocaleString() : "-"}
+                    </div>
+                    <div className="text-foreground break-words leading-relaxed">
+                      {it.note || "-"}
                     </div>
                   </div>
                 ))}
