@@ -60,7 +60,7 @@ function formatKrDateTime(v: unknown) {
   const min = String(d.getMinutes()).padStart(2, "0");
   const ampm = h < 12 ? "오전" : "오후";
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${yy}/${mm}/${dd} ${ampm}${h12}시${min}분`;
+  return `${yy}.${mm}.${dd} ${ampm}${h12}시${min}분`;
 }
 
 function startOfDay(d: Date) {
