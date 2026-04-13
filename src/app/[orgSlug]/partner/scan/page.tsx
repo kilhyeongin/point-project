@@ -46,7 +46,7 @@ export default function PartnerScanPage() {
     setCameraState("loading");
     setCameraError("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
       streamRef.current = stream;
       const video = videoRef.current;
       if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
