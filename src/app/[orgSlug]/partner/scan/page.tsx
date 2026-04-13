@@ -1,7 +1,7 @@
 // src/app/[orgSlug]/partner/scan/page.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QrCode } from "lucide-react";
@@ -16,11 +16,15 @@ function formatNumber(n: number) {
   return Number(n || 0).toLocaleString();
 }
 
+type CameraState = "idle" | "loading" | "active" | "error";
+
 export default function PartnerScanPage() {
   const [mode, setMode] = useState<"USE" | "GRANT">("USE");
   const [scanned, setScanned] = useState<string>("");
   const [amountText, setAmountText] = useState<string>("0");
   const [note, setNote] = useState<string>("");
+  const [cameraState, setCameraState] = useState<CameraState>("idle");
+  const [cameraError, setCameraError] = useState<string>("");
 
   const amountNum = useMemo(() => onlyDigitsToNumber(amountText), [amountText]);
 
@@ -34,10 +38,13 @@ export default function PartnerScanPage() {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     if (videoRef.current) { videoRef.current.srcObject = null; }
+    setCameraState("idle");
   }
 
   async function startCamera(onFound: (text: string) => void) {
     stopCamera();
+    setCameraState("loading");
+    setCameraError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
@@ -46,6 +53,7 @@ export default function PartnerScanPage() {
       video.srcObject = stream;
       await video.play();
       scanningRef.current = true;
+      setCameraState("active");
 
       const { Html5Qrcode } = await import("html5-qrcode");
       const decoder = new Html5Qrcode("qr-decoder-hidden");
@@ -89,18 +97,18 @@ export default function PartnerScanPage() {
 
       timerRef.current = setTimeout(scanFrame, 500);
     } catch (err) {
-      alert(`카메라 시작 실패: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      const isPermission = msg.includes("Permission") || msg.includes("NotAllowed") || msg.includes("denied");
+      setCameraError(isPermission ? "카메라 권한이 거부되었습니다. 브라우저 설정에서 카메라를 허용해주세요." : "카메라를 시작할 수 없습니다. 다시 시도해주세요.");
+      setCameraState("error");
     }
   }
 
-  useEffect(() => {
+  function handleStartCamera() {
     startCamera((text) => {
       setScanned(text);
-      alert("스캔 완료. 금액 입력 후 처리하세요.");
     });
-    return () => stopCamera();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
   async function submitRequest() {
     if (!scanned) { alert("먼저 QR을 스캔해주세요."); return; }
@@ -119,7 +127,7 @@ export default function PartnerScanPage() {
         alert(data?.message ?? (isGrant ? "적립 실패" : "사용 실패"));
         setScanned("");
         setAmountText("0");
-        startCamera((text) => { setScanned(text); alert("스캔 완료. 금액 입력 후 처리하세요."); });
+        startCamera((text) => setScanned(text));
         return;
       }
 
@@ -137,16 +145,12 @@ export default function PartnerScanPage() {
       setScanned("");
       setAmountText("0");
       setNote("");
-
-      startCamera((text) => {
-        setScanned(text);
-        alert("스캔 완료. 금액 입력 후 처리하세요.");
-      });
+      startCamera((text) => setScanned(text));
     } catch {
       alert("네트워크 오류가 발생했습니다.");
       setScanned("");
       setAmountText("0");
-      startCamera((text) => { setScanned(text); alert("스캔 완료. 금액 입력 후 처리하세요."); });
+      startCamera((text) => setScanned(text));
     }
   }
 
@@ -192,14 +196,60 @@ export default function PartnerScanPage() {
           <span className="text-sm font-bold text-foreground">QR 카메라</span>
         </div>
         <div id="qr-decoder-hidden" style={{ display: "none" }} />
+
+        {/* 카메라 대기 상태 */}
+        {cameraState === "idle" && (
+          <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-4 py-10">
+            <QrCode className="w-12 h-12 text-muted-foreground/40" />
+            <Button
+              type="button"
+              onClick={handleStartCamera}
+              className="h-12 px-8 text-base font-bold"
+              style={{ background: "oklch(0.52 0.27 264)" }}
+            >
+              QR 스캔 시작
+            </Button>
+            <p className="text-xs text-muted-foreground">버튼을 누르면 카메라 권한을 요청합니다</p>
+          </div>
+        )}
+
+        {/* 카메라 로딩 */}
+        {cameraState === "loading" && (
+          <div className="w-full rounded-xl bg-muted flex items-center justify-center py-10">
+            <p className="text-sm text-muted-foreground font-semibold">카메라 시작 중...</p>
+          </div>
+        )}
+
+        {/* 카메라 에러 */}
+        {cameraState === "error" && (
+          <div className="w-full rounded-xl bg-red-50 border border-red-200 flex flex-col items-center justify-center gap-3 py-8 px-4">
+            <p className="text-sm text-red-600 font-semibold text-center">{cameraError}</p>
+            <Button type="button" onClick={handleStartCamera} variant="outline" className="h-10 px-6 text-sm font-bold">
+              다시 시도
+            </Button>
+          </div>
+        )}
+
+        {/* 카메라 활성 */}
         <video
           ref={videoRef}
           autoPlay
           muted
           playsInline
-          className="w-full rounded-xl"
+          className={`w-full rounded-xl ${cameraState === "active" ? "block" : "hidden"}`}
           style={{ minHeight: "200px", background: "#000" }}
         />
+
+        {/* 스캔 완료 후 다시 스캔 버튼 */}
+        {scanned && cameraState === "idle" && (
+          <button
+            type="button"
+            onClick={handleStartCamera}
+            className="mt-3 w-full h-9 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
+          >
+            다시 스캔
+          </button>
+        )}
       </div>
 
       {/* Form */}
