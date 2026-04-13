@@ -47,22 +47,30 @@ export default function PartnerScanPage() {
     setCameraError("");
 
     async function tryGetStream(): Promise<MediaStream> {
-      // 안드로이드 크롬 첫 시도 실패 버그 대응 - 권한 허용 직후 첫 호출이 실패하는 known issue
-      // 최대 3회 시도 (즉시 → 500ms 후 → 1200ms 후)
-      const retryDelays = [500, 1200];
-      try {
-        return await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
-      } catch (firstErr) {
-        for (const delay of retryDelays) {
-          await new Promise(r => setTimeout(r, delay));
-          try {
-            return await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
-          } catch {
-            // 이번 시도 실패, 다음 시도로
-          }
+      // 안드로이드 크롬 첫 호출 실패 버그 대응
+      // 후면 카메라 요청으로 최대 5회, 실패 시 제약 없이 2회 추가 시도
+      const backConstraint = { video: { facingMode: { ideal: "environment" } } };
+      const anyConstraint = { video: true };
+      let lastErr: unknown;
+
+      for (let i = 0; i < 5; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, 600));
+        try {
+          return await navigator.mediaDevices.getUserMedia(backConstraint);
+        } catch (e) {
+          lastErr = e;
         }
-        throw firstErr;
       }
+      // facingMode 제약 없이 재시도
+      for (let i = 0; i < 2; i++) {
+        await new Promise(r => setTimeout(r, 600));
+        try {
+          return await navigator.mediaDevices.getUserMedia(anyConstraint);
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      throw lastErr;
     }
 
     try {
@@ -245,8 +253,9 @@ export default function PartnerScanPage() {
 
         {/* 카메라 로딩 */}
         {cameraState === "loading" && (
-          <div className="w-full rounded-xl bg-muted flex items-center justify-center py-10">
-            <p className="text-sm text-muted-foreground font-semibold">카메라 시작 중...</p>
+          <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-2 py-10">
+            <p className="text-sm text-muted-foreground font-semibold">카메라 여는 중...</p>
+            <p className="text-xs text-muted-foreground/70">권한 요청 중이면 허용을 눌러주세요</p>
           </div>
         )}
 
