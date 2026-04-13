@@ -128,8 +128,8 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Audit log 기록 (트랜잭션 외부에서 별도 저장)
-    await AuditLog.create({
+    // Audit log (실패해도 이미 커밋된 트랜잭션에 영향 없음 — Ledger에 actorId 기록됨)
+    AuditLog.create({
       adminId: adminOid,
       adminUsername: session.username,
       action: "ADJUST",
@@ -137,6 +137,8 @@ export async function POST(req: NextRequest) {
       targetUsername: target.username,
       detail: { amount: amountNum, note },
       ip,
+    }).catch((auditErr) => {
+      console.error("[AUDIT_LOG_FAIL] ADJUST", auditErr);
     });
 
     return NextResponse.json(result);

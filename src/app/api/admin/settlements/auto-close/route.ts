@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
   for (const partner of partners) {
     try {
-      const result = await generateSettlement(partner._id, periodKey);
+      const result = await generateSettlement(partner._id, periodKey, cronOrgId);
       successCount++;
       totalUsedPoints += result.usedPoints;
       totalIssuedPoints += result.issuedPoints;

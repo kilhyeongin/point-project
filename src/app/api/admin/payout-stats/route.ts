@@ -64,7 +64,7 @@ export async function GET(req: Request) {
           {
             organizationId: orgId,
             type: "ISSUE",
-            actorId: partner._id,
+            accountId: partner._id,
             createdAt: {
               $gte: startDate,
               $lte: endDate,
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
 
         const issueCount = rows.length;
         const issueTotal = rows.reduce(
-          (sum: number, row: any) => sum + Number(row.amount ?? 0),
+          (sum: number, row: any) => sum + Math.abs(Number(row.amount ?? 0)),
           0
         );
         const avgIssue =

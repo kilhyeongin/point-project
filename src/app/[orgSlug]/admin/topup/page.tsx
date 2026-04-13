@@ -496,7 +496,7 @@ export default function AdminTopupPage() {
           <h1 className="page-title">관리자 수동 충전</h1>
           <div className="page-sub">
             총괄관리자가 제휴사 계정에 포인트를 직접 충전하는 화면입니다.
-            충전 요청 승인과 별개로 즉시 반영되며 원장에는 충전으로 기록됩니다.
+            충전 요청 승인과 별개로 즉시 반영되며 거래 내역에 충전으로 기록됩니다.
           </div>
         </div>
 

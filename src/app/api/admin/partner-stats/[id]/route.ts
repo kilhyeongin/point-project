@@ -6,6 +6,8 @@ import { User } from "@/models/User";
 import { FavoritePartner } from "@/models/FavoritePartner";
 import { Ledger } from "@/models/Ledger";
 
+const PAGE_SIZE = 20;
+
 function parseDateStart(value: string | null) {
   if (!value) return null;
   const d = new Date(`${value}T00:00:00.000`);
@@ -33,12 +35,14 @@ export async function GET(
   const { searchParams } = new URL(req.url);
   const startDate = parseDateStart(searchParams.get("startDate"));
   const endDate = parseDateEnd(searchParams.get("endDate"));
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
 
   const orgId = session.orgId ?? "default";
 
   try {
     const partnerId = new mongoose.Types.ObjectId(id);
-    const partner = await User.findOne({ _id: partnerId, organizationId: orgId }).select("_id username name").lean() as any;
+    const partner = await User.findOne({ _id: partnerId, organizationId: orgId })
+      .select("_id username name").lean() as any;
     if (!partner) {
       return NextResponse.json({ ok: false, message: "제휴사 없음" }, { status: 404 });
     }
@@ -47,73 +51,85 @@ export async function GET(
     const appliedCount = await FavoritePartner.countDocuments({ organizationId: orgId, partnerId, status: "APPLIED" });
 
     const dateFilter = startDate && endDate ? { $gte: startDate, $lte: endDate } : undefined;
-    const issueMatch: any = { organizationId: orgId, actorId: partnerId, type: "ISSUE" };
-    const useMatch: any = { organizationId: orgId, actorId: partnerId, type: "USE" };
+
+    // ISSUE: 제휴사 차감행만 (accountId=파트너) → 중복 방지
+    // USE: 고객이 이 제휴사에서 사용한 행 (counterpartyId=파트너)
+    const issueMatch: any = { organizationId: orgId, accountId: partnerId, type: "ISSUE" };
+    const useMatch: any = { organizationId: orgId, counterpartyId: partnerId, type: "USE" };
     if (dateFilter) {
       issueMatch.createdAt = dateFilter;
       useMatch.createdAt = dateFilter;
     }
 
-    // 월별 지급 집계
-    const issueMonthly = await Ledger.aggregate([
-      { $match: issueMatch },
-      {
-        $group: {
-          _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
-          count: { $sum: 1 },
-          total: { $sum: "$amount" },
-        },
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1 } },
-    ]);
+    const baseMatch: any = {
+      organizationId: orgId,
+      $or: [
+        { accountId: partnerId, type: "ISSUE" },
+        { counterpartyId: partnerId, type: "USE" },
+      ],
+      ...(dateFilter ? { createdAt: dateFilter } : {}),
+    };
 
-    // 월별 차감 집계
-    const useMonthly = await Ledger.aggregate([
-      { $match: useMatch },
+    // 요약 집계
+    const summaryAgg = await Ledger.aggregate([
+      { $match: baseMatch },
       {
         $group: {
-          _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+          _id: "$type",
           count: { $sum: 1 },
           total: { $sum: { $abs: "$amount" } },
         },
       },
-      { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
-    // 월별 데이터 병합
-    const monthMap: Record<string, { issueCount: number; issueTotal: number; useCount: number; useTotal: number }> = {};
-    for (const row of issueMonthly) {
-      const key = `${row._id.year}-${String(row._id.month).padStart(2, "0")}`;
-      if (!monthMap[key]) monthMap[key] = { issueCount: 0, issueTotal: 0, useCount: 0, useTotal: 0 };
-      monthMap[key].issueCount = row.count;
-      monthMap[key].issueTotal = row.total;
-    }
-    for (const row of useMonthly) {
-      const key = `${row._id.year}-${String(row._id.month).padStart(2, "0")}`;
-      if (!monthMap[key]) monthMap[key] = { issueCount: 0, issueTotal: 0, useCount: 0, useTotal: 0 };
-      monthMap[key].useCount = row.count;
-      monthMap[key].useTotal = row.total;
-    }
+    const issueRow = summaryAgg.find((r) => r._id === "ISSUE");
+    const useRow = summaryAgg.find((r) => r._id === "USE");
 
-    const monthly = Object.entries(monthMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, data]) => ({ month, ...data }));
-
-    // 이용 고객 수 (기간 내 거래 있는 유니크 고객)
     const uniqueCustomerIds = await Ledger.distinct("userId", {
       organizationId: orgId,
-      actorId: partnerId,
-      type: { $in: ["ISSUE", "USE"] },
+      accountId: partnerId,
+      type: "ISSUE",
       ...(dateFilter ? { createdAt: dateFilter } : {}),
     });
 
     const summary = {
-      issueCount: monthly.reduce((s, m) => s + m.issueCount, 0),
-      issueTotal: monthly.reduce((s, m) => s + m.issueTotal, 0),
-      useCount: monthly.reduce((s, m) => s + m.useCount, 0),
-      useTotal: monthly.reduce((s, m) => s + m.useTotal, 0),
+      issueCount: issueRow?.count ?? 0,
+      issueTotal: issueRow?.total ?? 0,
+      useCount: useRow?.count ?? 0,
+      useTotal: useRow?.total ?? 0,
       uniqueCustomers: uniqueCustomerIds.filter(Boolean).length,
     };
+
+    // 페이지네이션 거래 내역
+    const total = await Ledger.countDocuments(baseMatch);
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+
+    const ledgerDocs = await Ledger.find(baseMatch)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * PAGE_SIZE)
+      .limit(PAGE_SIZE)
+      .lean() as any[];
+
+    // 고객 정보 일괄 조회
+    const userIds = [...new Set(ledgerDocs.map((d) => String(d.userId)).filter(Boolean))]
+      .map((uid) => new mongoose.Types.ObjectId(uid));
+
+    const users = userIds.length > 0
+      ? await User.find({ _id: { $in: userIds } }, { username: 1, name: 1 }).lean() as any[]
+      : [];
+    const userMap = new Map(users.map((u) => [String(u._id), u]));
+
+    const transactions = ledgerDocs.map((doc) => {
+      const user = doc.userId ? userMap.get(String(doc.userId)) : null;
+      return {
+        id: String(doc._id),
+        type: doc.type,
+        amount: Math.abs(Number(doc.amount ?? 0)),
+        memo: doc.memo ?? "",
+        createdAt: doc.createdAt,
+        customer: user ? { name: user.name ?? "", username: user.username ?? "" } : null,
+      };
+    });
 
     return NextResponse.json({
       ok: true,
@@ -125,7 +141,10 @@ export async function GET(
         appliedCount,
       },
       summary,
-      monthly,
+      transactions,
+      total,
+      page,
+      totalPages,
     });
   } catch (error) {
     console.error("[ADMIN_PARTNER_STATS_DETAIL_ERROR]", error);

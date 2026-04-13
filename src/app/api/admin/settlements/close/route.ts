@@ -119,20 +119,21 @@ export async function POST(req: Request) {
         },
       ]).session(dbSession);
 
-      // ----- ISSUE 집계 -----
+      // ----- ISSUE 집계 (파트너 차감행만: accountId=파트너, amount<0) -----
       const issueGrouped = await Ledger.aggregate([
         {
           $match: {
             organizationId: orgId,
             type: "ISSUE",
-            actorId: { $ne: null },
+            accountId: { $ne: null },
+            amount: { $lt: 0 },
             createdAt: { $gte: fromDate, $lte: toDate },
           },
         },
         {
           $group: {
-            _id: "$actorId",
-            issuedPoints: { $sum: "$amount" },
+            _id: "$accountId",
+            issuedPoints: { $sum: { $abs: "$amount" } },
             issueCount: { $sum: 1 },
             visitorSet: { $addToSet: "$userId" },
           },

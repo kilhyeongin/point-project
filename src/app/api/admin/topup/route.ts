@@ -135,8 +135,8 @@ export async function POST(req: Request & { ip?: string }) {
       };
     });
 
-    // Audit log
-    await AuditLog.create({
+    // Audit log (실패해도 이미 커밋된 트랜잭션에 영향 없음 — Ledger에 actorId 기록됨)
+    AuditLog.create({
       adminId: adminId,
       adminUsername: session.username,
       action: "TOPUP",
@@ -144,6 +144,8 @@ export async function POST(req: Request & { ip?: string }) {
       targetUsername: target.username,
       detail: { amount: amountNum, note },
       ip,
+    }).catch((auditErr) => {
+      console.error("[AUDIT_LOG_FAIL] TOPUP", auditErr);
     });
 
     return NextResponse.json(result);

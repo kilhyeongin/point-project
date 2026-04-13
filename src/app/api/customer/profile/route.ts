@@ -44,6 +44,13 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const { email, phone, address, detailAddress } = body;
 
+  if (email !== undefined && email !== "") {
+    const emailStr = String(email).trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+      return NextResponse.json({ ok: false, message: "이메일 형식이 올바르지 않습니다." }, { status: 400 });
+    }
+  }
+
   await connectDB();
 
   await User.findOneAndUpdate({ _id: session.uid, organizationId: session.orgId ?? "default" }, {

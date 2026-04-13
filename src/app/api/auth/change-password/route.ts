@@ -3,8 +3,17 @@ import bcrypt from "bcryptjs";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(`change-pw:${ip}`, 5, 60 * 1000)) {
+    return NextResponse.json(
+      { ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { status: 429 }
+    );
+  }
+
   const session = await getSessionFromCookies();
 
   if (!session) {

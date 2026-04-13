@@ -26,13 +26,13 @@ export type SessionPayload = {
 // JWT 생성 (1일 유효)
 export function signSession(payload: Omit<SessionPayload, "jti">) {
   const jti = crypto.randomUUID();
-  return jwt.sign({ ...payload, jti }, JWT_SECRET, { expiresIn: "1d" });
+  return jwt.sign({ ...payload, jti }, JWT_SECRET, { expiresIn: "1d", algorithm: "HS256" });
 }
 
 // JWT 검증 (블랙리스트는 별도로 확인)
 export function verifySession(token: string): SessionPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as SessionPayload;
+    return jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as SessionPayload;
   } catch {
     return null;
   }

@@ -74,22 +74,21 @@ export async function generateSettlement(
 
   const { fromDate, toDate, fromStr, toStr } = periodKeyToDateRange(periodKey);
 
-  // ----- 1. Ledger ISSUE 집계 -----
-  // actorId=partnerId, userId≠partnerId, type=ISSUE, createdAt in range
+  // ----- 1. Ledger ISSUE 집계 (파트너 차감행만: accountId=파트너, amount<0) -----
   const issueAgg = await Ledger.aggregate([
     {
       $match: {
         organizationId: orgId,
-        actorId: partnerOid,
-        userId: { $ne: partnerOid },
+        accountId: partnerOid,
         type: "ISSUE",
+        amount: { $lt: 0 },
         createdAt: { $gte: fromDate, $lte: toDate },
       },
     },
     {
       $group: {
         _id: null,
-        issuedPoints: { $sum: "$amount" },
+        issuedPoints: { $sum: { $abs: "$amount" } },
         issueCount: { $sum: 1 },
         visitorSet: { $addToSet: "$userId" },
       },
@@ -99,18 +98,15 @@ export async function generateSettlement(
   const issuedPoints = Number(issueAgg[0]?.issuedPoints ?? 0);
   const issueCount = Number(issueAgg[0]?.issueCount ?? 0);
   const visitorCount = Array.isArray(issueAgg[0]?.visitorSet)
-    ? issueAgg[0].visitorSet.length
+    ? issueAgg[0].visitorSet.filter(Boolean).length
     : 0;
 
-  // ----- 2. Ledger USE 집계 -----
-  // actorId=partnerId, userId≠partnerId, type=USE, createdAt in range
-  // USE는 amount가 음수(고객 차감)이므로 abs 처리
+  // ----- 2. Ledger USE 집계 (counterpartyId=파트너인 고객 차감행) -----
   const useAgg = await Ledger.aggregate([
     {
       $match: {
         organizationId: orgId,
-        actorId: partnerOid,
-        userId: { $ne: partnerOid },
+        counterpartyId: partnerOid,
         type: "USE",
         createdAt: { $gte: fromDate, $lte: toDate },
       },
@@ -126,33 +122,9 @@ export async function generateSettlement(
   ]);
 
   // USE가 actorId=partnerId로 기록되지 않는 경우 counterpartyId 기준으로 fallback
-  let usedPoints = Number(useAgg[0]?.usedPointsSum ?? 0);
-  let useCount = Number(useAgg[0]?.useCount ?? 0);
-  let lastUsedAt: Date | null = useAgg[0]?.lastUsedAt ?? null;
-
-  if (useCount === 0) {
-    const useAgg2 = await Ledger.aggregate([
-      {
-        $match: {
-          organizationId: orgId,
-          counterpartyId: partnerOid,
-          type: "USE",
-          createdAt: { $gte: fromDate, $lte: toDate },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          usedPointsSum: { $sum: { $abs: "$amount" } },
-          useCount: { $sum: 1 },
-          lastUsedAt: { $max: "$createdAt" },
-        },
-      },
-    ]);
-    usedPoints = Number(useAgg2[0]?.usedPointsSum ?? 0);
-    useCount = Number(useAgg2[0]?.useCount ?? 0);
-    lastUsedAt = useAgg2[0]?.lastUsedAt ?? null;
-  }
+  const usedPoints = Number(useAgg[0]?.usedPointsSum ?? 0);
+  const useCount = Number(useAgg[0]?.useCount ?? 0);
+  const lastUsedAt: Date | null = useAgg[0]?.lastUsedAt ?? null;
 
   // ----- 3. FavoritePartner 계약 집계 -----
   const completedCount = await FavoritePartner.countDocuments({

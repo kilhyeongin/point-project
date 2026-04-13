@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { Organization } from "@/models/Organization";
 import { signSession, setSessionCookie } from "@/lib/auth";
 
 interface KakaoTokenResponse {
@@ -65,26 +66,35 @@ export async function GET(req: Request) {
   cookieStore.delete("kakao_oauth_state");
   cookieStore.delete("kakao_oauth_org");
 
+  const loginRedirectBase = orgSlug === "default" ? "/login" : `/${orgSlug}/login`;
+
   if (error || !code || !state) {
-    return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_denied`, baseUrl));
+    return NextResponse.redirect(new URL(`${loginRedirectBase}?error=kakao_denied`, baseUrl));
   }
 
   if (!savedState || savedState !== state) {
-    return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_state`, baseUrl));
+    return NextResponse.redirect(new URL(`${loginRedirectBase}?error=kakao_state`, baseUrl));
   }
 
   try {
     const accessToken = await getKakaoToken(code);
     if (!accessToken) {
-      return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_token`, baseUrl));
+      return NextResponse.redirect(new URL(`${loginRedirectBase}?error=kakao_token`, baseUrl));
     }
 
     const profile = await getKakaoProfile(accessToken);
     if (!profile) {
-      return NextResponse.redirect(new URL(`/${orgSlug}/login?error=kakao_profile`, baseUrl));
+      return NextResponse.redirect(new URL(`${loginRedirectBase}?error=kakao_profile`, baseUrl));
     }
 
     await connectDB();
+
+    // orgSlug가 "default"이거나 org가 없으면 첫 번째 활성 org로 대체
+    let resolvedOrgSlug = orgSlug;
+    if (orgSlug === "default") {
+      const activeOrg = await Organization.findOne({ isActive: true }, { slug: 1 }).lean();
+      if (activeOrg) resolvedOrgSlug = activeOrg.slug;
+    }
 
     const kakaoId = String(profile.id);
     const kakaoEmail = profile.kakao_account?.email?.toLowerCase() ?? "";
@@ -121,6 +131,7 @@ export async function GET(req: Request) {
         name: kakaoName,
         role: "CUSTOMER",
         status: "ACTIVE",
+        organizationId: resolvedOrgSlug,
         socialAccounts: [{ provider: "kakao", providerId: kakaoId }],
         customerProfile: {
           phone: kakaoPhone,
@@ -131,7 +142,7 @@ export async function GET(req: Request) {
     }
 
     if (user.status === "BLOCKED") {
-      return NextResponse.redirect(new URL(`/${orgSlug}/login?error=blocked`, baseUrl));
+      return NextResponse.redirect(new URL(`/${resolvedOrgSlug}/login?error=blocked`, baseUrl));
     }
 
     const token = signSession({
@@ -139,14 +150,14 @@ export async function GET(req: Request) {
       role: user.role,
       username: user.username,
       name: user.name,
-      orgId: user.organizationId ?? "default",
+      orgId: user.organizationId ?? resolvedOrgSlug,
     });
 
     await setSessionCookie(token);
 
-    return NextResponse.redirect(new URL(`/${user.organizationId ?? orgSlug}/customer`, baseUrl));
+    return NextResponse.redirect(new URL(`/${user.organizationId ?? resolvedOrgSlug}/customer`, baseUrl));
   } catch (err) {
     console.error("[KAKAO_CALLBACK_ERROR]", err);
-    return NextResponse.redirect(new URL(`/${orgSlug}/login?error=server`, baseUrl));
+    return NextResponse.redirect(new URL(`${loginRedirectBase}?error=server`, baseUrl));
   }
 }

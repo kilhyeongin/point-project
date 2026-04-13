@@ -19,11 +19,13 @@ export async function GET() {
 
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
+  // ISSUE: 파트너 차감행(accountId=파트너), USE: 고객 차감 중 counterpartyId=파트너인 행
   const rows = await Ledger.find({
     organizationId: session.orgId ?? "default",
-    actorId: partnerId,
-    userId: { $ne: partnerId },
-    type: { $in: ["ISSUE", "USE"] },
+    $or: [
+      { accountId: partnerId, type: "ISSUE" },
+      { counterpartyId: partnerId, type: "USE" },
+    ],
   })
     .sort({ createdAt: -1 })
     .limit(50)

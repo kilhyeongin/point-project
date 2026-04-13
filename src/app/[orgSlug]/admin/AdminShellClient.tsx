@@ -31,7 +31,7 @@ export default function AdminShellClient({ session, children }: Props) {
   const MENU_GROUPS: MenuGroup[] = [
     {
       key: "ops",
-      label: "운영",
+      label: "대시보드",
       items: [
         { href: `/${orgSlug}/admin`, label: "대시보드" },
         { href: `/${orgSlug}/admin/accounts`, label: "계정 잔액" },
@@ -42,9 +42,9 @@ export default function AdminShellClient({ session, children }: Props) {
       key: "finance",
       label: "거래·정산",
       items: [
-        { href: `/${orgSlug}/admin/ledger`, label: "원장 조회" },
-        { href: `/${orgSlug}/admin/settlements`, label: "정산 관리" },
-        { href: `/${orgSlug}/admin/payout-stats`, label: "지급 현황" },
+        { href: `/${orgSlug}/admin/settlements`, label: "거래처 정산관리" },
+        { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 현황" },
+        { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
       ],
     },
     {

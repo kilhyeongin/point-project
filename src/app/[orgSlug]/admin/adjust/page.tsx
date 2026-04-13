@@ -492,7 +492,7 @@ export default function AdminAdjustPage() {
           <h1 className="page-title">관리자 포인트 조정</h1>
           <div className="page-sub">
             관리자 전용 수동 조정 화면입니다. 양수는 증액, 음수는 차감으로 기록되며
-            원장에는 조정으로 저장됩니다.
+            거래 내역에 조정으로 저장됩니다.
           </div>
         </div>
 

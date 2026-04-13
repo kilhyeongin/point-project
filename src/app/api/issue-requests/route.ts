@@ -159,7 +159,7 @@ export async function POST(req: Request) {
           {
             organizationId: session.orgId ?? "default",
             accountId: requesterId,
-            userId: requesterId,
+            userId: customerId,
             actorId: requesterId,
             counterpartyId: customerId,
             type: "ISSUE",

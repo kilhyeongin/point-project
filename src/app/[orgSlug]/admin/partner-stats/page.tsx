@@ -16,18 +16,22 @@ type Item = {
   uniqueCustomers: number;
 };
 
-type MonthlyRow = {
-  month: string;
-  issueCount: number;
-  issueTotal: number;
-  useCount: number;
-  useTotal: number;
+type TxRow = {
+  id: string;
+  type: "ISSUE" | "USE";
+  amount: number;
+  memo: string;
+  createdAt: string;
+  customer: { name: string; username: string } | null;
 };
 
 type DetailData = {
   partner: { id: string; username: string; name: string; likedCount: number; appliedCount: number };
   summary: { issueCount: number; issueTotal: number; useCount: number; useTotal: number; uniqueCustomers: number };
-  monthly: MonthlyRow[];
+  transactions: TxRow[];
+  total: number;
+  page: number;
+  totalPages: number;
 };
 
 function fmt(n: number) {
@@ -62,6 +66,7 @@ export default function PartnerStatsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DetailData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailPage, setDetailPage] = useState(1);
   const [sortCol, setSortCol] = useState<"issueTotal" | "useTotal" | "issueCount" | "useCount" | "uniqueCustomers">("issueTotal");
 
   function applyPreset(p: Preset) {
@@ -88,20 +93,27 @@ export default function PartnerStatsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function openDetail(partnerId: string) {
+  async function openDetail(partnerId: string, page = 1) {
     setSelectedId(partnerId);
     setDetail(null);
     setDetailLoading(true);
+    setDetailPage(page);
     try {
       const params = new URLSearchParams();
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
+      params.set("page", String(page));
       const res = await fetch(`/api/admin/partner-stats/${partnerId}?${params}`, { cache: "no-store" });
       const data = await res.json();
       if (data.ok) setDetail(data);
     } finally {
       setDetailLoading(false);
     }
+  }
+
+  async function goDetailPage(page: number) {
+    if (!selectedId) return;
+    await openDetail(selectedId, page);
   }
 
   const sorted = useMemo(() => {
@@ -129,7 +141,7 @@ export default function PartnerStatsPage() {
     { key: "issueCount", label: "지급건수순" },
     { key: "useTotal", label: "차감금액순" },
     { key: "useCount", label: "차감건수순" },
-    { key: "uniqueCustomers", label: "이용고객순" },
+    { key: "uniqueCustomers", label: "계약고객순" },
   ];
 
   return (
@@ -272,7 +284,7 @@ export default function PartnerStatsPage() {
                       <th className="text-left py-2.5 px-3 text-xs font-black text-muted-foreground">제휴사</th>
                       <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">잠재고객</th>
                       <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">신청고객</th>
-                      <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">이용고객</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">계약고객</th>
                       <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">지급 건수</th>
                       <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">지급 포인트</th>
                       <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">차감 건수</th>
@@ -338,7 +350,7 @@ export default function PartnerStatsPage() {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         {[
                           { label: "잠재고객", value: `${fmt(it.likedCount)}명` },
-                          { label: "이용고객", value: `${fmt(it.uniqueCustomers)}명`, highlight: true },
+                          { label: "계약고객", value: `${fmt(it.uniqueCustomers)}명`, highlight: true },
                           { label: "지급 건수", value: `${fmt(it.issueCount)}건` },
                           { label: "지급 포인트", value: `${fmt(it.issueTotal)}P`, bold: true },
                           { label: "차감 건수", value: `${fmt(it.useCount)}건` },
@@ -388,34 +400,90 @@ export default function PartnerStatsPage() {
                   </button>
                 </div>
 
-                {/* 월별 내역 */}
+                {/* 거래 내역 */}
                 <div>
-                  <div className="text-xs font-black text-muted-foreground mb-2">월별 내역</div>
-                  {detail.monthly.length === 0 ? (
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-black text-muted-foreground">전체 거래 내역</div>
+                    <div className="text-xs text-muted-foreground">총 {fmt(detail.total)}건</div>
+                  </div>
+                  {detail.transactions.length === 0 ? (
                     <div className="text-xs text-muted-foreground text-center py-4">내역 없음</div>
                   ) : (
                     <div className="space-y-1">
-                      {detail.monthly.map((m) => (
-                        <div key={m.month} className="border border-border/50 rounded-xl px-3 py-2.5">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-black text-foreground">{m.month}</span>
+                      {detail.transactions.map((tx) => (
+                        <div key={tx.id} className="border border-border/50 rounded-xl px-3 py-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                                tx.type === "ISSUE"
+                                  ? "bg-blue-50 text-blue-600"
+                                  : "bg-orange-50 text-orange-600"
+                              }`}>
+                                {tx.type === "ISSUE" ? "지급" : "차감"}
+                              </span>
+                              <span className="text-xs font-black text-foreground">{fmt(tx.amount)}P</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(tx.createdAt).toLocaleDateString("ko-KR")}
+                            </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-x-3 text-xs">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">지급</span>
-                              <span className="font-black">{fmt(m.issueTotal)}P</span>
+                          {tx.customer && (
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              고객: {tx.customer.name}
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">차감</span>
-                              <span className="font-bold">{fmt(m.useTotal)}P</span>
-                            </div>
-                            <div className="flex justify-between text-muted-foreground/70">
-                              <span>{fmt(m.issueCount)}건</span>
-                              <span>{fmt(m.useCount)}건</span>
-                            </div>
-                          </div>
+                          )}
+                          {tx.memo && (
+                            <div className="mt-0.5 text-[11px] text-muted-foreground truncate">{tx.memo}</div>
+                          )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* 페이지네이션 */}
+                  {detail.totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-1 mt-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => goDetailPage(detailPage - 1)}
+                        disabled={detailPage <= 1}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-border text-xs font-bold disabled:opacity-30 hover:bg-muted transition-colors"
+                      >
+                        ‹
+                      </button>
+                      {Array.from({ length: detail.totalPages }, (_, i) => i + 1)
+                        .filter((p) => p === 1 || p === detail.totalPages || Math.abs(p - detailPage) <= 1)
+                        .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                          if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((p, i) =>
+                          p === "..." ? (
+                            <span key={`e${i}`} className="text-xs text-muted-foreground px-1">…</span>
+                          ) : (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => goDetailPage(p as number)}
+                              className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                                detailPage === p
+                                  ? "bg-foreground text-background"
+                                  : "border border-border hover:bg-muted"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          )
+                        )}
+                      <button
+                        type="button"
+                        onClick={() => goDetailPage(detailPage + 1)}
+                        disabled={detailPage >= detail.totalPages}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-border text-xs font-bold disabled:opacity-30 hover:bg-muted transition-colors"
+                      >
+                        ›
+                      </button>
                     </div>
                   )}
                 </div>
@@ -449,27 +517,83 @@ export default function PartnerStatsPage() {
             </div>
 
             <div>
-              <div className="text-xs font-black text-muted-foreground mb-2">월별 내역</div>
-              <div className="space-y-2">
-                {detail.monthly.map((m) => (
-                  <div key={m.month} className="border border-border/50 rounded-xl px-3 py-2.5">
-                    <div className="text-xs font-black mb-1">{m.month}</div>
-                    <div className="grid grid-cols-2 gap-x-4 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">지급</span>
-                        <span className="font-black">{fmt(m.issueTotal)}P ({fmt(m.issueCount)}건)</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-black text-muted-foreground">전체 거래 내역</div>
+                <div className="text-xs text-muted-foreground">총 {fmt(detail.total)}건</div>
+              </div>
+              <div className="space-y-1">
+                {detail.transactions.map((tx) => (
+                  <div key={tx.id} className="border border-border/50 rounded-xl px-3 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                          tx.type === "ISSUE" ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"
+                        }`}>
+                          {tx.type === "ISSUE" ? "지급" : "차감"}
+                        </span>
+                        <span className="text-xs font-black text-foreground">{fmt(tx.amount)}P</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">차감</span>
-                        <span className="font-bold">{fmt(m.useTotal)}P ({fmt(m.useCount)}건)</span>
-                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(tx.createdAt).toLocaleDateString("ko-KR")}
+                      </span>
                     </div>
+                    {tx.customer && (
+                      <div className="mt-1 text-[11px] text-muted-foreground">고객: {tx.customer.name}</div>
+                    )}
+                    {tx.memo && (
+                      <div className="mt-0.5 text-[11px] text-muted-foreground truncate">{tx.memo}</div>
+                    )}
                   </div>
                 ))}
-                {detail.monthly.length === 0 && (
+                {detail.transactions.length === 0 && (
                   <div className="text-xs text-muted-foreground text-center py-4">내역 없음</div>
                 )}
               </div>
+
+              {/* 페이지네이션 */}
+              {detail.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1 mt-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => goDetailPage(detailPage - 1)}
+                    disabled={detailPage <= 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-sm font-bold disabled:opacity-30 hover:bg-muted transition-colors"
+                  >
+                    ‹
+                  </button>
+                  {Array.from({ length: detail.totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === detail.totalPages || Math.abs(p - detailPage) <= 1)
+                    .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      p === "..." ? (
+                        <span key={`e${i}`} className="text-xs text-muted-foreground px-1">…</span>
+                      ) : (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => goDetailPage(p as number)}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                            detailPage === p ? "bg-foreground text-background" : "border border-border hover:bg-muted"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button
+                    type="button"
+                    onClick={() => goDetailPage(detailPage + 1)}
+                    disabled={detailPage >= detail.totalPages}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-sm font-bold disabled:opacity-30 hover:bg-muted transition-colors"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -369,7 +369,7 @@ export default async function AdminDashboard({
             관리자 대시보드
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            승인 대기, 운영 KPI, 원장 현황, 정산 흐름을 한 번에 확인합니다.
+            승인 대기, 운영 KPI, 거래 현황, 정산 흐름을 한 번에 확인합니다.
           </p>
         </div>
 
@@ -406,7 +406,7 @@ export default async function AdminDashboard({
             {formatNumber(todayIssueAmount)}
             <span className="text-lg font-bold">P</span>
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">지급 원장 기준</p>
+          <p className="mt-2 text-xs text-muted-foreground">지급 내역 기준</p>
         </div>
 
         <div className="bg-card shadow-card rounded-2xl p-5">
@@ -415,7 +415,7 @@ export default async function AdminDashboard({
             {formatNumber(todayUseAmount)}
             <span className="text-lg font-bold">P</span>
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">사용 원장 기준</p>
+          <p className="mt-2 text-xs text-muted-foreground">사용 내역 기준</p>
         </div>
 
         <div className="bg-card shadow-card rounded-2xl p-5">
@@ -434,7 +434,7 @@ export default async function AdminDashboard({
         {/* Recent Ledger Activity */}
         <div className="bg-card shadow-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black text-foreground">최근 원장 활동</h2>
+            <h2 className="text-lg font-black text-foreground">최근 거래 내역</h2>
             <span className="text-xs text-muted-foreground font-semibold">가장 최근 8건</span>
           </div>
 
@@ -548,8 +548,8 @@ export default async function AdminDashboard({
               {[
                 { href: `/${orgSlug}/admin/topup`, label: "관리자 수동 충전" },
                 { href: `/${orgSlug}/admin/adjust`, label: "포인트 조정" },
-                { href: `/${orgSlug}/admin/ledger`, label: "원장 조회" },
-                { href: `/${orgSlug}/admin/settlements`, label: "월정산 관리" },
+                { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
+                { href: `/${orgSlug}/admin/settlements`, label: "제휴사 관리" },
                 { href: `/${orgSlug}/admin/accounts`, label: "계정 조회" },
               ].map((item) => (
                 <a

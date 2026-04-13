@@ -62,7 +62,7 @@ function amountText(amount: number) {
   return "0P";
 }
 
-const TYPE_CHIPS = ["ALL", "TOPUP", "ISSUE", "USE", "ADJUST"];
+const TYPE_CHIPS = ["ALL", "TOPUP", "ISSUE", "USE"];
 
 export default function AdminLedgerPage() {
   const pathname = usePathname();
@@ -119,7 +119,7 @@ export default function AdminLedgerPage() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setMsg(data?.message ?? "원장 조회 실패");
+        setMsg(data?.message ?? "내역 조회 실패");
         setItems([]);
         return;
       }
@@ -144,9 +144,9 @@ export default function AdminLedgerPage() {
       <section className="bg-card shadow-card rounded-2xl p-5">
         <div className="flex justify-between items-start gap-3 flex-wrap">
           <div>
-            <h1 className="text-xl font-black text-foreground tracking-tight">원장 조회</h1>
+            <h1 className="text-xl font-black text-foreground tracking-tight">전체 내역</h1>
             <div className="mt-2 text-muted-foreground text-sm leading-relaxed">
-              포인트 전체 원장 이력을 조회합니다. 지갑주인은 포인트 계좌 소유자, 직접대상은 거래 상대, 실행자는 처리 담당자입니다.
+              모든 포인트 거래 내역을 조회합니다. 충전·지급·사용 내역을 유형·계정별로 필터링할 수 있습니다.
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -180,7 +180,6 @@ export default function AdminLedgerPage() {
             <option value="TOPUP">충전</option>
             <option value="ISSUE">지급</option>
             <option value="USE">사용</option>
-            <option value="ADJUST">조정</option>
           </select>
           <Button onClick={load} type="button">
             조회
@@ -246,7 +245,7 @@ export default function AdminLedgerPage() {
           <div className="py-10 text-center text-sm text-muted-foreground">불러오는 중...</div>
         ) : items.length === 0 ? (
           <div className="py-10 text-center text-sm text-muted-foreground">
-            조회된 원장 데이터가 없습니다.
+            조회된 내역이 없습니다.
           </div>
         ) : (
           <>

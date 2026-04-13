@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         const appliedCount = await FavoritePartner.countDocuments({ organizationId: orgId, partnerId, status: "APPLIED" });
 
         const dateFilter = startDate && endDate ? { $gte: startDate, $lte: endDate } : undefined;
-        const issueMatch: any = { organizationId: orgId, actorId: partnerId, type: "ISSUE" };
+        const issueMatch: any = { organizationId: orgId, accountId: partnerId, type: "ISSUE" };
         const useMatch: any = { organizationId: orgId, actorId: partnerId, type: "USE" };
         if (dateFilter) {
           issueMatch.createdAt = dateFilter;
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
 
         const issueAgg = await Ledger.aggregate([
           { $match: issueMatch },
-          { $group: { _id: null, count: { $sum: 1 }, total: { $sum: "$amount" } } },
+          { $group: { _id: null, count: { $sum: 1 }, total: { $sum: { $abs: "$amount" } } } },
         ]);
 
         const useAgg = await Ledger.aggregate([
@@ -64,8 +64,8 @@ export async function GET(req: Request) {
 
         const uniqueCustomerIds = await Ledger.distinct("userId", {
           organizationId: orgId,
-          actorId: partnerId,
-          type: { $in: ["ISSUE", "USE"] },
+          accountId: partnerId,
+          type: "ISSUE",
           ...(dateFilter ? { createdAt: dateFilter } : {}),
         });
 

@@ -22,6 +22,13 @@ export async function GET() {
     );
   }
 
+  if (session.role !== "CUSTOMER") {
+    return NextResponse.json(
+      { ok: false, message: "고객만 접근 가능합니다." },
+      { status: 403 }
+    );
+  }
+
   await connectDB();
 
   const accountId = new mongoose.Types.ObjectId(session.uid);

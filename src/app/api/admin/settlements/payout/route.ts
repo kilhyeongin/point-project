@@ -130,13 +130,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Audit log
-    await AuditLog.create({
+    // Audit log (실패해도 이미 커밋된 트랜잭션에 영향 없음)
+    AuditLog.create({
       adminId: new mongoose.Types.ObjectId(session.uid),
       adminUsername: session.username,
       action: "PAYOUT",
       detail: { periodKey, counterpartyId: counterpartyIdStr, payoutRef, note },
       ip,
+    }).catch((auditErr) => {
+      console.error("[AUDIT_LOG_FAIL] PAYOUT", auditErr);
     });
 
     return NextResponse.json(result);
