@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
     const allCategoryMasters = await getPartnerCategoryMasters({
       activeOnly: true,
       visibleToCustomerOnly: true,
+      orgId: session.orgId ?? "default",
     });
     const codeToLabel = new Map<string, string>();
     const legacyLabelToCode = new Map<string, string>();

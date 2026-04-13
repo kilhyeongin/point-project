@@ -42,6 +42,7 @@ export default async function CustomerOnboardingPage({ params }: { params: Promi
   const categoryItems = await getPartnerCategoryMasters({
     activeOnly: true,
     visibleToCustomerOnly: true,
+    orgId: session.orgId ?? "default",
   });
 
   const interestOptions = categoryItems.map((item) => ({
