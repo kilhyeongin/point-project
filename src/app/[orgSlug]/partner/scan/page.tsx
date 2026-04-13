@@ -32,9 +32,11 @@ export default function PartnerScanPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scanningRef = useRef(false);
+  const cancelLoadingRef = useRef(false);
 
   function stopCamera() {
     scanningRef.current = false;
+    cancelLoadingRef.current = true;
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     if (videoRef.current) { videoRef.current.srcObject = null; }
@@ -43,38 +45,38 @@ export default function PartnerScanPage() {
 
   async function startCamera(onFound: (text: string) => void) {
     stopCamera();
+    cancelLoadingRef.current = false;
     setCameraState("loading");
     setCameraError("");
 
-    async function tryGetStream(): Promise<MediaStream> {
-      // 안드로이드 크롬 첫 호출 실패 버그 대응
-      // 후면 카메라 요청으로 최대 5회, 실패 시 제약 없이 2회 추가 시도
-      const backConstraint = { video: { facingMode: { ideal: "environment" } } };
-      const anyConstraint = { video: true };
-      let lastErr: unknown;
-
-      for (let i = 0; i < 5; i++) {
-        if (i > 0) await new Promise(r => setTimeout(r, 600));
+    // 안드로이드 크롬: 권한 허용 후에도 첫 호출이 실패하는 버그 존재
+    // 취소 전까지 1초 간격으로 무한 재시도
+    async function tryGetStream(): Promise<MediaStream | null> {
+      const constraints = [
+        { video: { facingMode: { ideal: "environment" } } },
+        { video: true },
+      ];
+      let attempt = 0;
+      while (!cancelLoadingRef.current) {
+        const constraint = constraints[attempt % 2 === 0 ? 0 : 1];
         try {
-          return await navigator.mediaDevices.getUserMedia(backConstraint);
+          return await navigator.mediaDevices.getUserMedia(constraint);
         } catch (e) {
-          lastErr = e;
+          const name = e instanceof Error ? e.name : "";
+          // 카메라 자체가 없는 경우는 즉시 중단
+          if (name === "NotFoundError" || name === "DevicesNotFoundError") throw e;
+          // 그 외(권한 오류, 사용 중 등)는 재시도
         }
+        attempt++;
+        // 1초 대기 (대기 중에도 취소 가능)
+        await new Promise(r => setTimeout(r, 1000));
       }
-      // facingMode 제약 없이 재시도
-      for (let i = 0; i < 2; i++) {
-        await new Promise(r => setTimeout(r, 600));
-        try {
-          return await navigator.mediaDevices.getUserMedia(anyConstraint);
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      throw lastErr;
+      return null; // 사용자가 취소
     }
 
     try {
       const stream = await tryGetStream();
+      if (!stream) return; // 취소됨
       streamRef.current = stream;
       const video = videoRef.current;
       if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -127,16 +129,9 @@ export default function PartnerScanPage() {
     } catch (err) {
       const name = err instanceof Error ? err.name : "";
       const msg = err instanceof Error ? err.message : String(err);
-      let errorMsg = "";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        errorMsg = "카메라 권한이 거부되었습니다. 주소창 자물쇠 아이콘 → 카메라 → 허용으로 변경 후 다시 시도해주세요.";
-      } else if (name === "NotReadableError" || name === "TrackStartError") {
-        errorMsg = "카메라가 다른 앱에서 사용 중입니다. 다른 앱을 닫고 다시 시도해주세요.";
-      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-        errorMsg = "카메라를 찾을 수 없습니다. 기기에 카메라가 있는지 확인해주세요.";
-      } else {
-        errorMsg = `카메라를 시작할 수 없습니다. (${name || msg}) 다시 시도해주세요.`;
-      }
+      const errorMsg = (name === "NotFoundError" || name === "DevicesNotFoundError")
+        ? "카메라를 찾을 수 없습니다. 기기에 카메라가 있는지 확인해주세요."
+        : `카메라를 시작할 수 없습니다. (${name || msg})`;
       setCameraError(errorMsg);
       setCameraState("error");
     }
@@ -253,9 +248,16 @@ export default function PartnerScanPage() {
 
         {/* 카메라 로딩 */}
         {cameraState === "loading" && (
-          <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-2 py-10">
+          <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-3 py-10">
             <p className="text-sm text-muted-foreground font-semibold">카메라 여는 중...</p>
-            <p className="text-xs text-muted-foreground/70">권한 요청 중이면 허용을 눌러주세요</p>
+            <p className="text-xs text-muted-foreground/70">권한 요청이 뜨면 허용을 눌러주세요</p>
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="mt-1 text-xs text-muted-foreground underline underline-offset-2"
+            >
+              취소
+            </button>
           </div>
         )}
 
