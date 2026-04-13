@@ -751,7 +751,7 @@ export default function PartnerPage() {
                     {reqItems.slice(0, visibleReq).map((it) => (
                       <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
                         <div className="min-w-0">
-                          <p className="text-sm font-black text-foreground truncate">{it.to ? <>{it.to.name}{(socialLabel(it.to.socialProvider) ?? it.to.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.to.socialProvider) ?? it.to.username})</span> : null}</> : <span className="text-muted-foreground font-normal">탈퇴된 고객</span>}</p>
+                          <p className="text-sm font-black text-foreground truncate">{it.to ? <>{it.to.name}{(socialLabel(it.to.socialProvider) ?? it.to.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.to.socialProvider) ?? it.to.username})</span> : null}</> : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -783,7 +783,7 @@ export default function PartnerPage() {
                     {historyItems.slice(0, visibleHistory).map((it) => (
                       <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
                         <div className="min-w-0">
-                          <p className="text-sm font-black text-foreground truncate">{it.customer ? <>{it.customer.name}{(socialLabel(it.customer.socialProvider) ?? it.customer.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.customer.socialProvider) ?? it.customer.username})</span> : null}</> : <span className="text-muted-foreground font-normal">탈퇴된 고객</span>}</p>
+                          <p className="text-sm font-black text-foreground truncate">{it.customer ? <>{it.customer.name}{(socialLabel(it.customer.socialProvider) ?? it.customer.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.customer.socialProvider) ?? it.customer.username})</span> : null}</> : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
                           {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
                         </div>
