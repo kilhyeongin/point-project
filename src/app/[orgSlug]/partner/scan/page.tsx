@@ -97,9 +97,21 @@ export default function PartnerScanPage() {
 
       timerRef.current = setTimeout(scanFrame, 500);
     } catch (err) {
+      const name = err instanceof Error ? err.name : "";
       const msg = err instanceof Error ? err.message : String(err);
-      const isPermission = msg.includes("Permission") || msg.includes("NotAllowed") || msg.includes("denied");
-      setCameraError(isPermission ? "카메라 권한이 거부되었습니다. 브라우저 설정에서 카메라를 허용해주세요." : "카메라를 시작할 수 없습니다. 다시 시도해주세요.");
+      let errorMsg = "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        errorMsg = "카메라 권한이 거부되었습니다. 주소창 자물쇠 아이콘 → 카메라 → 허용으로 변경 후 다시 시도해주세요.";
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
+        errorMsg = "카메라가 다른 앱에서 사용 중입니다. 다른 앱을 닫고 다시 시도해주세요.";
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        errorMsg = "카메라를 찾을 수 없습니다. 기기에 카메라가 있는지 확인해주세요.";
+      } else if (name === "OverconstrainedError") {
+        errorMsg = "후면 카메라를 찾을 수 없습니다. 다시 시도해주세요.";
+      } else {
+        errorMsg = `카메라를 시작할 수 없습니다. (${name || msg}) 다시 시도해주세요.`;
+      }
+      setCameraError(errorMsg);
       setCameraState("error");
     }
   }
