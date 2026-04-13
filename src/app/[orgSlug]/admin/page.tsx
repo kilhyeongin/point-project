@@ -804,7 +804,7 @@ export default async function AdminDashboard({
                     {formatNumber(u.balance)}P
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {u.createdAt ? new Date(u.createdAt).toLocaleString() : "-"}
+                    {formatKrDateTime(u.createdAt)}
                   </div>
                 </div>
               ))
@@ -863,7 +863,7 @@ export default async function AdminDashboard({
                   <div className="flex justify-between gap-3">
                     <span className="text-muted-foreground text-xs font-semibold">가입일</span>
                     <span className="text-xs text-foreground">
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "-"}
+                      {formatKrDateTime(u.createdAt)}
                     </span>
                   </div>
                 </div>
