@@ -36,6 +36,7 @@ export default function AdminShellClient({ session, children }: Props) {
         { href: `/${orgSlug}/admin`, label: "대시보드" },
         { href: `/${orgSlug}/admin/accounts`, label: "계정 잔액" },
         { href: `/${orgSlug}/admin/partner-stats`, label: "제휴사 현황" },
+        { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인" },
       ],
     },
     {
@@ -51,7 +52,6 @@ export default function AdminShellClient({ session, children }: Props) {
       key: "manage",
       label: "설정·관리",
       items: [
-        { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인" },
         { href: `/${orgSlug}/admin/partner-categories`, label: "카테고리 관리" },
       ],
     },
