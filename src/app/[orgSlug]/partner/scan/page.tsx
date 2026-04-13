@@ -51,8 +51,20 @@ export default function PartnerScanPage() {
     setCameraError("");
     setLoadingRetries(0);
 
-    // 안드로이드 크롬: 권한 허용 후에도 첫 호출이 실패하는 버그 존재
-    // 취소 전까지 1초 간격으로 무한 재시도
+    // 명시적으로 차단된 경우 즉시 안내
+    try {
+      const perm = await navigator.permissions.query({ name: "camera" as PermissionName });
+      if (perm.state === "denied") {
+        setCameraError("blocked");
+        setCameraState("error");
+        return;
+      }
+    } catch {
+      // permissions API 미지원 브라우저는 그냥 진행
+    }
+
+    // 삼성 인터넷 등: 권한 허용 후에도 첫 호출이 실패하는 버그 대응
+    // 취소 전까지 1초 간격으로 재시도
     async function tryGetStream(): Promise<MediaStream | null> {
       const constraints = [
         { video: { facingMode: { ideal: "environment" } } },
@@ -279,10 +291,24 @@ export default function PartnerScanPage() {
         {/* 카메라 에러 */}
         {cameraState === "error" && (
           <div className="w-full rounded-xl bg-red-50 border border-red-200 flex flex-col items-center justify-center gap-3 py-8 px-4">
-            <p className="text-sm text-red-600 font-semibold text-center">{cameraError}</p>
-            <Button type="button" onClick={handleStartCamera} variant="outline" className="h-10 px-6 text-sm font-bold">
-              다시 시도
-            </Button>
+            {cameraError === "blocked" ? (
+              <>
+                <p className="text-sm text-red-600 font-semibold text-center">카메라가 차단되어 있습니다</p>
+                <p className="text-xs text-red-500 text-center leading-relaxed">
+                  주소창 자물쇠 아이콘 → 카메라 → <strong>허용</strong>으로 변경 후<br />페이지를 새로고침해주세요
+                </p>
+                <Button type="button" onClick={() => window.location.reload()} className="h-10 px-6 text-sm font-bold bg-red-500 hover:bg-red-600 text-white">
+                  새로고침
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-red-600 font-semibold text-center">{cameraError}</p>
+                <Button type="button" onClick={handleStartCamera} variant="outline" className="h-10 px-6 text-sm font-bold">
+                  다시 시도
+                </Button>
+              </>
+            )}
           </div>
         )}
 
