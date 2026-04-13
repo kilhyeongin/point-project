@@ -82,7 +82,7 @@ function socialLabel(provider?: string | null) {
 function pointHistoryTypeLabel(type: string, note: string = "") {
   const isQr = note.startsWith("QR");
   if (type === "ISSUE") return isQr ? "QR 적립" : "포인트 지급";
-  if (type === "USE") return isQr ? "QR 결제" : "포인트 사용";
+  if (type === "USE") return isQr ? "QR 사용" : "포인트 사용";
   return type;
 }
 
