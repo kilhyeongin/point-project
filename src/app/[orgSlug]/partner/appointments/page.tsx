@@ -132,6 +132,7 @@ export default function PartnerAppointmentsPage() {
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [calMonth, setCalMonth] = useState(new Date());
+  const [calItems, setCalItems] = useState<Appointment[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const { start, end } = useMemo(() => getPeriodRange(period, anchor), [period, anchor]);
@@ -151,6 +152,19 @@ export default function PartnerAppointmentsPage() {
   }
 
   useEffect(() => { load(); }, [start, end]);
+
+  async function loadCal(month: Date) {
+    const year = month.getFullYear();
+    const m = month.getMonth();
+    const s = toYMD(new Date(year, m, 1));
+    const e = toYMD(new Date(year, m + 1, 0));
+    const params = new URLSearchParams({ start: s, end: e });
+    const res = await fetch(`/api/partner/appointments?${params}`, { cache: "no-store" });
+    const data = await res.json();
+    if (data.ok) setCalItems(data.items ?? []);
+  }
+
+  useEffect(() => { loadCal(calMonth); }, [calMonth]);
 
   const filtered = useMemo(() => {
     if (!q.trim()) return items;
@@ -223,13 +237,13 @@ export default function PartnerAppointmentsPage() {
 
   const calCounts = useMemo(() => {
     const map: Record<string, number> = {};
-    items.forEach((i) => {
+    calItems.forEach((i) => {
       if (!i.appointmentAt) return;
       const key = i.appointmentAt.slice(0, 10);
       map[key] = (map[key] ?? 0) + 1;
     });
     return map;
-  }, [items]);
+  }, [calItems]);
 
   return (
     <main className="min-w-0 space-y-4">
