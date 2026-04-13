@@ -483,11 +483,7 @@ export default async function AdminDashboard({
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      {r.counterparty
-                        ? `상대: ${r.counterparty.name}`
-                        : r.actor
-                        ? `실행자: ${r.actor.name}`
-                        : "상대 정보 없음"}
+                      {r.counterparty?.name ?? r.actor?.name ?? "상대 정보 없음"}
                       {" · "}
                       {formatKrDateTime(r.createdAt)}
                     </p>
