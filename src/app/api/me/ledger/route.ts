@@ -42,8 +42,8 @@ export async function GET() {
   const items = (docs as any[]).map((d) => {
     const actor = d.actorId as any;
     const partnerName =
-      actor?.partnerProfile?.businessName?.trim() ||
       actor?.name?.trim() ||
+      actor?.partnerProfile?.businessName?.trim() ||
       null;
     return {
       id: String(d._id),
