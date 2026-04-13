@@ -22,7 +22,7 @@ type LedgerItem = {
 
 function typeLabel(type: string, hasPartner = false) {
   if (type === "TOPUP") return "포인트 충전";
-  if (type === "ISSUE") return hasPartner ? "포인트 지급받음" : "포인트 지급받음";
+  if (type === "ISSUE") return hasPartner ? "포인트 지급받음" : "포인트 지급";
   if (type === "USE") return "포인트 사용";
   if (type === "ADJUST") return "포인트 조정";
   return type;

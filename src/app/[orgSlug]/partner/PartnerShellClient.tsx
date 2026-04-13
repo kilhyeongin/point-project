@@ -74,7 +74,7 @@ export default function PartnerShellClient({ session, children }: Props) {
                   <div className="text-white/90 text-sm font-bold leading-tight truncate">
                     포인트 관리
                   </div>
-                  <div className="text-white/40 text-xs truncate">파트너</div>
+                  <div className="text-white/40 text-xs truncate">제휴사</div>
                 </div>
               </div>
             </div>

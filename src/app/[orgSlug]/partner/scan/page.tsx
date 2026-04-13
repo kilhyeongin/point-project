@@ -115,7 +115,13 @@ export default function PartnerScanPage() {
         body: JSON.stringify({ qrPayload: scanned, amount: amountNum, note: note.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data?.message ?? (isGrant ? "적립 실패" : "사용 실패")); return; }
+      if (!res.ok) {
+        alert(data?.message ?? (isGrant ? "적립 실패" : "사용 실패"));
+        setScanned("");
+        setAmountText("0");
+        startCamera((text) => { setScanned(text); alert("스캔 완료. 금액 입력 후 처리하세요."); });
+        return;
+      }
 
       if (isGrant) {
         alert(`적립 완료!\n${formatNumber(amountNum)}P 지급 → 내 잔액 ${formatNumber(data?.partnerBalanceAfter ?? 0)}P`);
@@ -138,13 +144,16 @@ export default function PartnerScanPage() {
       });
     } catch {
       alert("네트워크 오류가 발생했습니다.");
+      setScanned("");
+      setAmountText("0");
+      startCamera((text) => { setScanned(text); alert("스캔 완료. 금액 입력 후 처리하세요."); });
     }
   }
 
   return (
     <div className="space-y-5 max-w-lg">
       <div>
-        <h1 className="text-xl font-black text-foreground tracking-tight">QR 스캔 결제</h1>
+        <h1 className="text-xl font-black text-foreground tracking-tight">QR 스캔</h1>
         <p className="text-sm text-muted-foreground mt-1">
           고객이 보여주는 QR을 스캔하고, 금액을 입력해 처리합니다.
         </p>

@@ -562,10 +562,10 @@ export default function AdminAccountsPage() {
                   </div>
                 )}
 
-                {/* 파트너 프로필 */}
+                {/* 제휴사 프로필 */}
                 {detail.role === "PARTNER" && detail.partnerProfile && (
                   <div className="rounded-xl border border-border p-4 space-y-2 text-sm">
-                    <div className="font-bold text-foreground mb-2">파트너 프로필</div>
+                    <div className="font-bold text-foreground mb-2">제휴사 프로필</div>
                     <Row label="상호명" value={detail.partnerProfile.businessName || "-"} />
                     <Row label="사업자번호" value={detail.partnerProfile.businessNumber || "-"} />
                     <Row label="담당자" value={detail.partnerProfile.contactName || "-"} />

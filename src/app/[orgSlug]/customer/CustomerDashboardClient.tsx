@@ -360,7 +360,7 @@ export default function CustomerDashboardClient({ session }: Props) {
   const emptyText =
     tab === "FAVORITES"
       ? submittedSearch ? "검색 조건에 맞는 관심업체가 없습니다." : "저장한 관심업체가 없습니다."
-      : submittedSearch ? "검색 조건에 맞는 업체가 없습니다." : "노출 중인 제휴사가 없습니다.";
+      : submittedSearch ? "검색 조건에 맞는 제휴사가 없습니다." : "노출 중인 제휴사가 없습니다.";
 
   return (
     <CustomerShellClient
