@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
 
 type UserBrief = {
   id: string;
@@ -65,12 +64,11 @@ function amountText(amount: number) {
 const TYPE_CHIPS = ["ALL", "TOPUP", "ISSUE", "USE"];
 
 export default function AdminLedgerPage() {
-  const pathname = usePathname();
-  const orgSlug = pathname.split('/')[1];
-
   const [items, setItems] = useState<LedgerItem[]>([]);
   const [q, setQ] = useState("");
   const [type, setType] = useState("ALL");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [page, setPage] = useState(1);
@@ -81,9 +79,11 @@ export default function AdminLedgerPage() {
     const sp = new URLSearchParams();
     if (q.trim()) sp.set("q", q.trim());
     if (type !== "ALL") sp.set("type", type);
+    if (start) sp.set("start", start);
+    if (end) sp.set("end", end);
     sp.set("page", String(page));
     return sp.toString();
-  }, [q, type, page]);
+  }, [q, type, start, end, page]);
 
   const stats = useMemo(() => {
     const topup = items.filter((it) => it.type === "TOPUP").length;
@@ -142,25 +142,8 @@ export default function AdminLedgerPage() {
   return (
     <main className="space-y-5">
       <section className="bg-card shadow-card rounded-2xl p-5">
-        <div className="flex justify-between items-start gap-3 flex-wrap">
-          <div>
-            <h1 className="text-xl font-black text-foreground tracking-tight">전체 내역</h1>
-            <div className="mt-2 text-muted-foreground text-sm leading-relaxed">
-              모든 포인트 거래 내역을 조회합니다. 충전·지급·사용 내역을 유형·계정별로 필터링할 수 있습니다.
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={load} type="button">
-              새로고침
-            </Button>
-            <a
-              href={`/${orgSlug}/admin`}
-              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-xl border border-border bg-card text-foreground font-bold text-sm hover:bg-muted transition-colors"
-            >
-              대시보드로
-            </a>
-          </div>
-        </div>
+        <h1 className="text-xl font-black text-foreground tracking-tight">전체 내역</h1>
+        <p className="mt-1 text-sm text-muted-foreground">모든 포인트 거래 내역을 조회합니다.</p>
       </section>
 
       <section className="bg-card shadow-card rounded-2xl p-5 space-y-3">
@@ -168,21 +151,34 @@ export default function AdminLedgerPage() {
           <Input
             value={q}
             onChange={(e) => { setQ(e.target.value); setPage(1); }}
-            placeholder="계정 사용자 이름 또는 아이디 검색"
-            className="h-10 flex-1 min-w-[200px]"
+            placeholder="이름 검색"
+            className="h-10 flex-1 min-w-[160px]"
           />
           <select
             value={type}
             onChange={(e) => { setType(e.target.value); setPage(1); }}
-            className="h-10 min-w-[160px] border border-border rounded-xl bg-background px-3 text-sm outline-none"
+            className="h-10 min-w-[120px] border border-border rounded-xl bg-background px-3 text-sm outline-none"
           >
             <option value="ALL">전체 유형</option>
             <option value="TOPUP">충전</option>
             <option value="ISSUE">지급</option>
             <option value="USE">사용</option>
           </select>
-          <Button onClick={load} type="button">
-            조회
+          <input
+            type="date"
+            value={start}
+            onChange={(e) => { setStart(e.target.value); setPage(1); }}
+            className="h-10 border border-border rounded-xl bg-background px-3 text-sm outline-none"
+          />
+          <span className="text-muted-foreground text-sm">~</span>
+          <input
+            type="date"
+            value={end}
+            onChange={(e) => { setEnd(e.target.value); setPage(1); }}
+            className="h-10 border border-border rounded-xl bg-background px-3 text-sm outline-none"
+          />
+          <Button onClick={() => { setStart(""); setEnd(""); setQ(""); setType("ALL"); setPage(1); }} variant="outline" type="button" className="text-xs">
+            초기화
           </Button>
         </div>
         <div className="flex gap-2 flex-wrap">

@@ -29,6 +29,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const typeParam = String(searchParams.get("type") ?? "ALL").toUpperCase();
   const q = String(searchParams.get("q") ?? "").trim();
+  const startParam = searchParams.get("start") ?? "";
+  const endParam = searchParams.get("end") ?? "";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = 50;
   const skip = (page - 1) * limit;
@@ -40,6 +42,12 @@ export async function GET(req: Request) {
 
   if (["TOPUP", "ISSUE", "USE", "ADJUST"].includes(typeParam)) {
     filter.type = typeParam;
+  }
+
+  if (startParam || endParam) {
+    filter.createdAt = {};
+    if (startParam) filter.createdAt.$gte = new Date(startParam + "T00:00:00.000Z");
+    if (endParam) filter.createdAt.$lte = new Date(endParam + "T23:59:59.999Z");
   }
 
   if (q) {
