@@ -214,23 +214,16 @@ export default function AdminLedgerPage() {
           </div>
         </div>
         <div className="bg-muted/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-foreground">
-            {formatNumber(stats.positiveAmount)}P
+          <div className="text-2xl font-black text-emerald-600">
+            +{formatNumber(stats.positiveAmount)}P
           </div>
-          <div className="text-xs text-muted-foreground mt-1">유입 포인트 합계</div>
-          <div className="text-xs text-muted-foreground">양수 amount 기준</div>
+          <div className="text-xs text-muted-foreground mt-1">총 지급·충전</div>
         </div>
         <div className="bg-muted/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-foreground">
-            {formatNumber(stats.negativeAmount)}P
+          <div className="text-2xl font-black text-red-500">
+            -{formatNumber(stats.negativeAmount)}P
           </div>
-          <div className="text-xs text-muted-foreground mt-1">유출 포인트 합계</div>
-          <div className="text-xs text-muted-foreground">음수 amount 절대값 기준</div>
-        </div>
-        <div className="bg-muted/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-foreground">{loading ? "조회중" : "완료"}</div>
-          <div className="text-xs text-muted-foreground mt-1">조회 상태</div>
-          <div className="text-xs text-muted-foreground">필터 변경 후 다시 조회 버튼 실행</div>
+          <div className="text-xs text-muted-foreground mt-1">총 사용·차감</div>
         </div>
       </div>
 
