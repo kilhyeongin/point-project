@@ -105,14 +105,16 @@ function CommonLoginFormInner() {
             </div>
 
             <div className="w-full max-w-[400px] space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-black tracking-tight">로그인</h2>
-                <p className="text-sm text-muted-foreground">아이디와 비밀번호를 입력해 주세요.</p>
+              <div>
+                <h2 className="text-foreground font-black" style={{ fontSize: "1.875rem", letterSpacing: "-0.04em" }}>
+                  로그인
+                </h2>
+                <p className="text-muted-foreground text-sm mt-2">계속하려면 계정 정보를 입력해 주세요</p>
               </div>
 
               {/* 세션 만료 배너 */}
               {isExpired && (
-                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm font-medium">
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-medium">
                   <span className="text-base leading-none">⏱</span>
                   세션이 만료되었습니다. 다시 로그인해 주세요.
                 </div>
@@ -126,34 +128,54 @@ function CommonLoginFormInner() {
                 </div>
               )}
 
-              {/* 에러 메시지 */}
-              {msg && (
-                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-medium">
-                  <span className="text-base leading-none">⚠</span>
-                  {msg}
-                </div>
-              )}
-
               {/* 로그인 폼 */}
-              <form onSubmit={onSubmit} className="space-y-3">
-                <Input
-                  type="text"
-                  placeholder="아이디"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
-                  required
-                />
-                <Input
-                  type="password"
-                  placeholder="비밀번호"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-                <Button type="submit" className="w-full h-12 text-base font-bold" disabled={loading}>
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "로그인"}
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-foreground">아이디</label>
+                  <Input
+                    type="text"
+                    placeholder="아이디 입력"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    required
+                    className="h-12 text-[15px] bg-card border-border/60"
+                    style={{ boxShadow: "0 1px 4px -1px oklch(0 0 0 / 0.06)" }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-foreground">비밀번호</label>
+                  <Input
+                    type="password"
+                    placeholder="비밀번호 입력"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    className="h-12 text-[15px] bg-card border-border/60"
+                    style={{ boxShadow: "0 1px 4px -1px oklch(0 0 0 / 0.06)" }}
+                  />
+                </div>
+
+                {msg && (
+                  <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-medium">
+                    <span className="text-base leading-none">⚠</span>
+                    {msg}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-[15px] font-bold mt-1"
+                  disabled={loading}
+                  style={{ background: "oklch(0.52 0.27 264)", borderRadius: "0.75rem" }}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      로그인 중...
+                    </span>
+                  ) : "로그인"}
                 </Button>
               </form>
 
@@ -164,7 +186,7 @@ function CommonLoginFormInner() {
                 <div className="flex-1 h-px bg-border" />
               </div>
 
-              {/* 소셜 로그인 — orgSlug 없이 호출, 콜백에서 유저의 org로 자동 이동 */}
+              {/* 소셜 로그인 */}
               <div className="flex flex-col gap-3">
                 <a
                   href="/api/auth/naver"
