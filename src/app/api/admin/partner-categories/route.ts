@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest) {
       )
     );
 
-    const items = await getPartnerCategoryMasters();
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
     return NextResponse.json({ ok: true, message: "순서가 저장되었습니다.", items });
   } catch (error) {
     console.error("[ADMIN_PARTNER_CATEGORIES_PATCH_ERROR]", error);
@@ -86,7 +86,7 @@ export async function GET() {
 
   try {
     await connectDB();
-    const items = await getPartnerCategoryMasters();
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
     return NextResponse.json({ ok: true, items });
   } catch (error) {
     console.error("[ADMIN_PARTNER_CATEGORIES_GET_ERROR]", error);
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       updatedBy: auth.session!.username,
     });
 
-    const items = await getPartnerCategoryMasters();
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
 
     return NextResponse.json({
       ok: true,

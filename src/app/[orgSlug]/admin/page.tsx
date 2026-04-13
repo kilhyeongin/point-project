@@ -97,6 +97,8 @@ export default async function AdminDashboard({
     999
   );
 
+  const orgId = session.orgId ?? "default";
+
   const [
     pendingTopupCount,
     pendingIssueCount,
@@ -105,18 +107,19 @@ export default async function AdminDashboard({
     customerCount,
     partnerCount,
   ] = await Promise.all([
-    TopupRequest.countDocuments({ status: "PENDING" }),
-    IssueRequest.countDocuments({ status: "PENDING" }),
-    UseRequest.countDocuments({ status: "PENDING" }),
-    User.countDocuments({}),
-    User.countDocuments({ role: "CUSTOMER" }),
-    User.countDocuments({ role: "PARTNER" }),
+    TopupRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
+    IssueRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
+    UseRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
+    User.countDocuments({ organizationId: orgId }),
+    User.countDocuments({ organizationId: orgId, role: "CUSTOMER" }),
+    User.countDocuments({ organizationId: orgId, role: "PARTNER" }),
   ]);
 
   const [todayLedgerRows, monthLedgerRows] = await Promise.all([
     Ledger.aggregate([
       {
         $match: {
+          organizationId: orgId,
           createdAt: { $gte: todayStart, $lte: todayEnd },
         },
       },
@@ -131,6 +134,7 @@ export default async function AdminDashboard({
     Ledger.aggregate([
       {
         $match: {
+          organizationId: orgId,
           createdAt: { $gte: thisMonthStart, $lte: thisMonthEnd },
         },
       },
@@ -170,6 +174,7 @@ export default async function AdminDashboard({
   const topCounterpartiesRaw = await Ledger.aggregate([
     {
       $match: {
+        organizationId: orgId,
         type: "USE",
         counterpartyId: { $ne: null },
         createdAt: { $gte: thisMonthStart, $lte: thisMonthEnd },
@@ -191,7 +196,7 @@ export default async function AdminDashboard({
   const topCounterpartyUsers =
     topCounterpartyIds.length > 0
       ? await User.find(
-          { _id: { $in: topCounterpartyIds } },
+          { _id: { $in: topCounterpartyIds }, organizationId: orgId },
           { name: 1, username: 1, role: 1 }
         ).lean()
       : [];
@@ -213,7 +218,7 @@ export default async function AdminDashboard({
     };
   });
 
-  const recentLedger = await Ledger.find({}).sort({ createdAt: -1 }).limit(8).lean();
+  const recentLedger = await Ledger.find({ organizationId: orgId }).sort({ createdAt: -1 }).limit(8).lean();
 
   const relationIds = new Set<string>();
   for (const row of recentLedger as any[]) {
@@ -232,6 +237,7 @@ export default async function AdminDashboard({
                 (id) => new mongoose.Types.ObjectId(id)
               ),
             },
+            organizationId: orgId,
           },
           { name: 1, username: 1, role: 1 }
         ).lean()
@@ -255,7 +261,7 @@ export default async function AdminDashboard({
     note: row.note ?? "",
   }));
 
-  const filter: any = {};
+  const filter: any = { organizationId: orgId };
 
   if (activeRole !== "ALL") {
     filter.role = activeRole;

@@ -26,10 +26,13 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   const [doc, relation] = await Promise.all([
     User.findOne(
       {
         _id: id,
+        organizationId: orgId,
         role: "PARTNER",
         status: "ACTIVE",
         "partnerProfile.isPublished": true,
@@ -42,6 +45,7 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
     ).lean(),
     FavoritePartner.findOne(
       {
+        organizationId: orgId,
         customerId: session.uid,
         partnerId: id,
       },
@@ -61,9 +65,10 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
   const profile = (doc as any).partnerProfile ?? {};
   const categoryCodes = await normalizeCategoryCodes(
     profile.categories,
-    profile.category
+    profile.category,
+    { orgId }
   );
-  const categoryLabels = await getCategoryLabels(categoryCodes);
+  const categoryLabels = await getCategoryLabels(categoryCodes, orgId);
 
   const relationStatus = String((relation as any)?.status ?? "NONE");
   const applied = relationStatus === "APPLIED";

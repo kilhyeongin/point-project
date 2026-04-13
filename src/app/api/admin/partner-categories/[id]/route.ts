@@ -66,7 +66,7 @@ export async function DELETE(_req: NextRequest, { params }: Context) {
       );
     }
 
-    const items = await getPartnerCategoryMasters();
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
 
     return NextResponse.json({
       ok: true,
@@ -152,7 +152,7 @@ export async function PUT(req: NextRequest, { params }: Context) {
       );
     }
 
-    const items = await getPartnerCategoryMasters();
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
 
     return NextResponse.json({
       ok: true,

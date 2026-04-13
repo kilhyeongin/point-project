@@ -77,7 +77,8 @@ export async function GET() {
 
     const categories = await normalizeCategoryCodes(
       profile.categories,
-      profile.category
+      profile.category,
+      { orgId: session.orgId ?? "default" }
     );
 
     return NextResponse.json({
@@ -242,7 +243,8 @@ export async function PUT(req: NextRequest) {
     const profile = (updated as any).partnerProfile ?? {};
     const normalizedSavedCategories = await normalizeCategoryCodes(
       profile.categories,
-      profile.category
+      profile.category,
+      { orgId: session.orgId ?? "default" }
     );
 
     return NextResponse.json({

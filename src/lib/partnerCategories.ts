@@ -86,8 +86,8 @@ export async function getPartnerCategoryMasters(options?: {
   }));
 }
 
-export async function getPartnerCategoryMap() {
-  const items = await getPartnerCategoryMasters();
+export async function getPartnerCategoryMap(orgId?: string) {
+  const items = await getPartnerCategoryMasters({ orgId });
   const map = new Map<string, string>();
 
   for (const item of items) {
@@ -146,17 +146,17 @@ export async function normalizeCategoryCodes(
   return Array.from(set);
 }
 
-export async function getCategoryLabel(value: unknown) {
+export async function getCategoryLabel(value: unknown, orgId?: string) {
   const raw = String(value ?? "").trim();
   if (!raw) return "기타";
 
   const mapped = LEGACY_LABEL_TO_CODE[raw] || normalizeCategoryCode(raw);
-  const map = await getPartnerCategoryMap();
+  const map = await getPartnerCategoryMap(orgId);
   return map.get(mapped) ?? raw ?? "기타";
 }
 
-export async function getCategoryLabels(values: unknown[]) {
-  const map = await getPartnerCategoryMap();
+export async function getCategoryLabels(values: unknown[], orgId?: string) {
+  const map = await getPartnerCategoryMap(orgId);
 
   return values.map((value) => {
     const raw = String(value ?? "").trim();

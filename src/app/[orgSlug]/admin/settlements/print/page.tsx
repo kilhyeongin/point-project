@@ -50,12 +50,15 @@ export default async function SettlementPrintPage({ params, searchParams }: Prop
 
   await connectDB();
 
+  const orgId = session.orgId ?? "default";
+
   const [doc, counterparty] = await Promise.all([
     Settlement.findOne({
+      organizationId: orgId,
       periodKey,
       counterpartyId: new mongoose.Types.ObjectId(counterpartyId),
     }).lean(),
-    User.findById(counterpartyId, { username: 1, name: 1, email: 1 }).lean(),
+    User.findOne({ _id: counterpartyId, organizationId: orgId }, { username: 1, name: 1, email: 1 }).lean(),
   ]);
 
   if (!doc) {
