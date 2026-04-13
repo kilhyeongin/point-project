@@ -79,9 +79,10 @@ function socialLabel(provider?: string | null) {
   return null;
 }
 
-function pointHistoryTypeLabel(type: string) {
-  if (type === "ISSUE") return "포인트 지급";
-  if (type === "USE") return "포인트 사용";
+function pointHistoryTypeLabel(type: string, note: string = "") {
+  const isQr = note.startsWith("QR");
+  if (type === "ISSUE") return isQr ? "QR 적립" : "포인트 지급";
+  if (type === "USE") return isQr ? "QR 결제" : "포인트 사용";
   return type;
 }
 
@@ -795,7 +796,7 @@ export default function PartnerPage() {
                             variant={it.type === "ISSUE" ? "secondary" : "outline"}
                             className={cn("font-bold text-xs", it.type === "ISSUE" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-orange-600 border-orange-200 bg-orange-50")}
                           >
-                            {pointHistoryTypeLabel(it.type)}
+                            {pointHistoryTypeLabel(it.type, it.note)}
                           </Badge>
                         </div>
                       </div>
