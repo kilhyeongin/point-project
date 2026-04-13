@@ -25,6 +25,7 @@ export default function PartnerScanPage() {
   const [note, setNote] = useState<string>("");
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string>("");
+  const [loadingRetries, setLoadingRetries] = useState(0);
 
   const amountNum = useMemo(() => onlyDigitsToNumber(amountText), [amountText]);
 
@@ -48,6 +49,7 @@ export default function PartnerScanPage() {
     cancelLoadingRef.current = false;
     setCameraState("loading");
     setCameraError("");
+    setLoadingRetries(0);
 
     // 안드로이드 크롬: 권한 허용 후에도 첫 호출이 실패하는 버그 존재
     // 취소 전까지 1초 간격으로 무한 재시도
@@ -63,15 +65,13 @@ export default function PartnerScanPage() {
           return await navigator.mediaDevices.getUserMedia(constraint);
         } catch (e) {
           const name = e instanceof Error ? e.name : "";
-          // 카메라 자체가 없는 경우는 즉시 중단
           if (name === "NotFoundError" || name === "DevicesNotFoundError") throw e;
-          // 그 외(권한 오류, 사용 중 등)는 재시도
         }
         attempt++;
-        // 1초 대기 (대기 중에도 취소 가능)
+        setLoadingRetries(attempt);
         await new Promise(r => setTimeout(r, 1000));
       }
-      return null; // 사용자가 취소
+      return null;
     }
 
     try {
@@ -248,13 +248,28 @@ export default function PartnerScanPage() {
 
         {/* 카메라 로딩 */}
         {cameraState === "loading" && (
-          <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-3 py-10">
+          <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-3 py-10 px-4">
             <p className="text-sm text-muted-foreground font-semibold">카메라 여는 중...</p>
-            <p className="text-xs text-muted-foreground/70">권한 요청이 뜨면 허용을 눌러주세요</p>
+            {loadingRetries < 3 ? (
+              <p className="text-xs text-muted-foreground/70 text-center">권한 요청이 뜨면 허용을 눌러주세요</p>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs text-amber-600 font-semibold text-center">
+                  권한 창이 뜨지 않으면 페이지를 새로고침해주세요
+                </p>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="h-9 px-5 rounded-xl bg-amber-500 text-white text-xs font-bold"
+                >
+                  새로고침
+                </button>
+              </div>
+            )}
             <button
               type="button"
               onClick={stopCamera}
-              className="mt-1 text-xs text-muted-foreground underline underline-offset-2"
+              className="text-xs text-muted-foreground underline underline-offset-2"
             >
               취소
             </button>
