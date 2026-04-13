@@ -50,6 +50,19 @@ function formatNumber(n: number) {
   return Number(n || 0).toLocaleString();
 }
 
+function formatKrDateTime(v: unknown) {
+  if (!v) return "-";
+  const d = new Date(v as string);
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const h = d.getHours();
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const ampm = h < 12 ? "오전" : "오후";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${yy}/${mm}/${dd} ${ampm}${h12}시${min}분`;
+}
+
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -478,7 +491,7 @@ export default async function AdminDashboard({
                         ? `실행자: ${r.actor.name} (${formatUsername(r.actor.username)})`
                         : "상대 정보 없음"}
                       {" · "}
-                      {r.createdAt ? new Date(r.createdAt).toLocaleString() : "-"}
+                      {formatKrDateTime(r.createdAt)}
                     </p>
                   </div>
                   <span className="text-base font-black text-foreground whitespace-nowrap shrink-0">
