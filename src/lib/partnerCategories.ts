@@ -106,12 +106,13 @@ export async function getPartnerCategoryMap() {
 export async function normalizeCategoryCodes(
   values: unknown,
   legacyCategory?: unknown,
-  options?: { onlyActive?: boolean; visibleToPartnerOnly?: boolean; visibleToCustomerOnly?: boolean }
+  options?: { onlyActive?: boolean; visibleToPartnerOnly?: boolean; visibleToCustomerOnly?: boolean; orgId?: string }
 ) {
   const items = await getPartnerCategoryMasters({
     activeOnly: options?.onlyActive,
     visibleToPartnerOnly: options?.visibleToPartnerOnly,
     visibleToCustomerOnly: options?.visibleToCustomerOnly,
+    orgId: options?.orgId,
   });
 
   const allowed = new Set(items.map((item) => item.code));

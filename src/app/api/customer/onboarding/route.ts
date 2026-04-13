@@ -7,10 +7,11 @@ import {
   normalizeCategoryCodes,
 } from "@/lib/partnerCategories";
 
-async function buildInterestOptions() {
+async function buildInterestOptions(orgId: string) {
   const items = await getPartnerCategoryMasters({
     activeOnly: true,
     visibleToCustomerOnly: true,
+    orgId,
   });
 
   return items.map((item) => ({
@@ -61,7 +62,7 @@ export async function GET() {
       interests: Array.isArray(customerProfile.interests)
         ? customerProfile.interests
         : [],
-      interestOptions: await buildInterestOptions(),
+      interestOptions: await buildInterestOptions(session.orgId ?? "default"),
     });
   } catch (error) {
     console.error("[CUSTOMER_ONBOARDING_GET_ERROR]", error);
@@ -97,6 +98,7 @@ export async function PUT(req: NextRequest) {
     const interests = await normalizeCategoryCodes(body?.interests, undefined, {
       onlyActive: true,
       visibleToCustomerOnly: true,
+      orgId: session.orgId ?? "default",
     });
 
     if (interests.length === 0) {
