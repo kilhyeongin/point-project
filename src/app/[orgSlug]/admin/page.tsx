@@ -479,16 +479,14 @@ export default async function AdminDashboard({
                         {(LEDGER_TYPE_LABEL as Record<string, string>)[r.type] ?? r.type}
                       </Badge>
                       <span className="text-sm font-bold text-foreground truncate">
-                        {r.account
-                          ? `${r.account.name} (${formatUsername(r.account.username)})`
-                          : "계정 정보 없음"}
+                        {r.account?.name ?? "계정 정보 없음"}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {r.counterparty
-                        ? `상대: ${r.counterparty.name} (${formatUsername(r.counterparty.username)})`
+                        ? `상대: ${r.counterparty.name}`
                         : r.actor
-                        ? `실행자: ${r.actor.name} (${formatUsername(r.actor.username)})`
+                        ? `실행자: ${r.actor.name}`
                         : "상대 정보 없음"}
                       {" · "}
                       {formatKrDateTime(r.createdAt)}
