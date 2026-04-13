@@ -10,7 +10,7 @@ const ALLOWED_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED", "NOSHOW", "CANCEL
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "대기중",
   CONFIRMED: "확정",
-  COMPLETED: "완료",
+  COMPLETED: "이용완료",
   NOSHOW: "노쇼",
   CANCELLED: "취소",
 };
@@ -43,6 +43,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const appointmentStatus = String(body?.appointmentStatus ?? "");
     if (!ALLOWED_STATUSES.includes(appointmentStatus)) {
       return NextResponse.json({ ok: false, error: "올바르지 않은 상태값입니다." }, { status: 400 });
+    }
+
+    // 예약 취소: 이용일 하루 전(자정) 이후 불가
+    if (appointmentStatus === "CANCELLED") {
+      const appt = await FavoritePartner.findOne(
+        { _id: id, organizationId: orgId, partnerId: session.uid },
+        { appointmentAt: 1 }
+      ).lean() as any;
+
+      if (appt?.appointmentAt) {
+        const apptDate = new Date(appt.appointmentAt);
+        const apptMidnight = new Date(apptDate.getFullYear(), apptDate.getMonth(), apptDate.getDate(), 0, 0, 0, 0);
+        const now_ = new Date();
+        if (now_ >= apptMidnight) {
+          return NextResponse.json(
+            { ok: false, error: "이용일 당일에는 예약을 취소할 수 없습니다. 노쇼 처리를 이용해주세요." },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const now = new Date();

@@ -31,7 +31,7 @@ type TabType = "list" | "calendar" | "settings";
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; bg: string; border: string }> = {
   PENDING:   { label: "대기중",  color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200" },
   CONFIRMED: { label: "확정",    color: "text-blue-700",    bg: "bg-blue-50",    border: "border-blue-200" },
-  COMPLETED: { label: "완료",    color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
+  COMPLETED: { label: "이용완료", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
   NOSHOW:    { label: "노쇼",    color: "text-red-700",     bg: "bg-red-50",     border: "border-red-200" },
   CANCELLED: { label: "취소",    color: "text-gray-500",    bg: "bg-gray-50",    border: "border-gray-200" },
 };
@@ -738,18 +738,10 @@ function PanelActions({
             <button
               type="button"
               disabled={updatingId === selected.id}
-              onClick={() => updateStatus(selected.id, "COMPLETED")}
-              className="h-11 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50"
-            >
-              예약 완료
-            </button>
-            <button
-              type="button"
-              disabled={updatingId === selected.id}
               onClick={() => updateStatus(selected.id, "NOSHOW")}
-              className="h-11 rounded-xl text-sm font-black border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+              className="col-span-2 h-11 rounded-xl text-sm font-black border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
             >
-              노쇼
+              노쇼 처리
             </button>
           </>
         )}
