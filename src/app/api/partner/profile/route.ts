@@ -194,6 +194,7 @@ export async function PUT(req: NextRequest) {
       {
         onlyActive: true,
         visibleToPartnerOnly: true,
+        orgId: session.orgId ?? "default",
       }
     );
 
