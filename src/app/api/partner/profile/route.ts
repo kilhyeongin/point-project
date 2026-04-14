@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/auth";
 import { User } from "@/models/User";
 import { normalizeCategoryCodes } from "@/lib/partnerCategories";
+import { deleteRemovedS3Objects } from "@/lib/s3";
 
 function text(value: unknown, max = 500) {
   return String(value ?? "").trim().slice(0, max);
@@ -188,6 +189,16 @@ export async function PUT(req: NextRequest) {
 
     await connectDB();
 
+    // 기존 이미지 URL 조회 (S3 삭제 비교용)
+    const existing = await User.findOne(
+      { _id: session.uid, organizationId: session.orgId ?? "4nwn" },
+      { "partnerProfile.coverImageUrl": 1, "partnerProfile.images": 1 }
+    ).lean() as any;
+    const oldCover = existing?.partnerProfile?.coverImageUrl ?? "";
+    const oldImages: string[] = Array.isArray(existing?.partnerProfile?.images)
+      ? existing.partnerProfile.images
+      : [];
+
     const categories = await normalizeCategoryCodes(
       body?.categories,
       body?.category,
@@ -240,6 +251,12 @@ export async function PUT(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    // 교체/삭제된 이미지 S3에서 제거
+    await deleteRemovedS3Objects(
+      [oldCover, ...oldImages],
+      [coverImageUrl || "", ...images]
+    );
 
     const profile = (updated as any).partnerProfile ?? {};
     const normalizedSavedCategories = await normalizeCategoryCodes(

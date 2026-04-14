@@ -19,6 +19,7 @@ import { NextResponse } from "next/server";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { deleteRemovedS3Objects } from "@/lib/s3";
 
 function isValidObjectId(id: string) {
   return mongoose.Types.ObjectId.isValid(id);
@@ -85,6 +86,8 @@ export async function PATCH(
       );
     }
 
+    const oldCover = toTrimmedString(user.partnerProfile?.coverImageUrl);
+
     user.partnerProfile = {
       category: toTrimmedString(body?.category),
       intro: toTrimmedString(body?.intro),
@@ -98,6 +101,10 @@ export async function PATCH(
     };
 
     await user.save();
+
+    // 교체/삭제된 대표 이미지 S3에서 제거
+    const newCover = toTrimmedString(body?.coverImageUrl);
+    await deleteRemovedS3Objects([oldCover], [newCover]);
 
     return NextResponse.json({
       ok: true,
