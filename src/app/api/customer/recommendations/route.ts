@@ -73,11 +73,11 @@ export async function GET() {
 
     // 카테고리 마스터 한 번만 로드
     const [catMap, myInterests] = await Promise.all([
-      getPartnerCategoryMap(),
+      getPartnerCategoryMap(orgId),
       normalizeCategoryCodes(
         (me as any)?.customerProfile?.interests ?? [],
         undefined,
-        { onlyActive: true, visibleToCustomerOnly: true }
+        { onlyActive: true, visibleToCustomerOnly: true, orgId }
       ),
     ]);
     const allowedCodes = new Set(catMap.keys());
