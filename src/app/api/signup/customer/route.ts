@@ -112,12 +112,30 @@ export async function POST(req: NextRequest) {
 
     const existsEmail = await User.findOne({ email, organizationId }, { _id: 1, socialAccounts: 1 }).lean() as any;
     if (existsEmail) {
-      const hasSocial = Array.isArray(existsEmail.socialAccounts) && existsEmail.socialAccounts.length > 0;
-      const provider = hasSocial ? existsEmail.socialAccounts[0].provider : null;
-      if (provider === "naver") {
-        return NextResponse.json({ ok: false, error: "이 이메일은 네이버 로그인으로 가입되어 있습니다. 네이버로 로그인해 주세요." }, { status: 409 });
+      const providers: string[] = Array.isArray(existsEmail.socialAccounts)
+        ? existsEmail.socialAccounts.map((s: { provider: string }) => s.provider)
+        : [];
+      if (providers.length > 0) {
+        const labels = providers.map(p => p === "kakao" ? "카카오" : p === "naver" ? "네이버" : p).join(", ");
+        return NextResponse.json({ ok: false, error: `이 이메일은 ${labels} 로그인으로 가입되어 있습니다. ${labels}로 로그인해 주세요.` }, { status: 409 });
       }
       return NextResponse.json({ ok: false, error: "이미 사용 중인 이메일입니다." }, { status: 409 });
+    }
+
+    // 전화번호 중복 확인
+    const normalizedPhone = phone.replace(/[^\d]/g, "");
+    if (normalizedPhone) {
+      const existsPhone = await User.findOne({ "customerProfile.phone": { $regex: normalizedPhone }, organizationId }, { _id: 1, socialAccounts: 1 }).lean() as any;
+      if (existsPhone) {
+        const providers: string[] = Array.isArray(existsPhone.socialAccounts)
+          ? existsPhone.socialAccounts.map((s: { provider: string }) => s.provider)
+          : [];
+        if (providers.length > 0) {
+          const labels = providers.map(p => p === "kakao" ? "카카오" : p === "naver" ? "네이버" : p).join(", ");
+          return NextResponse.json({ ok: false, error: `이 전화번호는 ${labels} 로그인으로 가입되어 있습니다. ${labels}로 로그인해 주세요.` }, { status: 409 });
+        }
+        return NextResponse.json({ ok: false, error: "이미 사용 중인 전화번호입니다." }, { status: 409 });
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
