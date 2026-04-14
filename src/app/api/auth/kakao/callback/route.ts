@@ -113,10 +113,20 @@ export async function GET(req: Request) {
     });
 
     if (!user && kakaoEmail) {
-      // 2. 동일 이메일의 일반 계정 찾기 → 소셜 계정 연결
+      // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
       user = await User.findOne({ email: kakaoEmail, role: "CUSTOMER" });
       if (user) {
         user.socialAccounts.push({ provider: "kakao", providerId: kakaoId });
+        await user.save();
+      }
+    }
+
+    if (!user && kakaoPhone) {
+      // 3. 동일 전화번호 계정 찾기 → 소셜 계정 연결
+      user = await User.findOne({ "customerProfile.phone": kakaoPhone, role: "CUSTOMER" });
+      if (user) {
+        user.socialAccounts.push({ provider: "kakao", providerId: kakaoId });
+        if (kakaoEmail && !user.email) user.email = kakaoEmail;
         await user.save();
       }
     }

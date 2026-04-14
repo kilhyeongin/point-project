@@ -105,10 +105,20 @@ export async function GET(req: Request) {
     });
 
     if (!user && naverEmail) {
-      // 2. 동일 이메일의 일반 계정 찾기 → 소셜 계정 연결
+      // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
       user = await User.findOne({ email: naverEmail, role: "CUSTOMER" });
       if (user) {
         user.socialAccounts.push({ provider: "naver", providerId: naverId });
+        await user.save();
+      }
+    }
+
+    if (!user && naverPhone) {
+      // 3. 동일 전화번호 계정 찾기 → 소셜 계정 연결
+      user = await User.findOne({ "customerProfile.phone": naverPhone, role: "CUSTOMER" });
+      if (user) {
+        user.socialAccounts.push({ provider: "naver", providerId: naverId });
+        if (naverEmail && !user.email) user.email = naverEmail;
         await user.save();
       }
     }
