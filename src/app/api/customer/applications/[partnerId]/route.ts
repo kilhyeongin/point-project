@@ -17,6 +17,15 @@ import { Resend } from "resend";
 import { logger } from "@/lib/logger";
 import { isKoreanHoliday, getHolidayName } from "@/lib/koreanHolidays";
 
+function escapeHtml(str: string) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 type Params = {
   params: Promise<{ partnerId: string }>;
 };
@@ -185,9 +194,9 @@ export async function POST(req: Request, { params }: Params) {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       const customerAny = customer as any;
-      const customerName = String(customerAny?.name ?? "고객");
-      const customerPhone = String(customerAny?.customerProfile?.phone ?? "-");
-      const customerAddress = String(customerAny?.customerProfile?.address ?? "-");
+      const customerName = escapeHtml(String(customerAny?.name ?? "고객"));
+      const customerPhone = escapeHtml(String(customerAny?.customerProfile?.phone ?? "-"));
+      const customerAddress = escapeHtml(String(customerAny?.customerProfile?.address ?? "-"));
 
       const appointmentKorean = appointmentDate.toLocaleString("ko-KR", {
         year: "numeric",
@@ -199,7 +208,7 @@ export async function POST(req: Request, { params }: Params) {
       });
 
       const noteHtml = noteText
-        ? `<tr><td style="padding:8px 0;color:#6b7280;font-size:14px;">추가 메모</td><td style="padding:8px 0;font-size:14px;">${noteText}</td></tr>`
+        ? `<tr><td style="padding:8px 0;color:#6b7280;font-size:14px;">추가 메모</td><td style="padding:8px 0;font-size:14px;">${escapeHtml(noteText)}</td></tr>`
         : "";
 
       await resend.emails.send({
@@ -398,7 +407,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   );
 
   const partnerAny = partner as Record<string, unknown>;
-  const businessName = String((partnerAny?.partnerProfile as Record<string, unknown>)?.businessName ?? (partnerAny?.name ?? ""));
+  const businessName = escapeHtml(String((partnerAny?.partnerProfile as Record<string, unknown>)?.businessName ?? (partnerAny?.name ?? "")));
   const apptKorean = cancelledAt
     ? new Date(cancelledAt).toLocaleString("ko-KR", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })
     : "-";
@@ -494,7 +503,7 @@ export async function PATCH(req: Request, { params }: Params) {
   );
 
   const partnerAny = partner as Record<string, unknown>;
-  const businessName = String((partnerAny?.partnerProfile as Record<string, unknown>)?.businessName ?? (partnerAny?.name ?? ""));
+  const businessName = escapeHtml(String((partnerAny?.partnerProfile as Record<string, unknown>)?.businessName ?? (partnerAny?.name ?? "")));
   const newKorean = newDate.toLocaleString("ko-KR", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" });
   const prevKorean = previousAppointmentAt
     ? new Date(previousAppointmentAt).toLocaleString("ko-KR", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })
@@ -518,7 +527,7 @@ export async function PATCH(req: Request, { params }: Params) {
       <td style="padding:8px 0;color:#6b7280;font-size:14px;">변경된 방문 일시</td>
       <td style="padding:8px 0;font-size:14px;font-weight:700;">${newKorean}</td>
     </tr>
-    ${rawNote ? `<tr><td style="padding:8px 0;color:#6b7280;font-size:14px;">메모</td><td style="padding:8px 0;font-size:14px;">${rawNote}</td></tr>` : ""}
+    ${rawNote ? `<tr><td style="padding:8px 0;color:#6b7280;font-size:14px;">메모</td><td style="padding:8px 0;font-size:14px;">${escapeHtml(rawNote)}</td></tr>` : ""}
   </table>
   <p style="color:#9ca3af;font-size:12px;margin-top:24px;">이 메일은 포인트 관리 시스템에서 자동 발송되었습니다.</p>
 </div>`.trim()

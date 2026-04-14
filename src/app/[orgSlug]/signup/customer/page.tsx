@@ -127,7 +127,7 @@ export default function CustomerSignupPage() {
       const res = await fetch("/api/auth/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email }),
+        body: JSON.stringify({ email: form.email, organizationId: orgSlug }),
       });
 
       const data = await res.json();

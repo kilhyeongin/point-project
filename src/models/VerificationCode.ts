@@ -2,6 +2,12 @@ import { Schema, models, model } from "mongoose";
 
 const VerificationCodeSchema = new Schema(
   {
+    organizationId: {
+      type: String,
+      required: true,
+      default: "default",
+      index: true,
+    },
     email: {
       type: String,
       required: true,

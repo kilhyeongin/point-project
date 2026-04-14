@@ -76,33 +76,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "주소를 입력해 주세요." }, { status: 400 });
     }
 
+    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
+
     await connectDB();
 
-    // 이메일 인증 코드 검증
-    const record = await VerificationCode.findOne({ email }).lean() as any;
+    // 이메일 인증 코드 검증 (atomic: 조회+삭제 동시 처리로 race condition 방지)
+    const record = await VerificationCode.findOneAndDelete({
+      email,
+      organizationId,
+      code: verificationCode,
+      expiresAt: { $gt: new Date() },
+    }).lean() as any;
 
     if (!record) {
-      return NextResponse.json(
-        { ok: false, error: "인증 코드가 없습니다. 인증 코드를 다시 발송해 주세요." },
-        { status: 400 }
-      );
-    }
-
-    if (new Date() > new Date(record.expiresAt)) {
-      return NextResponse.json(
-        { ok: false, error: "인증 코드가 만료되었습니다. 인증 코드를 다시 발송해 주세요." },
-        { status: 400 }
-      );
-    }
-
-    if (record.code !== verificationCode) {
+      // 코드가 없거나, 만료되었거나, 틀렸거나 — 원인별 메시지 제공
+      const anyRecord = await VerificationCode.findOne({ email, organizationId }, { expiresAt: 1, code: 1 }).lean() as any;
+      if (!anyRecord) {
+        return NextResponse.json(
+          { ok: false, error: "인증 코드가 없습니다. 인증 코드를 다시 발송해 주세요." },
+          { status: 400 }
+        );
+      }
+      if (new Date() > new Date(anyRecord.expiresAt)) {
+        return NextResponse.json(
+          { ok: false, error: "인증 코드가 만료되었습니다. 인증 코드를 다시 발송해 주세요." },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { ok: false, error: "인증 코드가 올바르지 않습니다." },
         { status: 400 }
       );
     }
-
-    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
 
     // 중복 확인 (org 범위)
     const existsUsername = await User.findOne({ username, organizationId }, { _id: 1 }).lean();
@@ -158,8 +163,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 사용된 인증 코드 삭제
-    await VerificationCode.deleteOne({ email });
+    // 인증 코드는 findOneAndDelete에서 이미 삭제됨
 
     return NextResponse.json({
       ok: true,

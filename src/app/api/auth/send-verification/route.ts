@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const email = String(body?.email ?? "").trim().toLowerCase();
+    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const exists = await User.findOne({ email }, { _id: 1 }).lean();
+    const exists = await User.findOne({ email, organizationId }, { _id: 1 }).lean();
     if (exists) {
       return NextResponse.json(
         { ok: false, error: "이미 사용 중인 이메일입니다." },
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // 기존 코드 덮어쓰기 (upsert)
     await VerificationCode.findOneAndUpdate(
-      { email },
+      { email, organizationId },
       { code, expiresAt },
       { upsert: true }
     );
