@@ -6,14 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const PRESET_PARTNERS = [
-  { businessName: "스타벅스 강남점", contactName: "김민준", address: "서울 강남구 테헤란로 1" },
-  { businessName: "올리브영 홍대점", contactName: "이서연", address: "서울 마포구 홍익로 1" },
-  { businessName: "CGV 영등포점", contactName: "박지훈", address: "서울 영등포구 영등포로 1" },
-  { businessName: "롯데리아 신촌점", contactName: "최수아", address: "서울 서대문구 신촌로 1" },
-  { businessName: "GS25 이태원점", contactName: "정도윤", address: "서울 용산구 이태원로 1" },
-  { businessName: "뚜레쥬르 잠실점", contactName: "윤하은", address: "서울 송파구 잠실로 1" },
-  { businessName: "맥도날드 명동점", contactName: "임재원", address: "서울 중구 명동길 1" },
-  { businessName: "파리바게뜨 건대점", contactName: "강다은", address: "서울 광진구 능동로 1" },
+  { businessName: "베틀한복",         contactName: "담당자", address: "서울" },
+  { businessName: "운선제한복",        contactName: "담당자", address: "서울" },
+  { businessName: "한복남",           contactName: "담당자", address: "서울" },
+  { businessName: "바른손",           contactName: "담당자", address: "서울" },
+  { businessName: "보자기카드",        contactName: "담당자", address: "서울" },
+  { businessName: "원골드",           contactName: "담당자", address: "서울" },
+  { businessName: "아크레도",          contactName: "담당자", address: "서울" },
+  { businessName: "레오르",           contactName: "담당자", address: "서울" },
+  { businessName: "원스위드",          contactName: "담당자", address: "서울" },
+  { businessName: "더베일스토리",       contactName: "담당자", address: "서울" },
+  { businessName: "드림아일랜드",       contactName: "담당자", address: "서울" },
+  { businessName: "투어스테이",        contactName: "담당자", address: "서울" },
+  { businessName: "디오드스튜디오",     contactName: "담당자", address: "서울" },
+  { businessName: "하다갤러리",        contactName: "담당자", address: "서울" },
+  { businessName: "까미유",           contactName: "담당자", address: "서울" },
+  { businessName: "바로오늘이그날",     contactName: "담당자", address: "서울" },
+  { businessName: "결혼식사회끝판왕",   contactName: "담당자", address: "서울" },
+  { businessName: "더라이브MC",        contactName: "담당자", address: "서울" },
+  { businessName: "연플라워",          contactName: "담당자", address: "서울" },
+  { businessName: "플로엣",           contactName: "담당자", address: "서울" },
+  { businessName: "멉씨 헤어메이크업",  contactName: "담당자", address: "서울" },
+  { businessName: "오늘메이크업",       contactName: "담당자", address: "서울" },
+  { businessName: "베일즈",           contactName: "담당자", address: "서울" },
+  { businessName: "더도톰",           contactName: "담당자", address: "서울" },
+  { businessName: "클라보",           contactName: "담당자", address: "서울" },
 ];
 
 type Form = {
@@ -36,9 +53,8 @@ function randomPhone() {
   return `010${mid}${end}`;
 }
 
-function toUsername(name: string, idx: number) {
-  const base = name.replace(/\s/g, "").toLowerCase().slice(0, 8);
-  return `${base}${idx + 1}`;
+function toUsername(_name: string, idx: number) {
+  return `ct${idx + 1}`;
 }
 
 export default function DevPartnerPage() {
@@ -132,8 +148,8 @@ export default function DevPartnerPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-xl font-black text-foreground tracking-tight">테스트 제휴사 생성</h1>
-        <p className="text-sm text-muted-foreground mt-1">테스트용 제휴사 계정을 빠르게 만듭니다. 기본 비밀번호: <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">12341234</code></p>
+        <h1 className="text-xl font-black text-foreground tracking-tight">제휴사 일괄 생성</h1>
+        <p className="text-sm text-muted-foreground mt-1">제휴사 계정을 빠르게 만듭니다. 아이디: <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">ct1~ct25</code> / 기본 비밀번호: <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">12341234</code></p>
       </div>
 
       {/* 프리셋 버튼 */}
@@ -152,7 +168,7 @@ export default function DevPartnerPage() {
           ))}
         </div>
         <Button type="button" onClick={bulkCreate} disabled={loading} className="w-full font-bold bg-emerald-500 hover:bg-emerald-600 text-white">
-          {loading ? "생성 중..." : "8개 전체 한번에 생성"}
+          {loading ? "생성 중..." : "25개 전체 한번에 생성"}
         </Button>
       </div>
 
