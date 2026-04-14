@@ -50,7 +50,7 @@ export default function DevPartnerPage() {
     businessNumber: "",
     contactName: "",
     username: "",
-    password: "Test1234!",
+    password: "12341234",
     contactPhone: "",
     address: "",
   });
@@ -68,7 +68,7 @@ export default function DevPartnerPage() {
       businessNumber: randomBizNum(),
       contactName: p.contactName,
       username: toUsername(p.businessName, idx),
-      password: "Test1234!",
+      password: "12341234",
       contactPhone: randomPhone(),
       address: p.address,
     });
@@ -106,7 +106,7 @@ export default function DevPartnerPage() {
         businessNumber: randomBizNum(),
         contactName: p.contactName,
         username: toUsername(p.businessName, i),
-        password: "Test1234!",
+        password: "12341234",
         contactPhone: randomPhone(),
         address: p.address,
         organizationId: orgSlug,
@@ -133,7 +133,7 @@ export default function DevPartnerPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-xl font-black text-foreground tracking-tight">테스트 제휴사 생성</h1>
-        <p className="text-sm text-muted-foreground mt-1">테스트용 제휴사 계정을 빠르게 만듭니다. 기본 비밀번호: <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">Test1234!</code></p>
+        <p className="text-sm text-muted-foreground mt-1">테스트용 제휴사 계정을 빠르게 만듭니다. 기본 비밀번호: <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">12341234</code></p>
       </div>
 
       {/* 프리셋 버튼 */}
@@ -178,7 +178,7 @@ export default function DevPartnerPage() {
           </div>
           <div>
             <label className="text-xs font-bold text-muted-foreground mb-1 block">비밀번호</label>
-            <Input value={form.password} onChange={e => set("password", e.target.value)} placeholder="Test1234!" className="h-10" />
+            <Input value={form.password} onChange={e => set("password", e.target.value)} placeholder="12341234" className="h-10" />
           </div>
           <div>
             <label className="text-xs font-bold text-muted-foreground mb-1 block">전화번호</label>
