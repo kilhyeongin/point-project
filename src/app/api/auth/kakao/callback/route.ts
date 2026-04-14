@@ -114,7 +114,7 @@ export async function GET(req: Request) {
 
     if (!user && kakaoEmail) {
       // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
-      user = await User.findOne({ email: kakaoEmail, role: "CUSTOMER" });
+      user = await User.findOne({ email: kakaoEmail, role: "CUSTOMER", organizationId: resolvedOrgSlug });
       if (user) {
         user.socialAccounts.push({ provider: "kakao", providerId: kakaoId });
         await user.save();
@@ -123,7 +123,7 @@ export async function GET(req: Request) {
 
     if (!user && kakaoPhone) {
       // 3. 동일 전화번호 계정 찾기 → 소셜 계정 연결
-      user = await User.findOne({ "customerProfile.phone": kakaoPhone, role: "CUSTOMER" });
+      user = await User.findOne({ "customerProfile.phone": kakaoPhone, role: "CUSTOMER", organizationId: resolvedOrgSlug });
       if (user) {
         user.socialAccounts.push({ provider: "kakao", providerId: kakaoId });
         if (kakaoEmail && !user.email) user.email = kakaoEmail;

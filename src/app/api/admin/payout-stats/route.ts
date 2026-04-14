@@ -8,13 +8,13 @@ import { User } from "@/models/User";
 
 function parseDateStart(value: string | null) {
   if (!value) return null;
-  const d = new Date(`${value}T00:00:00.000`);
+  const d = new Date(`${value}T00:00:00.000+09:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function parseDateEnd(value: string | null) {
   if (!value) return null;
-  const d = new Date(`${value}T23:59:59.999`);
+  const d = new Date(`${value}T23:59:59.999+09:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 

@@ -16,14 +16,14 @@ export function toPeriodKey(date: Date) {
   return `${yyyy}-${mm}`;
 }
 
-export async function isSettlementLockedByPeriodKey(periodKey: string) {
+export async function isSettlementLockedByPeriodKey(periodKey: string, orgId: string) {
   if (!/^\d{4}-\d{2}$/.test(periodKey)) return false;
 
-  const exists = await Settlement.exists({ periodKey });
+  const exists = await Settlement.exists({ organizationId: orgId, periodKey });
   return Boolean(exists);
 }
 
-export async function isSettlementLockedByDate(date: Date) {
+export async function isSettlementLockedByDate(date: Date, orgId: string) {
   const periodKey = toPeriodKey(date);
-  return isSettlementLockedByPeriodKey(periodKey);
+  return isSettlementLockedByPeriodKey(periodKey, orgId);
 }

@@ -16,11 +16,12 @@ import { Ledger } from "@/models/Ledger";
 import { User } from "@/models/User";
 import mongoose from "mongoose";
 
-function parseDateYYYYMMDD(s: string | null) {
+function parseDateYYYYMMDD(s: string | null, endOfDay = false) {
   if (!s) return null;
   // "2026-03-01" 형태만 받는 간단 방어
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
-  const d = new Date(`${s}T00:00:00.000Z`);
+  const suffix = endOfDay ? "T23:59:59.999+09:00" : "T00:00:00.000+09:00";
+  const d = new Date(`${s}${suffix}`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
   const toStr = searchParams.get("to");
 
   const from = parseDateYYYYMMDD(fromStr);
-  const to = parseDateYYYYMMDD(toStr);
+  const to = parseDateYYYYMMDD(toStr, true);
 
   await connectDB();
 
@@ -55,15 +56,10 @@ export async function GET(req: Request) {
     counterpartyId: { $ne: null },
   };
 
-  // 기간 조건 (to는 해당 날짜의 "끝"까지 포함되도록 23:59:59.999Z 처리)
   if (from || to) {
     match.createdAt = {};
     if (from) match.createdAt.$gte = from;
-    if (to) {
-      const end = new Date(to);
-      end.setUTCHours(23, 59, 59, 999);
-      match.createdAt.$lte = end;
-    }
+    if (to) match.createdAt.$lte = to;
   }
 
   const pipeline: any[] = [

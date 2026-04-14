@@ -106,7 +106,7 @@ export async function GET(req: Request) {
 
     if (!user && naverEmail) {
       // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
-      user = await User.findOne({ email: naverEmail, role: "CUSTOMER" });
+      user = await User.findOne({ email: naverEmail, role: "CUSTOMER", organizationId: resolvedOrgSlug });
       if (user) {
         user.socialAccounts.push({ provider: "naver", providerId: naverId });
         await user.save();
@@ -115,7 +115,7 @@ export async function GET(req: Request) {
 
     if (!user && naverPhone) {
       // 3. 동일 전화번호 계정 찾기 → 소셜 계정 연결
-      user = await User.findOne({ "customerProfile.phone": naverPhone, role: "CUSTOMER" });
+      user = await User.findOne({ "customerProfile.phone": naverPhone, role: "CUSTOMER", organizationId: resolvedOrgSlug });
       if (user) {
         user.socialAccounts.push({ provider: "naver", providerId: naverId });
         if (naverEmail && !user.email) user.email = naverEmail;
