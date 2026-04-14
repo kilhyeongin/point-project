@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   const roleParam = String(searchParams.get("role") ?? "").toUpperCase() as UserRole;
   const skip = (page - 1) * PAGE_SIZE;
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const filter: UserFilter = {
     organizationId: orgId,

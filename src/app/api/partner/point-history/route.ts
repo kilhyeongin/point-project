@@ -21,7 +21,7 @@ export async function GET() {
 
   // ISSUE: 파트너 차감행(accountId=파트너), USE: 고객 차감 중 counterpartyId=파트너인 행
   const rows = await Ledger.find({
-    organizationId: session.orgId ?? "default",
+    organizationId: session.orgId ?? "4nwn",
     $or: [
       { accountId: partnerId, type: "ISSUE" },
       { counterpartyId: partnerId, type: "USE" },

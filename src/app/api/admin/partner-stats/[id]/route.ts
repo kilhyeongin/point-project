@@ -37,7 +37,7 @@ export async function GET(
   const endDate = parseDateEnd(searchParams.get("endDate"));
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   try {
     const partnerId = new mongoose.Types.ObjectId(id);

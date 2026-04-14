@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const counterpartyId = new mongoose.Types.ObjectId(counterpartyIdStr);
   const dbSession = await mongoose.startSession();
 

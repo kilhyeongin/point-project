@@ -45,7 +45,7 @@ export async function GET() {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   // 모든 정산 라인 조회
   const docs = await Settlement.find({ organizationId: orgId })

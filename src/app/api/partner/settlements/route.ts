@@ -54,7 +54,7 @@ export async function GET() {
 
   const counterpartyId = new mongoose.Types.ObjectId(session.uid);
   const currentPeriodKey = getCurrentPeriodKey();
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   // ----- 마감된 정산 조회 -----
   const rows = await Settlement.find({ organizationId: orgId, counterpartyId })

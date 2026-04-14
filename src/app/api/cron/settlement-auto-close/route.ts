@@ -82,7 +82,7 @@ export async function GET(req: Request) {
 
   for (const partner of partners) {
     try {
-      const result = await generateSettlement(partner._id, periodKey, partner.organizationId ?? "default");
+      const result = await generateSettlement(partner._id, periodKey, partner.organizationId ?? "4nwn");
       results.push({
         partnerId: result.counterpartyId,
         ok: true,

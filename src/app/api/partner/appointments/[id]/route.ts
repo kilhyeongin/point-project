@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     await connectDB();
 
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     // 직원 메모 저장
     if (typeof body?.staffMemo === "string") {

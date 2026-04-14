@@ -58,7 +58,7 @@ export async function GET() {
     await connectDB();
 
     const me = await User.findOne(
-      { _id: session.uid, organizationId: session.orgId ?? "default" },
+      { _id: session.uid, organizationId: session.orgId ?? "4nwn" },
       {
         username: 1,
         name: 1,
@@ -78,7 +78,7 @@ export async function GET() {
     const categories = await normalizeCategoryCodes(
       profile.categories,
       profile.category,
-      { orgId: session.orgId ?? "default" }
+      { orgId: session.orgId ?? "4nwn" }
     );
 
     return NextResponse.json({
@@ -194,7 +194,7 @@ export async function PUT(req: NextRequest) {
       {
         onlyActive: true,
         visibleToPartnerOnly: true,
-        orgId: session.orgId ?? "default",
+        orgId: session.orgId ?? "4nwn",
       }
     );
 
@@ -203,7 +203,7 @@ export async function PUT(req: NextRequest) {
     const updated = await User.findOneAndUpdate(
       {
         _id: session.uid,
-        organizationId: session.orgId ?? "default",
+        organizationId: session.orgId ?? "4nwn",
         role: "PARTNER",
       },
       {
@@ -245,7 +245,7 @@ export async function PUT(req: NextRequest) {
     const normalizedSavedCategories = await normalizeCategoryCodes(
       profile.categories,
       profile.category,
-      { orgId: session.orgId ?? "default" }
+      { orgId: session.orgId ?? "4nwn" }
     );
 
     return NextResponse.json({

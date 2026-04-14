@@ -44,7 +44,7 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const doc = await Settlement.findOne({
     organizationId: orgId,

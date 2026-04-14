@@ -80,7 +80,7 @@ export async function POST(req: Request) {
 
   const { fromDate, toDate } = dateRange;
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   await connectDB();
 

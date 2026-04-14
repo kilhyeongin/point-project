@@ -5,7 +5,7 @@ import { FavoritePartner } from "@/models/FavoritePartner";
 export async function validatePartnerCustomerRelation({
   partnerId,
   customerId,
-  orgId = "default",
+  orgId = "4nwn",
 }: {
   partnerId: string;
   customerId: string;

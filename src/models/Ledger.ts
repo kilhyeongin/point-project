@@ -5,7 +5,7 @@ const LedgerSchema = new Schema(
   {
     organizationId: {
       type: String,
-      default: "default",
+      default: "4nwn",
       index: true,
     },
 

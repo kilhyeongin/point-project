@@ -5,7 +5,7 @@ const VerificationCodeSchema = new Schema(
     organizationId: {
       type: String,
       required: true,
-      default: "default",
+      default: "4nwn",
       index: true,
     },
     email: {

@@ -40,7 +40,7 @@ const LEGACY_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
   DEFAULT_PARTNER_CATEGORY_SEEDS.map((item) => [item.name, item.code])
 );
 
-export async function ensureDefaultPartnerCategories(orgId = "default") {
+export async function ensureDefaultPartnerCategories(orgId = "4nwn") {
   const count = await PartnerCategoryMaster.countDocuments({ organizationId: orgId });
   if (count > 0) return;
 
@@ -61,7 +61,7 @@ export async function getPartnerCategoryMasters(options?: {
   visibleToCustomerOnly?: boolean;
   orgId?: string;
 }) {
-  const orgId = options?.orgId ?? "default";
+  const orgId = options?.orgId ?? "4nwn";
   await ensureDefaultPartnerCategories(orgId);
 
   const filter: Record<string, unknown> = { organizationId: orgId };

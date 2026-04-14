@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     const [docs, favoriteDocs] = await Promise.all([
       User.find(
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     const allCategoryMasters = await getPartnerCategoryMasters({
       activeOnly: true,
       visibleToCustomerOnly: true,
-      orgId: session.orgId ?? "default",
+      orgId: session.orgId ?? "4nwn",
     });
     const codeToLabel = new Map<string, string>();
     const legacyLabelToCode = new Map<string, string>();

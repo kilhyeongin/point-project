@@ -72,7 +72,7 @@ export async function POST(_req: Request, { params }: Params) {
     if (session.role !== "CUSTOMER") return forbidden();
 
     const { partnerId } = await params;
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     await connectDB();
 
@@ -156,7 +156,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
     const customerId = new mongoose.Types.ObjectId(session.uid);
     const partnerObjectId = new mongoose.Types.ObjectId(partnerId);
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     const existing = await FavoritePartner.findOne(
       { organizationId: orgId, customerId, partnerId: partnerObjectId },

@@ -21,7 +21,7 @@ export async function GET() {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const rows = await Settlement.aggregate([
     { $match: { organizationId: orgId } },

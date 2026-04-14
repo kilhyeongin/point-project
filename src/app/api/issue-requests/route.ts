@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   const customerId = new mongoose.Types.ObjectId(userId);
 
   const relation = await FavoritePartner.findOne({
-    organizationId: session.orgId ?? "default",
+    organizationId: session.orgId ?? "4nwn",
     customerId,
     partnerId: requesterId,
     status: "APPLIED",
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const customer = await User.findOne({ _id: customerId, organizationId: session.orgId ?? "default" }, {
+  const customer = await User.findOne({ _id: customerId, organizationId: session.orgId ?? "4nwn" }, {
     _id: 1,
     username: 1,
     name: 1,
@@ -138,7 +138,7 @@ export async function POST(req: Request) {
       const issue = await IssueRequest.create(
         [
           {
-            organizationId: session.orgId ?? "default",
+            organizationId: session.orgId ?? "4nwn",
             userId: customerId,
             requesterId,
             adminId: null,
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
       const ledgerRows = await Ledger.create(
         [
           {
-            organizationId: session.orgId ?? "default",
+            organizationId: session.orgId ?? "4nwn",
             accountId: requesterId,
             userId: customerId,
             actorId: requesterId,
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
             note: note ? `신청 고객 지급 차감 / ${note}` : "신청 고객 지급 차감",
           },
           {
-            organizationId: session.orgId ?? "default",
+            organizationId: session.orgId ?? "4nwn",
             accountId: customerId,
             userId: customerId,
             actorId: requesterId,

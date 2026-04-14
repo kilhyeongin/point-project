@@ -62,7 +62,7 @@ export async function GET(req: Request) {
 
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const filter: Record<string, any> = {
     organizationId: orgId,

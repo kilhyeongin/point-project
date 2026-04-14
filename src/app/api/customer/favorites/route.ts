@@ -36,7 +36,7 @@ export async function GET() {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const docs = await FavoritePartner.find(
     { organizationId: orgId, customerId: session.uid, likedByCustomer: true },
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
 
   const partner = await User.findOne({
     _id: partnerId,
-    organizationId: session.orgId ?? "default",
+    organizationId: session.orgId ?? "4nwn",
     role: "PARTNER",
     status: "ACTIVE",
     "partnerProfile.isPublished": true,
@@ -101,14 +101,14 @@ export async function POST(req: Request) {
 
   await FavoritePartner.updateOne(
     {
-      organizationId: session.orgId ?? "default",
+      organizationId: session.orgId ?? "4nwn",
       customerId: session.uid,
       partnerId,
     },
     {
       $set: { likedByCustomer: true },
       $setOnInsert: {
-        organizationId: session.orgId ?? "default",
+        organizationId: session.orgId ?? "4nwn",
         customerId: session.uid,
         partnerId,
         status: "LIKED",

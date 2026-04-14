@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const { from, to, periodKey } = getPreviousMonthRange(new Date());
 
   // 모든 PARTNER 유저 조회 (auto-close는 CRON 전용이므로 orgId는 env로 관리 - 현재는 "default" 사용)
-  const cronOrgId = process.env.CRON_ORG_ID ?? "default";
+  const cronOrgId = process.env.CRON_ORG_ID ?? "4nwn";
 
   const partners = await User.find(
     { organizationId: cronOrgId, role: "PARTNER" },

@@ -62,7 +62,7 @@ export async function GET(req: Request) {
   // CSRF state 검증
   const cookieStore = await cookies();
   const savedState = cookieStore.get("kakao_oauth_state")?.value;
-  const orgSlug = cookieStore.get("kakao_oauth_org")?.value ?? "default";
+  const orgSlug = cookieStore.get("kakao_oauth_org")?.value ?? "4nwn";
   cookieStore.delete("kakao_oauth_state");
   cookieStore.delete("kakao_oauth_org");
 

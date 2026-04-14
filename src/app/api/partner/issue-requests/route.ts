@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   await connectDB();
 
   const filter: any = {
-    organizationId: session.orgId ?? "default",
+    organizationId: session.orgId ?? "4nwn",
     requesterId: new mongoose.Types.ObjectId(session.uid),
   };
   if (["PENDING", "APPROVED", "REJECTED"].includes(statusParam)) {

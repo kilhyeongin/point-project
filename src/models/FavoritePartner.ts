@@ -51,7 +51,7 @@ const FavoritePartnerSchema = new Schema<IFavoritePartner>(
   {
     organizationId: {
       type: String,
-      default: "default",
+      default: "4nwn",
       index: true,
     },
 

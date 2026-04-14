@@ -36,7 +36,7 @@ export async function GET(req: Request) {
   const q = String(searchParams.get("q") ?? "").trim();
   const status = String(searchParams.get("status") ?? "ALL").toUpperCase();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const filter: any = { organizationId: orgId };
 
   if (["PENDING", "APPROVED", "REJECTED"].includes(status)) {

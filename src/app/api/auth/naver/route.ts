@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const orgSlug = searchParams.get("orgSlug") ?? "default";
+  const orgSlug = searchParams.get("orgSlug") ?? "4nwn";
 
   const state = crypto.randomUUID();
 

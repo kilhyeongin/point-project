@@ -59,7 +59,7 @@ export async function GET(req: Request) {
   // CSRF state 검증
   const cookieStore = await cookies();
   const savedState = cookieStore.get("naver_oauth_state")?.value;
-  const orgSlug = cookieStore.get("naver_oauth_org")?.value ?? "default";
+  const orgSlug = cookieStore.get("naver_oauth_org")?.value ?? "4nwn";
   cookieStore.delete("naver_oauth_state");
   cookieStore.delete("naver_oauth_org");
 

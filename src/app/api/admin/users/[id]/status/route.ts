@@ -41,7 +41,7 @@ export async function PATCH(
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const user = await User.findOne({ _id: id, organizationId: orgId }, { role: 1, status: 1 }).lean();
 

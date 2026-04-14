@@ -110,7 +110,7 @@ export default async function AdminDashboard({
     999
   );
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const [
     pendingTopupCount,

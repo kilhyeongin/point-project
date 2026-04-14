@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const startDate = parseDateStart(searchParams.get("startDate"));
   const endDate = parseDateEnd(searchParams.get("endDate"));
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   try {
     const partners = await User.find({ organizationId: orgId, role: "PARTNER", status: "ACTIVE" })

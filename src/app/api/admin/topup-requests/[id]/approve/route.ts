@@ -46,7 +46,7 @@ export async function PATCH(_req: Request, { params }: Params) {
     );
   }
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const topupId = new mongoose.Types.ObjectId(id);
   const adminId = new mongoose.Types.ObjectId(session.uid);
 

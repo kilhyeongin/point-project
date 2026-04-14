@@ -12,7 +12,7 @@ export type SettlementPeriodStatus = "OPEN" | "CLOSED" | "PAID";
 
 const SettlementPeriodSchema = new Schema(
   {
-    organizationId: { type: String, default: "default", index: true },
+    organizationId: { type: String, default: "4nwn", index: true },
 
     // 예: "2026-03"
     periodKey: { type: String, required: true, index: true },

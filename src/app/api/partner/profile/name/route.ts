@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest) {
     await connectDB();
 
     const updated = await User.findOneAndUpdate(
-      { _id: session.uid, organizationId: session.orgId ?? "default", role: "PARTNER" },
+      { _id: session.uid, organizationId: session.orgId ?? "4nwn", role: "PARTNER" },
       { $set: { name } },
       { new: true, projection: { name: 1 } }
     ).lean();

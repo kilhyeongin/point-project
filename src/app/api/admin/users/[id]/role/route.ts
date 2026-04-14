@@ -63,7 +63,7 @@ export async function PATCH(
     // 6) DB 연결
     await connectDB();
 
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     // 7) 대상 사용자 조회
     const target = await User.findOne({ _id: userId, organizationId: orgId });

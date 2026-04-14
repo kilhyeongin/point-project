@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
 
-  const user = await User.findOne({ _id: session.uid, organizationId: session.orgId ?? "default" }, { passwordHash: 1 });
+  const user = await User.findOne({ _id: session.uid, organizationId: session.orgId ?? "4nwn" }, { passwordHash: 1 });
 
   if (!user) {
     return NextResponse.json(
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   }
 
   const hashed = await bcrypt.hash(newPassword, 12);
-  await User.updateOne({ _id: session.uid, organizationId: session.orgId ?? "default" }, { $set: { passwordHash: hashed } });
+  await User.updateOne({ _id: session.uid, organizationId: session.orgId ?? "4nwn" }, { $set: { passwordHash: hashed } });
 
   return NextResponse.json({ ok: true, message: "비밀번호가 변경되었습니다." });
 }

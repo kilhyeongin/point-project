@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const orgId = String(body?.organizationId ?? "default");
+    const orgId = String(body?.organizationId ?? "4nwn");
     const exists = await User.findOne({ username, organizationId: orgId }, { _id: 1 }).lean();
     if (exists) {
       return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });

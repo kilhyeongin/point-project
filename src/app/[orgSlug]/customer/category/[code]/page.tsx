@@ -18,7 +18,7 @@ export default async function CategoryPartnersPage({ params }: PageProps) {
   const categories = await getPartnerCategoryMasters({
     activeOnly: true,
     visibleToCustomerOnly: true,
-    orgId: session.orgId ?? "default",
+    orgId: session.orgId ?? "4nwn",
   });
   const category = categories.find((c) => c.code === code);
   if (!category) notFound();

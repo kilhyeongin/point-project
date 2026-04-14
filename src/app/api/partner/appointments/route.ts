@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       dateFilter.$lte = endDate;
     }
 
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     const query: Record<string, unknown> = {
       organizationId: orgId,

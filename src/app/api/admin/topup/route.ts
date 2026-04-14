@@ -68,7 +68,7 @@ export async function POST(req: Request & { ip?: string }) {
   const adminId = new mongoose.Types.ObjectId(session.uid);
   const targetOid = new mongoose.Types.ObjectId(targetUserId);
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const target = await User.findOne({ _id: targetOid, organizationId: orgId }, {
     role: 1,

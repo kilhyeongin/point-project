@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   const USERS_COLLECTION = "users";
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const match: any = {
     organizationId: orgId,

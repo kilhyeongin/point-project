@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     const partners = await User.find(
       { organizationId: orgId, role: "PARTNER" },

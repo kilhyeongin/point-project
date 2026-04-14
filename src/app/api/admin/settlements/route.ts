@@ -48,7 +48,7 @@ export async function GET(req: Request) {
   // User 모델에서 실제 컬렉션 이름 참조 (하드코딩 방지)
   const USERS_COLLECTION = User.collection.name;
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const match: any = {
     organizationId: orgId,

@@ -4,7 +4,7 @@ import { Schema, model, models } from "mongoose";
 
 const AuditLogSchema = new Schema(
   {
-    organizationId: { type: String, default: "default", index: true },
+    organizationId: { type: String, default: "4nwn", index: true },
 
     // 작업을 수행한 관리자 ID
     adminId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },

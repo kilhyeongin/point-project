@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: Context) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const user = await User.findOne({ _id: id, organizationId: orgId }, {
     username: 1,

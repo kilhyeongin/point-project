@@ -33,7 +33,7 @@ export async function GET() {
 
   const accountId = new mongoose.Types.ObjectId(session.uid);
 
-  const docs = await Ledger.find({ organizationId: session.orgId ?? "default", accountId })
+  const docs = await Ledger.find({ organizationId: session.orgId ?? "4nwn", accountId })
     .sort({ createdAt: -1 })
     .limit(100)
     .populate("actorId", "name partnerProfile.businessName")

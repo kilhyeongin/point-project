@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const filter: any = { organizationId: orgId };
 
   if (["TOPUP", "ISSUE", "USE", "ADJUST"].includes(typeParam)) {

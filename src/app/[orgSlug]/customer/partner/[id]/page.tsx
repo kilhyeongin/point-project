@@ -26,7 +26,7 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const [doc, relation] = await Promise.all([
     User.findOne(

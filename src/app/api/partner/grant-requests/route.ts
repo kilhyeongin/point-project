@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     }
     await connectDB();
     targetUser = await User.findOne(
-      { _id: new mongoose.Types.ObjectId(customerId), organizationId: session.orgId ?? "default" },
+      { _id: new mongoose.Types.ObjectId(customerId), organizationId: session.orgId ?? "4nwn" },
       { _id: 1, role: 1, status: 1, username: 1, name: 1 }
     );
   } catch (e: any) {
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
   const partnerId = new mongoose.Types.ObjectId(session.uid);
 
   const relation = await FavoritePartner.findOne({
-    organizationId: session.orgId ?? "default",
+    organizationId: session.orgId ?? "4nwn",
     customerId,
     partnerId,
     status: "APPLIED",
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
       const ledgerDocs = await Ledger.create(
         [
           {
-            organizationId: session.orgId ?? "default",
+            organizationId: session.orgId ?? "4nwn",
             accountId: partnerId,
             userId: customerId,
             actorId: partnerId,
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
             note: note ? `포인트 지급 - ${note}` : "QR 적립 지급",
           },
           {
-            organizationId: session.orgId ?? "default",
+            organizationId: session.orgId ?? "4nwn",
             accountId: customerId,
             userId: customerId,
             actorId: partnerId,

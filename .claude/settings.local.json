@@ -87,7 +87,9 @@
       "Bash(cp \"C:/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/admin/partner-stats/page.tsx\" \"C:/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/[orgSlug]/admin/partner-stats/page.tsx\")",
       "Bash(cp \"C:/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/admin/payout-stats/page.tsx\" \"C:/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/[orgSlug]/admin/payout-stats/page.tsx\")",
       "Bash(cp \"C:/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/admin/settings/page.tsx\" \"C:/Users/PLANIT_DESIGN4/Desktop/point-project/point-project/src/app/[orgSlug]/admin/settings/page.tsx\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2, ensure_ascii=False\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2, ensure_ascii=False\\)\\)\")",
+      "Skill(update-config)",
+      "mcp__serena__initial_instructions"
     ]
   }
 }

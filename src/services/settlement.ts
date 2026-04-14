@@ -65,7 +65,7 @@ export interface GenerateSettlementResult {
 export async function generateSettlement(
   partnerId: string | mongoose.Types.ObjectId,
   periodKey: string,
-  orgId: string = "default"
+  orgId: string = "4nwn"
 ): Promise<GenerateSettlementResult> {
   const partnerOid =
     typeof partnerId === "string"

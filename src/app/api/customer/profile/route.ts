@@ -11,7 +11,7 @@ export async function GET() {
 
   await connectDB();
 
-  const user = await User.findOne({ _id: session.uid, organizationId: session.orgId ?? "default" })
+  const user = await User.findOne({ _id: session.uid, organizationId: session.orgId ?? "4nwn" })
     .select("name email customerProfile socialAccounts")
     .lean() as any;
 
@@ -53,7 +53,7 @@ export async function PUT(req: NextRequest) {
 
   await connectDB();
 
-  await User.findOneAndUpdate({ _id: session.uid, organizationId: session.orgId ?? "default" }, {
+  await User.findOneAndUpdate({ _id: session.uid, organizationId: session.orgId ?? "4nwn" }, {
     ...(email !== undefined && { email: String(email).trim().toLowerCase() }),
     ...(phone !== undefined && { "customerProfile.phone": String(phone).trim() }),
     ...(address !== undefined && { "customerProfile.address": String(address).trim() }),

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const email = String(body?.email ?? "").trim().toLowerCase();
-    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
+    const organizationId = String(body?.organizationId ?? "4nwn").trim() || "4nwn";
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(

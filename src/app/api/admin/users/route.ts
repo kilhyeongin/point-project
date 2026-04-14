@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const filter: any = { organizationId: orgId };
 
   // ✅ role 필터
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  const postOrgId = session.orgId ?? "default";
+  const postOrgId = session.orgId ?? "4nwn";
 
   const exists = await User.findOne({ organizationId: postOrgId, username }, { _id: 1 }).lean();
   if (exists) {

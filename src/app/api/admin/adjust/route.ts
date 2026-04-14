@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   const targetOid = new mongoose.Types.ObjectId(targetUserId);
   const adminOid = new mongoose.Types.ObjectId(session.uid);
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const target = await User.findOne({ _id: targetOid, organizationId: orgId }, {
     _id: 1,

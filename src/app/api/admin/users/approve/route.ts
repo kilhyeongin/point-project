@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const orgId = session.orgId ?? "default";
+    const orgId = session.orgId ?? "4nwn";
 
     const target = await User.findOne({ _id: userId, organizationId: orgId });
 

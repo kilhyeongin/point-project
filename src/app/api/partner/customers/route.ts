@@ -19,7 +19,7 @@ export async function GET() {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const docs = await FavoritePartner.find(
     { organizationId: orgId, partnerId: session.uid, status: "APPLIED" },

@@ -55,7 +55,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const _id = new mongoose.Types.ObjectId(id);
   const adminId = new mongoose.Types.ObjectId(session.uid);
 

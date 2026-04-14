@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "주소를 입력해 주세요." }, { status: 400 });
     }
 
-    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
+    const organizationId = String(body?.organizationId ?? "4nwn").trim() || "4nwn";
 
     await connectDB();
 

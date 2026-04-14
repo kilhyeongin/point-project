@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const organizationId = String(body?.organizationId ?? "default").trim() || "default";
+    const organizationId = String(body?.organizationId ?? "4nwn").trim() || "4nwn";
 
     const exists = await User.findOne({ username, organizationId }, { _id: 1 }).lean();
     if (exists) {

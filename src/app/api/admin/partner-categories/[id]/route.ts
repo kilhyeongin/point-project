@@ -55,7 +55,7 @@ export async function DELETE(_req: NextRequest, { params }: Context) {
 
     await connectDB();
 
-    const orgId = auth.session!.orgId ?? "default";
+    const orgId = auth.session!.orgId ?? "4nwn";
 
     const deleted = await PartnerCategoryMaster.findOneAndDelete({ _id: id, organizationId: orgId }).lean();
 
@@ -66,7 +66,7 @@ export async function DELETE(_req: NextRequest, { params }: Context) {
       );
     }
 
-    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "4nwn" });
 
     return NextResponse.json({
       ok: true,
@@ -114,7 +114,7 @@ export async function PUT(req: NextRequest, { params }: Context) {
 
     await connectDB();
 
-    const orgId = auth.session!.orgId ?? "default";
+    const orgId = auth.session!.orgId ?? "4nwn";
 
     const duplicate = await PartnerCategoryMaster.findOne(
       { organizationId: orgId, code, _id: { $ne: id } },
@@ -152,7 +152,7 @@ export async function PUT(req: NextRequest, { params }: Context) {
       );
     }
 
-    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "default" });
+    const items = await getPartnerCategoryMasters({ orgId: auth.session!.orgId ?? "4nwn" });
 
     return NextResponse.json({
       ok: true,

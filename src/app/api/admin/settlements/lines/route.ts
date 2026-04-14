@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const docs = await Settlement.find({ organizationId: orgId, periodKey })
     .sort({ createdAt: -1 })

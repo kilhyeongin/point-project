@@ -50,7 +50,7 @@ export default async function SettlementPrintPage({ params, searchParams }: Prop
 
   await connectDB();
 
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const [doc, counterparty] = await Promise.all([
     Settlement.findOne({

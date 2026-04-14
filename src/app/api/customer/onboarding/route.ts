@@ -41,7 +41,7 @@ export async function GET() {
     await connectDB();
 
     const me = await User.findOne(
-      { _id: session.uid, organizationId: session.orgId ?? "default" },
+      { _id: session.uid, organizationId: session.orgId ?? "4nwn" },
       {
         customerProfile: 1,
       }
@@ -62,7 +62,7 @@ export async function GET() {
       interests: Array.isArray(customerProfile.interests)
         ? customerProfile.interests
         : [],
-      interestOptions: await buildInterestOptions(session.orgId ?? "default"),
+      interestOptions: await buildInterestOptions(session.orgId ?? "4nwn"),
     });
   } catch (error) {
     console.error("[CUSTOMER_ONBOARDING_GET_ERROR]", error);
@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
     const interests = await normalizeCategoryCodes(body?.interests, undefined, {
       onlyActive: true,
       visibleToCustomerOnly: true,
-      orgId: session.orgId ?? "default",
+      orgId: session.orgId ?? "4nwn",
     });
 
     if (interests.length === 0) {
@@ -111,7 +111,7 @@ export async function PUT(req: NextRequest) {
     const updated = await User.findOneAndUpdate(
       {
         _id: session.uid,
-        organizationId: session.orgId ?? "default",
+        organizationId: session.orgId ?? "4nwn",
         role: "CUSTOMER",
       },
       {

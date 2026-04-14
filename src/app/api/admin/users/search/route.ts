@@ -36,7 +36,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = String(searchParams.get("q") ?? "").trim();
   const role = String(searchParams.get("role") ?? "ALL").toUpperCase();
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
 
   const filter: any = { organizationId: orgId };
 

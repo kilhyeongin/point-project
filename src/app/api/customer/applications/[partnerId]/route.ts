@@ -103,7 +103,7 @@ export async function POST(req: Request, { params }: Params) {
   const partner = await User.findOne(
     {
       _id: partnerObjectId,
-      organizationId: session.orgId ?? "default",
+      organizationId: session.orgId ?? "4nwn",
       role: "PARTNER",
       status: "ACTIVE",
       "partnerProfile.isPublished": true,
@@ -137,12 +137,12 @@ export async function POST(req: Request, { params }: Params) {
 
   // ── 슬롯 유효성 및 중복 예약 검증 ──────────────────────────
   const pp = (partner as any).partnerProfile ?? {};
-  const orgId = session.orgId ?? "default";
+  const orgId = session.orgId ?? "4nwn";
   const slotError = await validateAppointmentSlot(appointmentDate, pp, customerId, partnerObjectId, orgId);
   if (slotError) return slotError;
   // ─────────────────────────────────────────────────────────
 
-  const customer = await User.findOne({ _id: customerId, organizationId: session.orgId ?? "default" }, {
+  const customer = await User.findOne({ _id: customerId, organizationId: session.orgId ?? "4nwn" }, {
     name: 1,
     "customerProfile.phone": 1,
     "customerProfile.address": 1,
@@ -152,7 +152,7 @@ export async function POST(req: Request, { params }: Params) {
 
   await FavoritePartner.updateOne(
     {
-      organizationId: session.orgId ?? "default",
+      organizationId: session.orgId ?? "4nwn",
       customerId,
       partnerId: partnerObjectId,
     },
@@ -174,7 +174,7 @@ export async function POST(req: Request, { params }: Params) {
         },
       },
       $setOnInsert: {
-        organizationId: session.orgId ?? "default",
+        organizationId: session.orgId ?? "4nwn",
         customerId,
         partnerId: partnerObjectId,
       },
@@ -345,7 +345,7 @@ async function validateCustomerAndPartner(partnerId: string) {
 
   await connectDB();
   const partner = await User.findOne(
-    { _id: partnerId, organizationId: session.orgId ?? "default", role: "PARTNER", status: "ACTIVE" },
+    { _id: partnerId, organizationId: session.orgId ?? "4nwn", role: "PARTNER", status: "ACTIVE" },
     { _id: 1, name: 1, email: 1, "partnerProfile.contactEmail": 1, "partnerProfile.businessName": 1 }
   ).lean();
 
@@ -381,7 +381,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   const customerId = new mongoose.Types.ObjectId(session.uid);
   const partnerObjectId = new mongoose.Types.ObjectId(partnerId);
 
-  const record = await FavoritePartner.findOne({ organizationId: session.orgId ?? "default", customerId, partnerId: partnerObjectId });
+  const record = await FavoritePartner.findOne({ organizationId: session.orgId ?? "4nwn", customerId, partnerId: partnerObjectId });
 
   if (!record || record.status !== "APPLIED") {
     return NextResponse.json({ ok: false, message: "취소할 수 있는 신청이 없습니다." }, { status: 404 });
@@ -391,7 +391,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   const cancelledNote = record.appointmentNote ?? "";
 
   await FavoritePartner.updateOne(
-    { organizationId: session.orgId ?? "default", customerId, partnerId: partnerObjectId },
+    { organizationId: session.orgId ?? "4nwn", customerId, partnerId: partnerObjectId },
     {
       $set: { status: "LIKED", appointmentAt: null, appointmentNote: "" },
       $push: {
@@ -464,14 +464,14 @@ export async function PATCH(req: Request, { params }: Params) {
   const customerId = new mongoose.Types.ObjectId(session.uid);
   const partnerObjectId = new mongoose.Types.ObjectId(partnerId);
 
-  const record = await FavoritePartner.findOne({ organizationId: session.orgId ?? "default", customerId, partnerId: partnerObjectId });
+  const record = await FavoritePartner.findOne({ organizationId: session.orgId ?? "4nwn", customerId, partnerId: partnerObjectId });
   if (!record || record.status !== "APPLIED") {
     return NextResponse.json({ ok: false, message: "변경할 수 있는 신청이 없습니다." }, { status: 404 });
   }
 
   // 파트너 스케줄 유효성 검증
   const fullPartner = await User.findOne(
-    { _id: partnerObjectId, organizationId: session.orgId ?? "default" },
+    { _id: partnerObjectId, organizationId: session.orgId ?? "4nwn" },
     {
       "partnerProfile.operatingDays": 1, "partnerProfile.openTime": 1, "partnerProfile.closeTime": 1,
       "partnerProfile.slotMinutes": 1, "partnerProfile.maxPerSlot": 1, "partnerProfile.advanceDays": 1,
@@ -481,13 +481,13 @@ export async function PATCH(req: Request, { params }: Params) {
   ).lean();
 
   const pp = ((fullPartner as Record<string, unknown>)?.partnerProfile ?? {}) as Record<string, unknown>;
-  const slotError = await validateAppointmentSlot(newDate, pp, customerId, partnerObjectId, session.orgId ?? "default");
+  const slotError = await validateAppointmentSlot(newDate, pp, customerId, partnerObjectId, session.orgId ?? "4nwn");
   if (slotError) return slotError;
 
   const previousAppointmentAt = record.appointmentAt;
 
   await FavoritePartner.updateOne(
-    { organizationId: session.orgId ?? "default", customerId, partnerId: partnerObjectId },
+    { organizationId: session.orgId ?? "4nwn", customerId, partnerId: partnerObjectId },
     {
       $set: { appointmentAt: newDate, appointmentNote: rawNote },
       $push: {
