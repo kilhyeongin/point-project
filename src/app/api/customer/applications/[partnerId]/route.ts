@@ -128,109 +128,9 @@ export async function POST(req: Request, { params }: Params) {
 
   // ── 슬롯 유효성 및 중복 예약 검증 ──────────────────────────
   const pp = (partner as any).partnerProfile ?? {};
-  const operatingDays: number[] = Array.isArray(pp.operatingDays) ? pp.operatingDays : [1,2,3,4,5];
-  const openTime: string = pp.openTime ?? "09:00";
-  const closeTime: string = pp.closeTime ?? "18:00";
-  const slotMinutes: number = Number(pp.slotMinutes ?? 30);
-  const maxPerSlot: number = Number(pp.maxPerSlot ?? 1);
-  const advanceDays: number = Number(pp.advanceDays ?? 30);
-  const breakStart: string = String(pp.breakStart ?? "12:00");
-  const breakEnd: string = String(pp.breakEnd ?? "13:00");
-  const closedOnHolidays: boolean = Boolean(pp.closedOnHolidays ?? true);
-  const blockedDates: string[] = Array.isArray(pp.blockedDates) ? pp.blockedDates : [];
-
-  // 요일 체크 (KST 기준)
-  const kstDate = new Date(appointmentDate.getTime() + 9 * 60 * 60 * 1000);
-  const dayOfWeek = kstDate.getUTCDay(); // KST 기준 요일
-  if (!operatingDays.includes(dayOfWeek)) {
-    return NextResponse.json(
-      { ok: false, message: "해당 요일은 운영하지 않습니다." },
-      { status: 400 }
-    );
-  }
-
-  // 공휴일 체크
-  const kstDateStr = `${kstDate.getUTCFullYear()}-${String(kstDate.getUTCMonth() + 1).padStart(2, "0")}-${String(kstDate.getUTCDate()).padStart(2, "0")}`;
-  if (closedOnHolidays && isKoreanHoliday(kstDateStr)) {
-    return NextResponse.json(
-      { ok: false, message: `${getHolidayName(kstDateStr)}은(는) 휴무일입니다.` },
-      { status: 400 }
-    );
-  }
-
-  // 특정 휴무일 체크
-  if (blockedDates.includes(kstDateStr)) {
-    return NextResponse.json(
-      { ok: false, message: "해당 날짜는 특별 휴무일입니다." },
-      { status: 400 }
-    );
-  }
-
-  // 예약 가능 기간 체크
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const maxAllowedDate = new Date(todayStart);
-  maxAllowedDate.setDate(maxAllowedDate.getDate() + advanceDays);
-  if (appointmentDate < todayStart || appointmentDate > maxAllowedDate) {
-    return NextResponse.json(
-      { ok: false, message: "예약 가능 기간이 아닙니다." },
-      { status: 400 }
-    );
-  }
-
-  // 운영 시간 체크 (KST HH:MM)
-  const kstHour = kstDate.getUTCHours();
-  const kstMin = kstDate.getUTCMinutes();
-  const apptMinutes = kstHour * 60 + kstMin;
-  const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
-  const openMin = toMin(openTime);
-  const closeMin = toMin(closeTime);
-  if (apptMinutes < openMin || apptMinutes >= closeMin) {
-    return NextResponse.json(
-      { ok: false, message: `운영 시간(${openTime}~${closeTime}) 내의 시간을 선택해 주세요.` },
-      { status: 400 }
-    );
-  }
-
-  // 슬롯 경계 체크 (30분 단위이면 :00 또는 :30이어야 함)
-  if ((apptMinutes - openMin) % slotMinutes !== 0) {
-    return NextResponse.json(
-      { ok: false, message: `${slotMinutes}분 단위 슬롯으로 선택해 주세요.` },
-      { status: 400 }
-    );
-  }
-
-  // 휴무시간 체크
-  if (breakStart && breakEnd) {
-    const toMin2 = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
-    const breakStartMin = toMin2(breakStart);
-    const breakEndMin = toMin2(breakEnd);
-    if (apptMinutes >= breakStartMin && apptMinutes < breakEndMin) {
-      return NextResponse.json(
-        { ok: false, message: `${breakStart}~${breakEnd}는 휴무 시간입니다. 다른 시간을 선택해 주세요.` },
-        { status: 400 }
-      );
-    }
-  }
-
-  // 슬롯 시간 범위
-  const slotEnd = new Date(appointmentDate.getTime() + slotMinutes * 60 * 1000);
-
-  // 이미 예약된 수 확인 (내 기존 예약 제외)
-  const bookedCount = await FavoritePartner.countDocuments({
-    organizationId: session.orgId ?? "default",
-    partnerId: partnerObjectId,
-    customerId: { $ne: customerId },   // 본인 제외 (재신청 허용)
-    status: "APPLIED",
-    appointmentAt: { $gte: appointmentDate, $lt: slotEnd },
-  });
-
-  if (bookedCount >= maxPerSlot) {
-    return NextResponse.json(
-      { ok: false, message: "해당 시간은 이미 예약이 마감되었습니다. 다른 시간을 선택해 주세요." },
-      { status: 409 }
-    );
-  }
+  const orgId = session.orgId ?? "default";
+  const slotError = await validateAppointmentSlot(appointmentDate, pp, customerId, partnerObjectId, orgId);
+  if (slotError) return slotError;
   // ─────────────────────────────────────────────────────────
 
   const customer = await User.findOne({ _id: customerId, organizationId: session.orgId ?? "default" }, {
@@ -355,6 +255,76 @@ export async function POST(req: Request, { params }: Params) {
       },
     }
   );
+}
+
+// ─── 공통: 예약 슬롯 유효성 검증 헬퍼 ────────────────────────
+async function validateAppointmentSlot(
+  appointmentDate: Date,
+  pp: Record<string, unknown>,
+  customerId: mongoose.Types.ObjectId,
+  partnerObjectId: mongoose.Types.ObjectId,
+  orgId: string
+): Promise<NextResponse | null> {
+  const operatingDays: number[] = Array.isArray(pp.operatingDays) ? (pp.operatingDays as number[]) : [1,2,3,4,5];
+  const openTime = String(pp.openTime ?? "09:00");
+  const closeTime = String(pp.closeTime ?? "18:00");
+  const slotMinutes = Number(pp.slotMinutes ?? 30);
+  const maxPerSlot = Number(pp.maxPerSlot ?? 1);
+  const advanceDays = Number(pp.advanceDays ?? 30);
+  const breakStart = String(pp.breakStart ?? "12:00");
+  const breakEnd = String(pp.breakEnd ?? "13:00");
+  const closedOnHolidays = Boolean(pp.closedOnHolidays ?? true);
+  const blockedDates: string[] = Array.isArray(pp.blockedDates) ? (pp.blockedDates as string[]) : [];
+
+  const kstDate = new Date(appointmentDate.getTime() + 9 * 60 * 60 * 1000);
+  const dayOfWeek = kstDate.getUTCDay();
+  if (!operatingDays.includes(dayOfWeek)) {
+    return NextResponse.json({ ok: false, message: "해당 요일은 운영하지 않습니다." }, { status: 400 });
+  }
+
+  const kstDateStr = `${kstDate.getUTCFullYear()}-${String(kstDate.getUTCMonth() + 1).padStart(2, "0")}-${String(kstDate.getUTCDate()).padStart(2, "0")}`;
+  if (closedOnHolidays && isKoreanHoliday(kstDateStr)) {
+    return NextResponse.json({ ok: false, message: `${getHolidayName(kstDateStr)}은(는) 휴무일입니다.` }, { status: 400 });
+  }
+  if (blockedDates.includes(kstDateStr)) {
+    return NextResponse.json({ ok: false, message: "해당 날짜는 특별 휴무일입니다." }, { status: 400 });
+  }
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const maxAllowed = new Date(todayStart);
+  maxAllowed.setDate(maxAllowed.getDate() + advanceDays);
+  if (appointmentDate < todayStart || appointmentDate > maxAllowed) {
+    return NextResponse.json({ ok: false, message: "예약 가능 기간이 아닙니다." }, { status: 400 });
+  }
+
+  const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+  const apptMinutes = kstDate.getUTCHours() * 60 + kstDate.getUTCMinutes();
+  const openMin = toMin(openTime);
+  const closeMin = toMin(closeTime);
+  if (apptMinutes < openMin || apptMinutes >= closeMin) {
+    return NextResponse.json({ ok: false, message: `운영 시간(${openTime}~${closeTime}) 내의 시간을 선택해 주세요.` }, { status: 400 });
+  }
+  if ((apptMinutes - openMin) % slotMinutes !== 0) {
+    return NextResponse.json({ ok: false, message: `${slotMinutes}분 단위 슬롯으로 선택해 주세요.` }, { status: 400 });
+  }
+  if (breakStart && breakEnd && apptMinutes >= toMin(breakStart) && apptMinutes < toMin(breakEnd)) {
+    return NextResponse.json({ ok: false, message: `${breakStart}~${breakEnd}는 휴무 시간입니다. 다른 시간을 선택해 주세요.` }, { status: 400 });
+  }
+
+  const slotEnd = new Date(appointmentDate.getTime() + slotMinutes * 60 * 1000);
+  const bookedCount = await FavoritePartner.countDocuments({
+    organizationId: orgId,
+    partnerId: partnerObjectId,
+    customerId: { $ne: customerId },
+    status: "APPLIED",
+    appointmentAt: { $gte: appointmentDate, $lt: slotEnd },
+  });
+  if (bookedCount >= maxPerSlot) {
+    return NextResponse.json({ ok: false, message: "해당 시간은 이미 예약이 마감되었습니다. 다른 시간을 선택해 주세요." }, { status: 409 });
+  }
+
+  return null;
 }
 
 // ─── 공통: 세션/파트너 검증 헬퍼 ─────────────────────────────
@@ -490,7 +460,7 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ ok: false, message: "변경할 수 있는 신청이 없습니다." }, { status: 404 });
   }
 
-  // 파트너 스케줄 유효성 검증 (POST와 동일 로직)
+  // 파트너 스케줄 유효성 검증
   const fullPartner = await User.findOne(
     { _id: partnerObjectId, organizationId: session.orgId ?? "default" },
     {
@@ -501,63 +471,9 @@ export async function PATCH(req: Request, { params }: Params) {
     }
   ).lean();
 
-  const pp = (fullPartner as Record<string, unknown>)?.partnerProfile as Record<string, unknown> ?? {};
-  const operatingDays: number[] = Array.isArray(pp.operatingDays) ? pp.operatingDays as number[] : [1,2,3,4,5];
-  const openTime = String(pp.openTime ?? "09:00");
-  const closeTime = String(pp.closeTime ?? "18:00");
-  const slotMinutes = Number(pp.slotMinutes ?? 30);
-  const maxPerSlot = Number(pp.maxPerSlot ?? 1);
-  const advanceDays = Number(pp.advanceDays ?? 30);
-  const breakStart = String(pp.breakStart ?? "12:00");
-  const breakEnd = String(pp.breakEnd ?? "13:00");
-  const closedOnHolidays = Boolean(pp.closedOnHolidays ?? true);
-  const blockedDates: string[] = Array.isArray(pp.blockedDates) ? pp.blockedDates as string[] : [];
-
-  const kstDate = new Date(newDate.getTime() + 9 * 60 * 60 * 1000);
-  const dayOfWeek = kstDate.getUTCDay();
-  if (!operatingDays.includes(dayOfWeek)) {
-    return NextResponse.json({ ok: false, message: "해당 요일은 운영하지 않습니다." }, { status: 400 });
-  }
-
-  const kstDateStr = `${kstDate.getUTCFullYear()}-${String(kstDate.getUTCMonth()+1).padStart(2,"0")}-${String(kstDate.getUTCDate()).padStart(2,"0")}`;
-  if (closedOnHolidays && isKoreanHoliday(kstDateStr)) {
-    return NextResponse.json({ ok: false, message: `${getHolidayName(kstDateStr)}은(는) 휴무일입니다.` }, { status: 400 });
-  }
-  if (blockedDates.includes(kstDateStr)) {
-    return NextResponse.json({ ok: false, message: "해당 날짜는 특별 휴무일입니다." }, { status: 400 });
-  }
-
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const maxAllowed = new Date(todayStart); maxAllowed.setDate(maxAllowed.getDate() + advanceDays);
-  if (newDate < todayStart || newDate > maxAllowed) {
-    return NextResponse.json({ ok: false, message: "예약 가능 기간이 아닙니다." }, { status: 400 });
-  }
-
-  const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
-  const apptMinutes = kstDate.getUTCHours() * 60 + kstDate.getUTCMinutes();
-  const openMin = toMin(openTime); const closeMin = toMin(closeTime);
-  if (apptMinutes < openMin || apptMinutes >= closeMin) {
-    return NextResponse.json({ ok: false, message: `운영 시간(${openTime}~${closeTime}) 내의 시간을 선택해 주세요.` }, { status: 400 });
-  }
-  if ((apptMinutes - openMin) % slotMinutes !== 0) {
-    return NextResponse.json({ ok: false, message: `${slotMinutes}분 단위 슬롯으로 선택해 주세요.` }, { status: 400 });
-  }
-  if (breakStart && breakEnd && apptMinutes >= toMin(breakStart) && apptMinutes < toMin(breakEnd)) {
-    return NextResponse.json({ ok: false, message: `${breakStart}~${breakEnd}는 휴무 시간입니다.` }, { status: 400 });
-  }
-
-  // 슬롯 중복 확인 (본인 제외)
-  const slotEnd = new Date(newDate.getTime() + slotMinutes * 60 * 1000);
-  const bookedCount = await FavoritePartner.countDocuments({
-    organizationId: session.orgId ?? "default",
-    partnerId: partnerObjectId,
-    customerId: { $ne: customerId },
-    status: "APPLIED",
-    appointmentAt: { $gte: newDate, $lt: slotEnd },
-  });
-  if (bookedCount >= maxPerSlot) {
-    return NextResponse.json({ ok: false, message: "해당 시간은 이미 예약이 마감되었습니다. 다른 시간을 선택해 주세요." }, { status: 409 });
-  }
+  const pp = ((fullPartner as Record<string, unknown>)?.partnerProfile ?? {}) as Record<string, unknown>;
+  const slotError = await validateAppointmentSlot(newDate, pp, customerId, partnerObjectId, session.orgId ?? "default");
+  if (slotError) return slotError;
 
   const previousAppointmentAt = record.appointmentAt;
 

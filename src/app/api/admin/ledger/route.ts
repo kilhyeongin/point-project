@@ -46,8 +46,8 @@ export async function GET(req: Request) {
 
   if (startParam || endParam) {
     filter.createdAt = {};
-    if (startParam) filter.createdAt.$gte = new Date(startParam + "T00:00:00.000Z");
-    if (endParam) filter.createdAt.$lte = new Date(endParam + "T23:59:59.999Z");
+    if (startParam) filter.createdAt.$gte = new Date(startParam + "T00:00:00.000+09:00");
+    if (endParam) filter.createdAt.$lte = new Date(endParam + "T23:59:59.999+09:00");
   }
 
   if (q) {

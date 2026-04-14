@@ -26,7 +26,7 @@ type PeriodItem = {
   periodKey: string;
   from: string;
   to: string;
-  status: "OPEN" | "CLOSED" | "PAID";
+  status: "OPEN" | "PAID";
   closedAt?: string | null;
   totalCounterparties: number;
   totalUseCount: number;
@@ -88,7 +88,7 @@ function SettlementStatusBadge({ status }: { status: string }) {
         지급완료
       </Badge>
     );
-  if (status === "CLOSED")
+  if (status === "OPEN")
     return (
       <Badge className="bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-extrabold">
         마감
