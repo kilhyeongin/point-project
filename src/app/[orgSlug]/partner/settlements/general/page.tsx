@@ -77,18 +77,26 @@ export default function GeneralSettlementPage() {
     setError("");
     setSavedDraft(false);
     try {
-      const [settlementsRes, profileRes] = await Promise.all([
+      const [settlementsRes, profileRes, templateRes] = await Promise.all([
         fetch("/api/partner/general-settlements"),
         fetch("/api/partner/profile"),
+        fetch("/api/partner/settlement-columns"),
       ]);
       const data = await settlementsRes.json();
       const profileData = await profileRes.json();
+      const templateData = await templateRes.json();
 
       if (profileData?.ok && profileData?.item) {
         setPartnerName(
           profileData.item.businessName || profileData.item.name || ""
         );
       }
+
+      // 저장된 컬럼 템플릿 (없으면 기본값)
+      const savedTemplate: string[] =
+        templateData?.ok && templateData.columns?.length > 0
+          ? templateData.columns
+          : [...DEFAULT_COLUMNS];
 
       if (!data.ok) return;
 
@@ -101,20 +109,22 @@ export default function GeneralSettlementPage() {
 
       const target = draft ?? submitted_doc;
       if (target) {
+        // 기존 정산서가 있으면 그대로 불러오기
         setExistingId(target.id);
-        setColumns(target.columns ?? [...DEFAULT_COLUMNS]);
+        setColumns(target.columns ?? savedTemplate);
         setRows(
           target.rows?.length > 0
             ? target.rows
-            : makeEmptyRows(DEFAULT_ROW_COUNT, (target.columns ?? DEFAULT_COLUMNS).length)
+            : makeEmptyRows(DEFAULT_ROW_COUNT, (target.columns ?? savedTemplate).length)
         );
         setPeriodStart(target.periodStart || `${m}/1`);
         setPeriodEnd(target.periodEnd || `${m}/${new Date(y, m, 0).getDate()}`);
         setSubmitted(target.status === "SUBMITTED");
       } else {
+        // 새 정산: 저장된 컬럼 템플릿으로 시작
         setExistingId(null);
-        setColumns([...DEFAULT_COLUMNS]);
-        setRows(makeEmptyRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMNS.length));
+        setColumns(savedTemplate);
+        setRows(makeEmptyRows(DEFAULT_ROW_COUNT, savedTemplate.length));
         setPeriodStart(`${m}/1`);
         setPeriodEnd(`${m}/${new Date(y, m, 0).getDate()}`);
         setSubmitted(false);
@@ -176,6 +186,13 @@ export default function GeneralSettlementPage() {
       if (!existingId && data.id) setExistingId(data.id);
       if (status === "SUBMITTED") setSubmitted(true);
       if (status === "DRAFT") setSavedDraft(true);
+
+      // 컬럼 구조 템플릿 자동 저장 (백그라운드, 실패해도 무시)
+      fetch("/api/partner/settlement-columns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ columns }),
+      }).catch(() => {});
     } catch {
       setError("저장 중 오류가 발생했습니다.");
     } finally {
@@ -433,18 +450,7 @@ export default function GeneralSettlementPage() {
           <div className="px-5 pb-5">
             <button
               type="button"
-              onClick={() => {
-                setSubmitted(false);
-                setSavedDraft(false);
-                setYear(now.getFullYear());
-                setMonth(now.getMonth() + 1);
-                setExistingId(null);
-                setColumns([...DEFAULT_COLUMNS]);
-                setRows(makeEmptyRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMNS.length));
-                setPeriodStart(`${now.getMonth() + 1}/1`);
-                setPeriodEnd(`${now.getMonth() + 1}/${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`);
-                setError("");
-              }}
+              onClick={() => loadExisting(now.getFullYear(), now.getMonth() + 1)}
               className="w-full py-3 rounded-2xl text-sm font-bold border border-border bg-background text-foreground hover:bg-muted transition-colors"
             >
               새 정산 작성

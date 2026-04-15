@@ -120,6 +120,12 @@ const PartnerProfileSchema = new Schema(
       index: true,
     },
 
+    // ── 일반 정산 컬럼 템플릿 ─────────────────────────
+    settlementColumns: {
+      type: [String],
+      default: [],
+    },
+
     // ── 예약 스케줄 설정 ──────────────────────────────
     scheduleEnabled: {
       type: Boolean,
