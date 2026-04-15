@@ -40,11 +40,17 @@ export default function AdminShellClient({ session, children }: Props) {
       ],
     },
     {
-      key: "finance",
-      label: "거래·정산",
+      key: "settlement",
+      label: "제휴사 정산관리",
       items: [
-        { href: `/${orgSlug}/admin/settlements`, label: "거래처 정산관리" },
+        { href: `/${orgSlug}/admin/settlements`, label: "포인트 정산관리" },
         { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
+      ],
+    },
+    {
+      key: "finance",
+      label: "포인트 및 내역",
+      items: [
         { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 현황" },
         { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
       ],
