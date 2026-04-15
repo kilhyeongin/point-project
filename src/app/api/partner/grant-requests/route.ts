@@ -123,14 +123,15 @@ export async function POST(req: Request) {
   }
 
   // 가용 잔액 체크 (잠긴 금액 제외)
+  const orgId = session.orgId ?? "4nwn";
   const [wallet, pendingWithdrawals, pendingSettlements] = await Promise.all([
     Wallet.findOne({ accountId: partnerId }).lean() as any,
     WithdrawalRequest.aggregate([
-      { $match: { partnerId: String(partnerId), status: "PENDING" } },
+      { $match: { organizationId: orgId, partnerId: partnerId, status: "PENDING" } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
     PointSettlementPayment.aggregate([
-      { $match: { partnerId: String(partnerId), status: "PENDING" } },
+      { $match: { organizationId: orgId, partnerId: partnerId, status: "PENDING" } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
   ]);

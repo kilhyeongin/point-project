@@ -79,7 +79,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteContext) {
             note: `(수신) ${noteText}`,
           },
         ],
-        { session: dbSession }
+        { session: dbSession, ordered: true }
       ) as any[];
 
       doc.status = "CONFIRMED";
