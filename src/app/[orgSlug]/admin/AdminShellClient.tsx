@@ -67,6 +67,7 @@ export default function AdminShellClient({ session, children }: Props) {
 
   function isActive(href: string) {
     if (href === `/${orgSlug}/admin`) return pathname === `/${orgSlug}/admin`;
+    if (href === `/${orgSlug}/admin/settlements`) return pathname === `/${orgSlug}/admin/settlements`;
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
