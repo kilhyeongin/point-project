@@ -187,6 +187,7 @@ export default function AdminGeneralSettlementsPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [startMonth, setStartMonth] = useState(1);
   const [endMonth, setEndMonth] = useState(12);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>("all");
 
   async function load() {
     setLoading(true);
@@ -231,10 +232,22 @@ export default function AdminGeneralSettlementsPage() {
     });
   }
 
-  // 선택 연도 + 월 범위 기준 필터
+  // 전체 제휴사 목록 (드롭다운용, 연도 무관)
+  const allPartners = useMemo(() => {
+    const map = new Map<string, string>();
+    items.forEach((i) => map.set(i.partnerId, i.partnerName));
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [items]);
+
+  // 선택 연도 + 월 범위 + 제휴사 기준 필터
   const yearItems = useMemo(
-    () => items.filter((i) => i.year === selectedYear && i.month >= startMonth && i.month <= endMonth),
-    [items, selectedYear, startMonth, endMonth]
+    () => items.filter((i) =>
+      i.year === selectedYear &&
+      i.month >= startMonth &&
+      i.month <= endMonth &&
+      (selectedPartnerId === "all" || i.partnerId === selectedPartnerId)
+    ),
+    [items, selectedYear, startMonth, endMonth, selectedPartnerId]
   );
 
   // 통계 (선택 연도)
@@ -398,6 +411,55 @@ export default function AdminGeneralSettlementsPage() {
           )}
         </div>
       </div>
+
+      {/* 제휴사 필터 */}
+      {!loading && allPartners.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-bold text-muted-foreground shrink-0">제휴사</span>
+          {allPartners.length <= 10 ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setSelectedPartnerId("all")}
+                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${
+                  selectedPartnerId === "all"
+                    ? "text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
+                }`}
+                style={selectedPartnerId === "all" ? { background: "oklch(0.52 0.27 264)" } : undefined}
+              >
+                전체
+              </button>
+              {allPartners.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedPartnerId(p.id)}
+                  className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${
+                    selectedPartnerId === p.id
+                      ? "text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
+                  }`}
+                  style={selectedPartnerId === p.id ? { background: "oklch(0.44 0.24 280)" } : undefined}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <select
+              value={selectedPartnerId}
+              onChange={(e) => setSelectedPartnerId(e.target.value)}
+              className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="all">전체</option>
+              {allPartners.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {/* 통계 카드 */}
       {!loading && (
