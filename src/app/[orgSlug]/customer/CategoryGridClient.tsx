@@ -113,7 +113,7 @@ export default function CategoryGridClient({ session }: { session: SessionInfo }
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-black text-foreground">카테고리</h2>
             <Link
-              href={`/${orgSlug}/customer/settings`}
+              href={`/${orgSlug}/customer/interests`}
               className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -132,7 +132,7 @@ export default function CategoryGridClient({ session }: { session: SessionInfo }
               <p className="text-sm text-muted-foreground font-semibold mb-2">
                 설정된 관심 카테고리가 없습니다.
               </p>
-              <Link href={`/${orgSlug}/customer/settings`} className="text-sm font-bold text-primary hover:underline">
+              <Link href={`/${orgSlug}/customer/interests`} className="text-sm font-bold text-primary hover:underline">
                 관심사 설정하기 →
               </Link>
             </div>
