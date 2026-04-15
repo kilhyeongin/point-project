@@ -81,7 +81,7 @@ export default function PartnerPointsSettlementsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-2xl">
       <div>
         <h1 className="text-xl font-black text-foreground tracking-tight">포인트 정산</h1>
         <p className="text-sm text-muted-foreground mt-1">매월 말일 기준으로 정산됩니다.</p>
