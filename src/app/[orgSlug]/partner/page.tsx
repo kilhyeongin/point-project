@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowDownToLine, Coins, X, Plus, Minus } from "lucide-react";
 
 type RelationStatus = "LIKED" | "APPLIED";
 
@@ -167,8 +167,23 @@ function EmptyText({ text }: { text: string }) {
 
 export default function PartnerPage() {
   const [myBalance, setMyBalance] = useState(0);
+  const [lockedBalance, setLockedBalance] = useState(0);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceRefreshing, setBalanceRefreshing] = useState(false);
+
+  // 출금 신청
+  const [withdrawalModal, setWithdrawalModal] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState(1_000_000);
+  const [withdrawalSubmitting, setWithdrawalSubmitting] = useState(false);
+  const [pendingWithdrawalId, setPendingWithdrawalId] = useState<string | null>(null);
+
+  // 포인트로 정산
+  const [settlementModal, setSettlementModal] = useState(false);
+  const [settlementYear, setSettlementYear] = useState(new Date().getFullYear());
+  const [settlementMonth, setSettlementMonth] = useState(new Date().getMonth() + 1);
+  const [settlementAmount, setSettlementAmountRaw] = useState("");
+  const [settlementNote, setSettlementNote] = useState("");
+  const [settlementSubmitting, setSettlementSubmitting] = useState(false);
 
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -239,11 +254,20 @@ export default function PartnerPage() {
   async function fetchMyBalance() {
     setBalanceLoading(true);
     try {
-      const res = await fetch("/api/me/balance", { cache: "no-store" });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setMyBalance(Number(data.balance ?? 0));
-      }
+      const [balRes, wRes, sRes] = await Promise.all([
+        fetch("/api/me/balance", { cache: "no-store" }),
+        fetch("/api/partner/withdrawal-requests"),
+        fetch("/api/partner/point-settlements"),
+      ]);
+      const [balData, wData, sData] = await Promise.all([balRes.json(), wRes.json(), sRes.json()]);
+      if (balRes.ok && balData.ok) setMyBalance(Number(balData.balance ?? 0));
+      // PENDING 출금 + PENDING 포인트 정산 합산 = 잠긴 포인트
+      const pendingW = (wData.items ?? []).filter((i: any) => i.status === "PENDING");
+      const pendingS = (sData.items ?? []).filter((i: any) => i.status === "PENDING");
+      const locked = [...pendingW, ...pendingS].reduce((sum: number, i: any) => sum + Number(i.amount), 0);
+      setLockedBalance(locked);
+      if (pendingW.length > 0) setPendingWithdrawalId(pendingW[0].id);
+      else setPendingWithdrawalId(null);
     } finally {
       setBalanceLoading(false);
     }
@@ -252,13 +276,83 @@ export default function PartnerPage() {
   async function refreshMyBalance() {
     setBalanceRefreshing(true);
     try {
-      const res = await fetch("/api/me/balance", { cache: "no-store" });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setMyBalance(Number(data.balance ?? 0));
-      }
+      const [balRes, wRes, sRes] = await Promise.all([
+        fetch("/api/me/balance", { cache: "no-store" }),
+        fetch("/api/partner/withdrawal-requests"),
+        fetch("/api/partner/point-settlements"),
+      ]);
+      const [balData, wData, sData] = await Promise.all([balRes.json(), wRes.json(), sRes.json()]);
+      if (balRes.ok && balData.ok) setMyBalance(Number(balData.balance ?? 0));
+      const pendingW = (wData.items ?? []).filter((i: any) => i.status === "PENDING");
+      const pendingS = (sData.items ?? []).filter((i: any) => i.status === "PENDING");
+      const locked = [...pendingW, ...pendingS].reduce((sum: number, i: any) => sum + Number(i.amount), 0);
+      setLockedBalance(locked);
+      if (pendingW.length > 0) setPendingWithdrawalId(pendingW[0].id);
+      else setPendingWithdrawalId(null);
     } finally {
       setBalanceRefreshing(false);
+    }
+  }
+
+  async function submitWithdrawal() {
+    setWithdrawalSubmitting(true);
+    try {
+      const res = await fetch("/api/partner/withdrawal-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: withdrawalAmount }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(`${formatNumber(withdrawalAmount)}P 출금 신청이 완료되었습니다.`);
+        setWithdrawalModal(false);
+        await refreshMyBalance();
+      } else {
+        toast.error(data.message || "출금 신청에 실패했습니다.");
+      }
+    } finally {
+      setWithdrawalSubmitting(false);
+    }
+  }
+
+  async function cancelWithdrawal() {
+    if (!pendingWithdrawalId) return;
+    try {
+      const res = await fetch(`/api/partner/withdrawal-requests/${pendingWithdrawalId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success("출금 신청이 취소되었습니다.");
+        await refreshMyBalance();
+      } else {
+        toast.error(data.message || "취소에 실패했습니다.");
+      }
+    } catch {
+      toast.error("오류가 발생했습니다.");
+    }
+  }
+
+  async function submitPointSettlement() {
+    const amount = Number(settlementAmount.replace(/,/g, ""));
+    if (!amount || amount < 1) { toast.error("금액을 입력해주세요."); return; }
+    setSettlementSubmitting(true);
+    try {
+      const res = await fetch("/api/partner/point-settlements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, year: settlementYear, month: settlementMonth, note: settlementNote }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(`${settlementYear}년 ${settlementMonth}월 포인트 정산 신청이 완료되었습니다.`);
+        setSettlementModal(false);
+        setSettlementAmountRaw("");
+        setSettlementNote("");
+        await refreshMyBalance();
+      } else {
+        toast.error(data.message || "정산 신청에 실패했습니다.");
+      }
+    } finally {
+      setSettlementSubmitting(false);
     }
   }
 
@@ -547,6 +641,36 @@ export default function PartnerPage() {
             {balanceLoading ? "—" : `${formatNumber(myBalance)}`}
             <span className="text-base ml-1 opacity-80">P</span>
           </p>
+          {lockedBalance > 0 && (
+            <p className="text-xs opacity-70 mt-1">잠긴 포인트 {formatNumber(lockedBalance)}P · 가용 {formatNumber(myBalance - lockedBalance)}P</p>
+          )}
+          {/* 출금 / 정산 버튼 */}
+          <div className="flex gap-2 mt-3">
+            {pendingWithdrawalId ? (
+              <button
+                type="button"
+                onClick={cancelWithdrawal}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />출금 취소
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setWithdrawalAmount(1_000_000); setWithdrawalModal(true); }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <ArrowDownToLine className="w-3.5 h-3.5" />포인트 출금
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setSettlementModal(true)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+            >
+              <Coins className="w-3.5 h-3.5" />포인트 정산
+            </button>
+          </div>
         </div>
         <div className="rounded-2xl p-4 bg-card shadow-card shrink-0 sm:shrink">
           <p className="text-xs font-semibold text-muted-foreground mb-1">상담신청 고객</p>
@@ -967,6 +1091,102 @@ export default function PartnerPage() {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 포인트 출금 모달 ── */}
+      {withdrawalModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-foreground">포인트 출금 신청</h3>
+              <button type="button" onClick={() => setWithdrawalModal(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-muted/40 rounded-xl px-4 py-3 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">총 잔액</span><span className="font-bold">{formatNumber(myBalance)}P</span></div>
+                <div className="flex justify-between mt-1"><span className="text-muted-foreground">가용 잔액</span><span className="font-black text-primary">{formatNumber(myBalance - lockedBalance)}P</span></div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">출금 금액 (최소 100만P, 5만P 단위)</p>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setWithdrawalAmount((v) => Math.max(1_000_000, v - 50_000))}
+                    className="w-10 h-10 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <div className="flex-1 text-center">
+                    <span className="text-xl font-black text-foreground">{formatNumber(withdrawalAmount)}</span>
+                    <span className="text-sm text-muted-foreground ml-1">P</span>
+                  </div>
+                  <button type="button" onClick={() => setWithdrawalAmount((v) => v + 50_000)}
+                    className="w-10 h-10 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                {withdrawalAmount > myBalance - lockedBalance && (
+                  <p className="text-xs text-destructive mt-2 text-center">가용 포인트를 초과했습니다.</p>
+                )}
+              </div>
+            </div>
+            <button type="button" onClick={submitWithdrawal}
+              disabled={withdrawalSubmitting || withdrawalAmount > myBalance - lockedBalance}
+              className="w-full py-3 rounded-2xl text-sm font-black text-white disabled:opacity-50 transition-all"
+              style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}>
+              {withdrawalSubmitting ? "신청 중..." : "출금 신청하기"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 포인트로 정산하기 모달 ── */}
+      {settlementModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-foreground">포인트로 정산하기</h3>
+              <button type="button" onClick={() => setSettlementModal(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-muted/40 rounded-xl px-4 py-3 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">가용 포인트</span><span className="font-black text-primary">{formatNumber(myBalance - lockedBalance)}P</span></div>
+              </div>
+              {/* 정산 연월 */}
+              <div className="flex gap-2">
+                <select value={settlementYear} onChange={(e) => setSettlementYear(Number(e.target.value))}
+                  className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm font-bold focus:outline-none">
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
+                    <option key={y} value={y}>{y}년</option>
+                  ))}
+                </select>
+                <select value={settlementMonth} onChange={(e) => setSettlementMonth(Number(e.target.value))}
+                  className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm font-bold focus:outline-none">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>{m}월</option>
+                  ))}
+                </select>
+              </div>
+              {/* 금액 */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">정산 금액 (P)</p>
+                <input type="text" value={settlementAmount}
+                  onChange={(e) => setSettlementAmountRaw(e.target.value.replace(/[^\d]/g, ""))}
+                  placeholder="0"
+                  className="w-full h-10 rounded-xl border border-border bg-background px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              {/* 메모 */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">메모 (선택)</p>
+                <input type="text" value={settlementNote} onChange={(e) => setSettlementNote(e.target.value)}
+                  placeholder="정산 관련 메모"
+                  className="w-full h-10 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+            </div>
+            <button type="button" onClick={submitPointSettlement} disabled={settlementSubmitting}
+              className="w-full py-3 rounded-2xl text-sm font-black text-white disabled:opacity-50 transition-all"
+              style={{ background: "linear-gradient(135deg, oklch(0.44 0.24 280) 0%, oklch(0.52 0.27 264) 100%)" }}>
+              {settlementSubmitting ? "신청 중..." : "정산 신청하기"}
+            </button>
           </div>
         </div>
       )}
