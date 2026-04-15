@@ -319,7 +319,8 @@ export default function PartnerPage() {
   }
 
   async function cancelWithdrawal() {
-    if (!pendingWithdrawalId) return;
+    if (!pendingWithdrawalId || withdrawalSubmitting) return;
+    setWithdrawalSubmitting(true);
     try {
       const res = await fetch(`/api/partner/withdrawal-requests/${pendingWithdrawalId}`, { method: "DELETE" });
       const data = await res.json();
@@ -331,11 +332,14 @@ export default function PartnerPage() {
       }
     } catch {
       toast.error("오류가 발생했습니다.");
+    } finally {
+      setWithdrawalSubmitting(false);
     }
   }
 
   async function cancelSettlement() {
-    if (!pendingSettlementId) return;
+    if (!pendingSettlementId || settlementSubmitting) return;
+    setSettlementSubmitting(true);
     try {
       const res = await fetch(`/api/partner/point-settlements/${pendingSettlementId}`, { method: "DELETE" });
       const data = await res.json();
@@ -347,6 +351,8 @@ export default function PartnerPage() {
       }
     } catch {
       toast.error("오류가 발생했습니다.");
+    } finally {
+      setSettlementSubmitting(false);
     }
   }
 
@@ -661,9 +667,10 @@ export default function PartnerPage() {
               <button
                 type="button"
                 onClick={cancelWithdrawal}
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+                disabled={withdrawalSubmitting}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors disabled:opacity-50"
               >
-                <X className="w-3.5 h-3.5" />출금 취소
+                <X className="w-3.5 h-3.5" />{withdrawalSubmitting ? "취소 중..." : "출금 취소"}
               </button>
             ) : (
               <button
@@ -678,9 +685,10 @@ export default function PartnerPage() {
               <button
                 type="button"
                 onClick={cancelSettlement}
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+                disabled={settlementSubmitting}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors disabled:opacity-50"
               >
-                <X className="w-3.5 h-3.5" />정산 취소
+                <X className="w-3.5 h-3.5" />{settlementSubmitting ? "취소 중..." : "정산 취소"}
               </button>
             ) : (
               <button

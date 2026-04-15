@@ -37,9 +37,9 @@ describe("rateLimit", () => {
 
   it("getRateLimitInfo는 remaining을 올바르게 반환한다", async () => {
     const { isRateLimited, getRateLimitInfo } = await import("@/lib/rateLimit");
-    isRateLimited("test:e", 5, 60_000);
-    isRateLimited("test:e", 5, 60_000);
-    const info = getRateLimitInfo("test:e", 5, 60_000);
+    await isRateLimited("test:e", 5, 60_000);
+    await isRateLimited("test:e", 5, 60_000);
+    const info = await getRateLimitInfo("test:e", 5, 60_000);
     expect(info.remaining).toBe(3);
     expect(info.limited).toBe(false);
   });

@@ -13,7 +13,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const session = await getSessionFromCookies();
   if (!session || session.role !== "ADMIN")
-    return NextResponse.json({ ok: false }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "관리자만 접근할 수 있습니다." }, { status: 403 });
 
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
@@ -39,7 +39,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
 export async function PATCH(_req: NextRequest, { params }: RouteContext) {
   const session = await getSessionFromCookies();
   if (!session || session.role !== "ADMIN")
-    return NextResponse.json({ ok: false }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "관리자만 접근할 수 있습니다." }, { status: 403 });
 
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
