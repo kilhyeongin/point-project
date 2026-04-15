@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type SettlementItem = {
   id: string;
@@ -23,62 +22,44 @@ function formatNumber(n: number) {
   return Number(n || 0).toLocaleString();
 }
 
-function statusLabel(s: string) {
-  if (s === "PAID") return "마감";
-  if (s === "OPEN") return "마감";
-  if (s === "PENDING") return "집계중";
-  return s;
-}
-
 function StatusChip({ status }: { status: string }) {
   const base = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold";
   if (status === "PAID")
-    return <span className={`${base} bg-foreground text-background`}>{statusLabel(status)}</span>;
-  if (status === "PENDING")
-    return <span className={`${base} bg-muted text-muted-foreground border border-border`}>{statusLabel(status)}</span>;
-  return <span className={`${base} bg-muted text-muted-foreground border border-border`}>{statusLabel(status)}</span>;
+    return <span className={`${base} bg-foreground text-background`}>마감</span>;
+  return <span className={`${base} bg-muted text-muted-foreground border border-border`}>집계중</span>;
 }
 
-function formatPeriod(periodKey: string) {
-  const [year, month] = periodKey.split("-");
-  return { year, month: String(Number(month)) };
-}
-
-type StatRowProps = { label: string; value: string; highlight?: boolean };
-function StatRow({ label, value, highlight }: StatRowProps) {
+function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center py-3 border-b border-border last:border-0">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm font-bold ${highlight ? "text-foreground text-base" : "text-foreground"}`}>
-        {value}
-      </span>
+      <span className="text-sm font-bold text-foreground">{value}</span>
     </div>
   );
 }
 
 export default function PartnerPointsSettlementsPage() {
-  const [items, setItems] = useState<SettlementItem[]>([]);
+  const [item, setItem] = useState<SettlementItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const now = new Date();
+  const currentPeriodKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
 
   useEffect(() => {
     fetch("/api/partner/settlements")
       .then((r) => r.json())
       .then((data) => {
-        if (data.ok) setItems(data.items);
+        if (data.ok) {
+          const found = data.items.find(
+            (it: SettlementItem) => it.periodKey === currentPeriodKey
+          );
+          setItem(found ?? null);
+        }
       })
       .finally(() => setLoading(false));
-  }, []);
-
-  const it = items[currentIndex] ?? null;
-  const total = items.length;
-
-  function prev() {
-    setCurrentIndex((i) => Math.min(i + 1, total - 1));
-  }
-  function next() {
-    setCurrentIndex((i) => Math.max(i - 1, 0));
-  }
+  }, [currentPeriodKey]);
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -96,84 +77,50 @@ export default function PartnerPointsSettlementsPage() {
             ))}
           </div>
         </div>
-      ) : total === 0 ? (
-        <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
-          정산 내역이 없습니다.
-        </div>
       ) : (
         <div className="bg-card shadow-card rounded-2xl overflow-hidden">
-          {/* 월 네비게이터 */}
-          <div className="flex flex-col border-b border-border">
-            {/* 상태 */}
-            {it && (
-              <div className="flex justify-center pt-4">
-                <StatusChip status={it.status} />
-              </div>
-            )}
-            {/* 월 이동 */}
-            <div className="flex items-center justify-between px-5 py-3">
-              <button
-                type="button"
-                onClick={prev}
-                disabled={currentIndex >= total - 1}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground disabled:opacity-25 hover:bg-muted transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-
-              <div className="text-center">
-                {it && (() => {
-                  const { year, month } = formatPeriod(it.periodKey);
-                  return (
-                    <div className="flex items-baseline gap-1.5 justify-center">
-                      <span className="text-sm text-muted-foreground font-semibold">{year}년</span>
-                      <span className="text-2xl font-black text-foreground">{month}월</span>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <button
-                type="button"
-                onClick={next}
-                disabled={currentIndex <= 0}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground disabled:opacity-25 hover:bg-muted transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+          {/* 이번 달 헤더 */}
+          <div className="flex flex-col items-center border-b border-border pt-4 pb-3 gap-2">
+            {item && <StatusChip status={item.status} />}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm text-muted-foreground font-semibold">{currentYear}년</span>
+              <span className="text-2xl font-black text-foreground">{currentMonth}월</span>
             </div>
           </div>
 
-          {/* 정산 지급액 강조 */}
-          {it && (
+          {item ? (
             <>
+              {/* 정산 지급액 */}
               <div className="px-5 py-6 text-center border-b border-border">
                 <p className="text-xs text-muted-foreground font-semibold mb-1">정산 지급액</p>
                 <p className="text-4xl font-black text-foreground tracking-tight">
-                  {formatNumber(it.netPayable)}
+                  {formatNumber(item.netPayable)}
                   <span className="text-2xl ml-1 text-muted-foreground font-bold">P</span>
                 </p>
-                {it.paidAt && (
+                {item.paidAt && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    지급일 {new Date(it.paidAt).toLocaleDateString()}
+                    지급일 {new Date(item.paidAt).toLocaleDateString()}
                   </p>
                 )}
               </div>
 
               {/* 지표 목록 */}
               <div className="px-5 py-1">
-                <StatRow label="방문 고객" value={`${formatNumber(it.visitorCount)}명`} />
-                <StatRow label="포인트 지급" value={`${formatNumber(it.issuedPoints)}P`} />
-                <StatRow label="포인트 사용" value={`${formatNumber(it.usedPoints)}P`} />
-                <StatRow label="계약 완료" value={`${formatNumber(it.completedCount)}건`} />
-                <StatRow label="방문 취소" value={`${formatNumber(it.cancelledCount)}건`} />
-                <StatRow label="지급 횟수" value={`${formatNumber(it.issueCount)}회`} />
-                <StatRow label="사용 횟수" value={`${formatNumber(it.useCount)}회`} />
-                {it.note && (
-                  <StatRow label="메모" value={it.note} />
-                )}
+                <StatRow label="방문 고객" value={`${formatNumber(item.visitorCount)}명`} />
+                <StatRow label="포인트 지급" value={`${formatNumber(item.issuedPoints)}P`} />
+                <StatRow label="포인트 사용" value={`${formatNumber(item.usedPoints)}P`} />
+                <StatRow label="계약 완료" value={`${formatNumber(item.completedCount)}건`} />
+                <StatRow label="방문 취소" value={`${formatNumber(item.cancelledCount)}건`} />
+                <StatRow label="지급 횟수" value={`${formatNumber(item.issueCount)}회`} />
+                <StatRow label="사용 횟수" value={`${formatNumber(item.useCount)}회`} />
+                {item.note && <StatRow label="메모" value={item.note} />}
               </div>
             </>
+          ) : (
+            <div className="px-5 py-12 text-center">
+              <p className="text-sm font-semibold text-muted-foreground">이번 달 정산 내역이 없습니다.</p>
+              <p className="text-xs text-muted-foreground mt-1">정산내역 탭에서 이전 달을 확인할 수 있습니다.</p>
+            </div>
           )}
         </div>
       )}
