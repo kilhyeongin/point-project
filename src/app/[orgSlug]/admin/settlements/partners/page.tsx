@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
 
 type GeneralSettlementItem = {
   id: string;
@@ -175,12 +175,16 @@ type PartnerGroup = {
   pendingCount: number;
 };
 
+const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
 export default function AdminGeneralSettlementsPage() {
+  const currentYear = new Date().getFullYear();
   const [items, setItems] = useState<GeneralSettlementItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   async function load() {
     setLoading(true);
@@ -225,10 +229,41 @@ export default function AdminGeneralSettlementsPage() {
     });
   }
 
-  // 업체별 그룹핑
+  // 선택 연도 기준 필터
+  const yearItems = useMemo(() => items.filter((i) => i.year === selectedYear), [items, selectedYear]);
+
+  // 통계 (선택 연도)
+  const stats = useMemo(() => {
+    const confirmed = yearItems.filter((i) => i.status === "CONFIRMED");
+    const pending = yearItems.filter((i) => i.status === "SUBMITTED");
+    return {
+      confirmedTotal: confirmed.reduce((s, i) => s + i.total, 0),
+      confirmedCount: confirmed.length,
+      pendingTotal: pending.reduce((s, i) => s + i.total, 0),
+      pendingCount: pending.length,
+      allCount: yearItems.filter((i) => i.status !== "DRAFT").length,
+    };
+  }, [yearItems]);
+
+  // 월별 통계 (선택 연도)
+  const monthlyStats = useMemo(() => {
+    return MONTHS.map((m) => {
+      const mItems = yearItems.filter((i) => i.month === m && i.status !== "DRAFT");
+      const confirmed = mItems.filter((i) => i.status === "CONFIRMED");
+      return {
+        month: m,
+        count: mItems.length,
+        total: mItems.reduce((s, i) => s + i.total, 0),
+        confirmedTotal: confirmed.reduce((s, i) => s + i.total, 0),
+        confirmedCount: confirmed.length,
+      };
+    });
+  }, [yearItems]);
+
+  // 업체별 그룹핑 (선택 연도 기준)
   const groups = useMemo<PartnerGroup[]>(() => {
     const map = new Map<string, PartnerGroup>();
-    items.forEach((item) => {
+    yearItems.forEach((item) => {
       const existing = map.get(item.partnerId);
       if (existing) {
         existing.items.push(item);
@@ -243,7 +278,7 @@ export default function AdminGeneralSettlementsPage() {
       }
     });
     return Array.from(map.values()).sort((a, b) => b.pendingCount - a.pendingCount);
-  }, [items]);
+  }, [yearItems]);
 
   const filtered = useMemo(() => {
     if (!q.trim()) return groups;
@@ -251,10 +286,16 @@ export default function AdminGeneralSettlementsPage() {
     return groups.filter((g) => g.partnerName.toLowerCase().includes(lower));
   }, [groups, q]);
 
+  // 전체 대기중 (연도 무관)
   const totalPending = items.filter((i) => i.status === "SUBMITTED").length;
 
+  // 연도 범위 (현재 기준 -3 ~ +1)
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
+
+  const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
+
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-5 max-w-3xl">
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -268,6 +309,131 @@ export default function AdminGeneralSettlementsPage() {
           </div>
         )}
       </div>
+
+      {/* 연도 선택 */}
+      <div className="flex items-center gap-2">
+        <BarChart3 className="w-4 h-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-bold text-muted-foreground">기간</span>
+        <div className="flex items-center gap-1 ml-1">
+          <button
+            type="button"
+            onClick={() => setSelectedYear((y) => Math.max(y - 1, yearOptions[0]))}
+            disabled={selectedYear <= yearOptions[0]}
+            className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div className="flex gap-1">
+            {yearOptions.map((y) => (
+              <button
+                key={y}
+                type="button"
+                onClick={() => setSelectedYear(y)}
+                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${
+                  selectedYear === y
+                    ? "text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+                style={selectedYear === y ? { background: "oklch(0.52 0.27 264)" } : undefined}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedYear((y) => Math.min(y + 1, yearOptions[yearOptions.length - 1]))}
+            disabled={selectedYear >= yearOptions[yearOptions.length - 1]}
+            className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+
+      {/* 통계 카드 */}
+      {!loading && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-card shadow-card rounded-2xl px-4 py-4 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground">확인완료 총액</p>
+            <p className="text-lg font-black text-foreground leading-tight">
+              {formatMoney(stats.confirmedTotal)}
+              <span className="text-xs font-bold text-muted-foreground ml-1">원</span>
+            </p>
+            <p className="text-xs text-muted-foreground">{stats.confirmedCount}건</p>
+          </div>
+          <div className="bg-card shadow-card rounded-2xl px-4 py-4 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground">대기중 총액</p>
+            <p className="text-lg font-black leading-tight" style={{ color: "oklch(0.72 0.18 80)" }}>
+              {formatMoney(stats.pendingTotal)}
+              <span className="text-xs font-bold text-muted-foreground ml-1">원</span>
+            </p>
+            <p className="text-xs text-muted-foreground">{stats.pendingCount}건</p>
+          </div>
+          <div className="bg-card shadow-card rounded-2xl px-4 py-4 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground">전체 건수</p>
+            <p className="text-lg font-black text-foreground leading-tight">
+              {stats.allCount}
+              <span className="text-xs font-bold text-muted-foreground ml-1">건</span>
+            </p>
+            <p className="text-xs text-muted-foreground">{selectedYear}년</p>
+          </div>
+        </div>
+      )}
+
+      {/* 월별 통계 테이블 */}
+      {!loading && hasMonthlyData && (
+        <div className="bg-card shadow-card rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <span className="text-sm font-black text-foreground">{selectedYear}년 월별 현황</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-muted/40">
+                  <th className="px-4 py-2.5 text-left font-bold text-muted-foreground">월</th>
+                  <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">건수</th>
+                  <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">총액</th>
+                  <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">확인완료액</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {monthlyStats.map((m) => (
+                  <tr
+                    key={m.month}
+                    className={`transition-colors ${m.count > 0 ? "hover:bg-muted/20" : "opacity-40"}`}
+                  >
+                    <td className="px-4 py-2.5 font-semibold text-foreground">{m.month}월</td>
+                    <td className="px-4 py-2.5 text-right text-muted-foreground">
+                      {m.count > 0 ? `${m.count}건` : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-bold text-foreground">
+                      {m.total > 0 ? `${formatMoney(m.total)}원` : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-bold" style={m.confirmedTotal > 0 ? { color: "oklch(0.52 0.18 160)" } : undefined}>
+                      {m.confirmedTotal > 0 ? `${formatMoney(m.confirmedTotal)}원` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/40 border-t-2 border-border">
+                  <td className="px-4 py-2.5 font-black text-foreground">합계</td>
+                  <td className="px-4 py-2.5 text-right font-black text-foreground">{stats.allCount}건</td>
+                  <td className="px-4 py-2.5 text-right font-black text-foreground">
+                    {monthlyStats.reduce((s, m) => s + m.total, 0) > 0
+                      ? `${formatMoney(monthlyStats.reduce((s, m) => s + m.total, 0))}원`
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-black" style={{ color: "oklch(0.52 0.18 160)" }}>
+                    {stats.confirmedTotal > 0 ? `${formatMoney(stats.confirmedTotal)}원` : "—"}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 검색 */}
       <div className="relative">
@@ -292,7 +458,7 @@ export default function AdminGeneralSettlementsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
-          {q ? "검색 결과가 없습니다." : "제출된 정산서가 없습니다."}
+          {q ? "검색 결과가 없습니다." : `${selectedYear}년 제출된 정산서가 없습니다.`}
         </div>
       ) : (
         <div className="space-y-2">
