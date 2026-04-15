@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, ChevronUp, Lock, Star, User } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronRight, Lock, Star, User } from "lucide-react";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
-import InterestsSettingForm from "./InterestsSettingForm";
 
 type Profile = {
   name: string;
@@ -16,6 +17,8 @@ type Profile = {
 };
 
 export default function CustomerMyPageClient() {
+  const pathname = usePathname();
+  const orgSlug = pathname.split('/')[1];
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<Omit<Profile, "name">>({
     email: "",
@@ -28,7 +31,6 @@ export default function CustomerMyPageClient() {
   const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showInterests, setShowInterests] = useState(false);
 
   useEffect(() => {
     fetch("/api/customer/profile", { cache: "no-store" })
@@ -188,26 +190,16 @@ export default function CustomerMyPageClient() {
 
       {/* 관심사 설정 */}
       <section className="bg-card shadow-card rounded-2xl overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowInterests((v) => !v)}
+        <Link
+          href={`/${orgSlug}/customer/interests`}
           className="w-full flex items-center justify-between gap-2.5 px-5 py-4 hover:bg-muted/30 transition-colors"
         >
           <div className="flex items-center gap-2.5">
             <Star className="w-4 h-4 text-primary" />
             <span className="text-sm font-black text-foreground">관심사 설정</span>
           </div>
-          {showInterests ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </button>
-        {showInterests && (
-          <div className="px-5 pb-5 border-t border-border pt-4">
-            <InterestsSettingForm />
-          </div>
-        )}
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
       </section>
     </div>
   );
