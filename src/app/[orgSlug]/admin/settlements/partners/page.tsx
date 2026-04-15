@@ -307,8 +307,9 @@ export default function AdminGeneralSettlementsPage() {
   // 전체 대기중 (연도 무관)
   const totalPending = items.filter((i) => i.status === "SUBMITTED").length;
 
-  // 연도 범위 (현재 기준 -3 ~ +1)
+  // 연도 범위: 데스크탑 5개(-3~+1), 모바일 3개(-1~+1)
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
+  const mobileYearOptions = [currentYear - 1, currentYear, currentYear + 1];
 
   const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
 
@@ -335,13 +336,32 @@ export default function AdminGeneralSettlementsPage() {
         <div className="flex items-center gap-1 ml-1">
           <button
             type="button"
-            onClick={() => setSelectedYear((y) => Math.max(y - 1, yearOptions[0]))}
+            onClick={() => setSelectedYear((y) => y - 1)}
             disabled={selectedYear <= yearOptions[0]}
             className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
           >
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
-          <div className="flex gap-1">
+          {/* 모바일: 3개 */}
+          <div className="flex gap-1 sm:hidden">
+            {mobileYearOptions.map((y) => (
+              <button
+                key={y}
+                type="button"
+                onClick={() => setSelectedYear(y)}
+                className={`px-2.5 py-1 rounded-lg text-sm font-bold transition-all ${
+                  selectedYear === y
+                    ? "text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+                style={selectedYear === y ? { background: "oklch(0.52 0.27 264)" } : undefined}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+          {/* 데스크탑: 5개 */}
+          <div className="hidden sm:flex gap-1">
             {yearOptions.map((y) => (
               <button
                 key={y}
@@ -360,7 +380,7 @@ export default function AdminGeneralSettlementsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setSelectedYear((y) => Math.min(y + 1, yearOptions[yearOptions.length - 1]))}
+            onClick={() => setSelectedYear((y) => y + 1)}
             disabled={selectedYear >= yearOptions[yearOptions.length - 1]}
             className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
           >
