@@ -20,7 +20,7 @@ import { User } from "@/models/User";
 import { UseRequest } from "@/models/UseRequest";
 import { Ledger } from "@/models/Ledger";
 import { FavoritePartner } from "@/models/FavoritePartner";
-import { debitWallet } from "@/services/wallet";
+import { debitWallet, creditWallet } from "@/services/wallet";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 function parseQrPayload(v: string) {
@@ -207,10 +207,12 @@ export async function POST(req: Request) {
         );
         const req = doc[0];
 
-        // 고객 포인트 차감 (사라짐 — 제휴사로 이동하지 않음)
+        // 고객 포인트 차감
         const debit = await debitWallet(userId, Math.abs(amount), dbSession);
+        // 제휴사 포인트 적립
+        await creditWallet(partnerId, Math.abs(amount), dbSession);
 
-        // Ledger: 고객 차감 1행만. counterpartyId = 제휴사 (정산 집계용)
+        // Ledger: 고객 차감 + 제휴사 수취
         const ledgerDocs = await Ledger.create(
           [
             {
@@ -224,6 +226,18 @@ export async function POST(req: Request) {
               refType: "USE_REQUEST",
               refId: req._id,
               note: note ? `QR 결제 - ${note}` : "QR 결제(차감)",
+            },
+            {
+              organizationId: session.orgId ?? "4nwn",
+              accountId: partnerId,
+              userId: partnerId,
+              actorId: partnerId,
+              counterpartyId: userId,
+              type: "USE",
+              amount: +Math.abs(amount),
+              refType: "USE_REQUEST",
+              refId: req._id,
+              note: note ? `포인트 수취 - ${note}` : "포인트 수취",
             },
           ],
           { session: dbSession, ordered: true }
