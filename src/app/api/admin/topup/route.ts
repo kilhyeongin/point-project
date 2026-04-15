@@ -56,9 +56,16 @@ export async function POST(req: Request & { ip?: string }) {
     );
   }
 
+  const MAX_TOPUP = 100_000_000; // 1회 최대 1억P
   if (!Number.isFinite(amountNum) || !Number.isInteger(amountNum) || amountNum <= 0) {
     return NextResponse.json(
       { ok: false, message: "amount는 1 이상의 정수여야 합니다." },
+      { status: 400 }
+    );
+  }
+  if (amountNum > MAX_TOPUP) {
+    return NextResponse.json(
+      { ok: false, message: `1회 최대 충전 가능 금액은 ${MAX_TOPUP.toLocaleString()}P 입니다.` },
       { status: 400 }
     );
   }

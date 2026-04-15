@@ -27,6 +27,7 @@ const WalletSchema = new Schema(
       type: Number,
       required: true,
       default: 0,
+      min: [0, "잔액은 0 이상이어야 합니다."],
     },
   },
   {

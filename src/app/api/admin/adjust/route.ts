@@ -58,9 +58,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const MAX_ADJUST = 100_000_000; // 1회 최대 ±1억P
   if (!Number.isFinite(amountNum) || !Number.isInteger(amountNum) || amountNum === 0) {
     return NextResponse.json(
       { ok: false, message: "amount는 0이 아닌 정수여야 합니다." },
+      { status: 400 }
+    );
+  }
+  if (Math.abs(amountNum) > MAX_ADJUST) {
+    return NextResponse.json(
+      { ok: false, message: `1회 최대 조정 가능 금액은 ±${MAX_ADJUST.toLocaleString()}P 입니다.` },
+      { status: 400 }
+    );
+  }
+  if (!note) {
+    return NextResponse.json(
+      { ok: false, message: "수동 조정 사유(note)를 입력해주세요." },
       { status: 400 }
     );
   }
