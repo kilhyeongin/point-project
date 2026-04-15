@@ -18,7 +18,7 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { Ledger } from "@/models/Ledger";
 import { FavoritePartner } from "@/models/FavoritePartner";
-import { debitWallet } from "@/services/wallet";
+import { debitWallet, creditWallet } from "@/services/wallet";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 const MAX_USE_AMOUNT = 1_000_000;
@@ -153,9 +153,12 @@ export async function POST(req: Request) {
     const result = await dbSession.withTransaction(async () => {
       const amount = amountNum;
 
+      // 고객 포인트 차감
       const debit = await debitWallet(customerOid, amount, dbSession);
+      // 제휴사 포인트 적립
+      await creditWallet(partnerOid, amount, dbSession);
 
-      const row = await Ledger.create(
+      await Ledger.create(
         [
           {
             organizationId: session.orgId ?? "4nwn",
@@ -167,7 +170,19 @@ export async function POST(req: Request) {
             amount: -amount,
             refType: "USE_DIRECT",
             refId: null,
-            note: note ? `제휴사 즉시 차감 / ${note}` : "제휴사 즉시 차감",
+            note: note ? `포인트 사용 / ${note}` : "포인트 사용",
+          },
+          {
+            organizationId: session.orgId ?? "4nwn",
+            accountId: partnerOid,
+            userId: partnerOid,
+            actorId: partnerOid,
+            counterpartyId: customerOid,
+            type: "USE",
+            amount: +amount,
+            refType: "USE_DIRECT",
+            refId: null,
+            note: note ? `포인트 수취 / ${note}` : "포인트 수취",
           },
         ],
         { session: dbSession }
@@ -175,7 +190,6 @@ export async function POST(req: Request) {
 
       return {
         ok: true as const,
-        ledgerId: String(row[0]._id),
         balanceBefore: debit.balanceBefore,
         balanceAfter: debit.balanceAfter,
         customer: {
