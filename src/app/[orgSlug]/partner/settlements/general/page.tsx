@@ -321,21 +321,21 @@ export default function GeneralSettlementPage() {
         <div className="px-4 pb-3 overflow-x-auto">
           <table className="w-full border-collapse text-sm" style={{ minWidth: `${Math.max(600, columns.length * 110 + 60)}px` }}>
             <thead>
-              <tr>
-                <th className="border border-border/60 px-2 py-2.5 text-xs font-bold text-muted-foreground w-10 text-center"
-                  style={{ background: "oklch(0.97 0.008 264)" }}>
+              <tr style={{ height: "40px" }}>
+                <th className="border border-border/60 px-2 text-xs font-bold text-muted-foreground w-10 text-center"
+                  style={{ background: "oklch(0.97 0.008 264)", height: "40px" }}>
                   번호
                 </th>
                 {columns.map((col, ci) => (
-                  <th key={ci} className="border border-border/60 px-1 py-1 min-w-[90px]"
-                    style={{ background: "oklch(0.97 0.008 264)" }}>
-                    <div className="flex items-center justify-center gap-0.5">
+                  <th key={ci} className="border border-border/60 px-1 min-w-[90px]"
+                    style={{ background: "oklch(0.97 0.008 264)", height: "40px" }}>
+                    <div className="flex items-center justify-center gap-0.5 h-full">
                       <input
                         type="text"
                         value={col}
                         onChange={(e) => updateColumnHeader(ci, e.target.value)}
                         disabled={submitted}
-                        className="flex-1 text-xs font-black text-center text-foreground bg-transparent focus:outline-none focus:bg-background focus:rounded px-1 py-0.5 min-w-0 disabled:opacity-70"
+                        className="flex-1 text-xs font-black text-center text-foreground bg-transparent focus:outline-none focus:bg-background focus:rounded px-1 py-0.5 min-w-0 disabled:opacity-70 h-full"
                       />
                       {!submitted && columns.length > 1 && (
                         <button
@@ -353,12 +353,12 @@ export default function GeneralSettlementPage() {
             </thead>
             <tbody>
               {rows.map((row, ri) => (
-                <tr key={ri} className={ri % 2 === 0 ? "bg-background" : "bg-muted/20"}>
-                  <td className="border border-border/60 px-2 py-1.5 text-center text-xs font-bold text-muted-foreground">
+                <tr key={ri} className={ri % 2 === 0 ? "bg-background" : "bg-muted/20"} style={{ height: "36px" }}>
+                  <td className="border border-border/60 px-2 text-center text-xs font-bold text-muted-foreground" style={{ height: "36px" }}>
                     {ri + 1}
                   </td>
                   {columns.map((_, ci) => (
-                    <td key={ci} className="border border-border/60 p-0">
+                    <td key={ci} className="border border-border/60 p-0" style={{ height: "36px" }}>
                       <input
                         type="text"
                         value={row.cells[ci] ?? ""}
