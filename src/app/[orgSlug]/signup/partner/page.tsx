@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
@@ -155,7 +156,7 @@ export default function PartnerSignupPage() {
 
   function openAddressSearch() {
     if (!window.daum?.Postcode) {
-      alert("주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+      toast.error("주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
     new window.daum.Postcode({
@@ -201,8 +202,7 @@ export default function PartnerSignupPage() {
         return;
       }
 
-      alert("제휴사 가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.");
-      router.push(`/${orgSlug}/login`);
+      router.push(`/${orgSlug}/login?partner_registered=1`);
     } catch {
       setMsg("네트워크 오류");
     } finally {

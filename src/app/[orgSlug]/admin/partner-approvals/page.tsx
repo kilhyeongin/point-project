@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatUsername } from "@/lib/utils";
+import { toast } from "sonner";
 
 type ApprovalItem = {
   id: string;
@@ -82,14 +83,14 @@ export default function AdminPartnerApprovalsPage() {
       const data = await res.json();
 
       if (!res.ok || !data?.ok) {
-        window.alert(data?.error ?? "승인 처리에 실패했습니다.");
+        toast.error(data?.error ?? "승인 처리에 실패했습니다.");
         return;
       }
 
-      window.alert(data?.message ?? "승인되었습니다.");
+      toast.success(data?.message ?? "승인되었습니다.");
       await load();
     } catch {
-      window.alert("네트워크 오류가 발생했습니다.");
+      toast.error("네트워크 오류가 발생했습니다.");
     } finally {
       setApprovingId("");
     }

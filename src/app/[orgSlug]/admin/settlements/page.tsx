@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 type PreviewItem = {
   counterpartyId: string | null;
@@ -230,11 +231,12 @@ export default function AdminSettlementsPage() {
         body: JSON.stringify({ periodKey: selectedPeriodKey, counterpartyId: line.counterparty.id, payoutRef, note }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data?.message ?? "지급 처리 실패"); return; }
+      if (!res.ok) { toast.error(data?.message ?? "지급 처리 실패"); return; }
+      toast.success("지급 완료 처리되었습니다.");
       await loadPeriods();
       await loadLines(selectedPeriodKey);
     } catch {
-      alert("네트워크 오류");
+      toast.error("네트워크 오류");
     }
   }
 
@@ -248,11 +250,12 @@ export default function AdminSettlementsPage() {
         body: JSON.stringify({ periodKey: selectedPeriodKey, counterpartyId: line.counterparty.id }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data?.message ?? "취소 실패"); return; }
+      if (!res.ok) { toast.error(data?.message ?? "취소 실패"); return; }
+      toast.success("지급 취소되었습니다.");
       await loadPeriods();
       await loadLines(selectedPeriodKey);
     } catch {
-      alert("네트워크 오류");
+      toast.error("네트워크 오류");
     }
   }
 

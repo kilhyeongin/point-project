@@ -25,6 +25,8 @@ function LoginFormInner() {
   const searchParams = useSearchParams();
   const isExpired = searchParams.get("expired") === "1";
   const socialError = searchParams.get("error");
+  const isRegistered = searchParams.get("registered") === "1";
+  const isPartnerRegistered = searchParams.get("partner_registered") === "1";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -166,6 +168,20 @@ function LoginFormInner() {
               계속하려면 계정 정보를 입력해 주세요
             </p>
           </div>
+
+          {/* 회원가입 완료 배너 */}
+          {isRegistered && (
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
+              <span className="text-base leading-none">✓</span>
+              회원가입이 완료되었습니다. 로그인해 주세요.
+            </div>
+          )}
+          {isPartnerRegistered && (
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
+              <span className="text-base leading-none">✓</span>
+              제휴사 가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.
+            </div>
+          )}
 
           {/* Session expired banner */}
           {isExpired && (

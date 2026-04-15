@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Coins, FileText, Clock, CheckCircle2, XCircle, ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { toast } from "sonner";
 
 type WithdrawalItem = {
   id: string;
@@ -75,8 +76,8 @@ export default function AdminPointRequestsPage() {
     try {
       const res = await fetch(`/api/admin/withdrawal-requests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       const data = await res.json();
-      if (data.ok) setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : i));
-      else alert(data.message || "오류가 발생했습니다.");
+      if (data.ok) { setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : i)); toast.success("출금 확정 완료"); }
+      else toast.error(data.message || "오류가 발생했습니다.");
     } finally {
       setConfirming(null);
     }
@@ -87,8 +88,8 @@ export default function AdminPointRequestsPage() {
     try {
       const res = await fetch(`/api/admin/point-settlements/${id}`, { method: "PATCH" });
       const data = await res.json();
-      if (data.ok) setSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : i));
-      else alert(data.message || "오류가 발생했습니다.");
+      if (data.ok) { setSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : i)); toast.success("정산 확정 완료"); }
+      else toast.error(data.message || "오류가 발생했습니다.");
     } finally {
       setConfirming(null);
     }
@@ -100,8 +101,8 @@ export default function AdminPointRequestsPage() {
     try {
       const res = await fetch(`/api/admin/withdrawal-requests/${id}`, { method: "DELETE" });
       const data = await res.json();
-      if (data.ok) setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i));
-      else alert(data.message || "오류가 발생했습니다.");
+      if (data.ok) { setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i)); toast.success("출금 요청 거절됨"); }
+      else toast.error(data.message || "오류가 발생했습니다.");
     } finally {
       setCancelling(null);
     }
@@ -113,8 +114,8 @@ export default function AdminPointRequestsPage() {
     try {
       const res = await fetch(`/api/admin/point-settlements/${id}`, { method: "DELETE" });
       const data = await res.json();
-      if (data.ok) setSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i));
-      else alert(data.message || "오류가 발생했습니다.");
+      if (data.ok) { setSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i)); toast.success("정산 요청 거절됨"); }
+      else toast.error(data.message || "오류가 발생했습니다.");
     } finally {
       setCancelling(null);
     }

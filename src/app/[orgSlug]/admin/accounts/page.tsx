@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type AccountItem = {
   id: string;
@@ -183,10 +184,10 @@ export default function AdminAccountsPage() {
           prev.map((it) => (it.id === id ? { ...it, status: newStatus } : it))
         );
       } else {
-        alert(data.message ?? "상태 변경 실패");
+        toast.error(data.message ?? "상태 변경 실패");
       }
     } catch {
-      alert("네트워크 오류");
+      toast.error("네트워크 오류");
     }
   }
 

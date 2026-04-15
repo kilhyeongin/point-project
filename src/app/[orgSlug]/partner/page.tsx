@@ -618,12 +618,12 @@ export default function PartnerPage() {
       const res = await fetch(`/api/topup-requests/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        alert(data?.message ?? "취소에 실패했습니다.");
+        toast.error(data?.message ?? "취소에 실패했습니다.");
         return;
       }
       await fetchMyTopups();
     } catch {
-      alert("네트워크 오류가 발생했습니다.");
+      toast.error("네트워크 오류가 발생했습니다.");
     }
   }
 

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type Props = {
   partnerId: string;
@@ -43,7 +44,7 @@ export default function FavoritePartnerButton({
       const data: ToggleResponse = await res.json();
 
       if (!res.ok || !data?.ok) {
-        alert(data?.message ?? data?.error ?? "처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+        toast.error(data?.message ?? data?.error ?? "처리 중 오류가 발생했습니다. 다시 시도해주세요.");
         return;
       }
 
@@ -53,7 +54,7 @@ export default function FavoritePartnerButton({
       onChange?.(next);
       onChanged?.(next);
     } catch {
-      alert("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
+      toast.error("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }

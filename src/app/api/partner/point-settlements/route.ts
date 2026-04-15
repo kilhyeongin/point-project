@@ -61,6 +61,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: "정산 연월을 선택해주세요." }, { status: 400 });
   }
 
+  // 이미 PENDING 정산 있는지 확인
+  const existingPending = await PointSettlementPayment.findOne({
+    organizationId: orgId,
+    partnerId,
+    status: "PENDING",
+  }).lean();
+
+  if (existingPending) {
+    return NextResponse.json(
+      { ok: false, message: "이미 대기중인 정산 신청이 있습니다. 취소 후 다시 신청해주세요." },
+      { status: 400 }
+    );
+  }
+
   // 가용 잔액 확인 (잔액 - PENDING 출금 - PENDING 포인트 정산)
   const [walletBalance, pendingWithdrawals, pendingSettlements] = await Promise.all([
     getWalletBalance(partnerId),
