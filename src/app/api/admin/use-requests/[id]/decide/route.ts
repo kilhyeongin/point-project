@@ -13,7 +13,7 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { UseRequest } from "@/models/UseRequest";
 import { Ledger } from "@/models/Ledger";
-import { debitWallet } from "@/services/wallet";
+import { debitWallet, creditWallet } from "@/services/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -95,18 +95,22 @@ export async function PATCH(req: Request, { params }: Params) {
       const customerAccountId = new mongoose.Types.ObjectId(String(locked.userId));
       const partnerAccountId = new mongoose.Types.ObjectId(String(locked.partnerId));
 
-      // 고객 포인트 차감 (사라짐 — 제휴사로 이동하지 않음)
+      // 1) 고객 포인트 차감
       const debit = await debitWallet(customerAccountId, amount, dbSession);
+
+      // 2) 제휴사 포인트 적립 (고객이 사용한 포인트 그대로 이동)
+      await creditWallet(partnerAccountId, amount, dbSession);
 
       const baseNote = locked.note
         ? `${locked.note} / ADMIN 승인(차감)`
         : "ADMIN 승인(차감)";
       const finalNote = adminNote ? `${baseNote} / ADMIN: ${adminNote}` : baseNote;
 
-      // Ledger: 고객 차감 1행만. counterpartyId = 제휴사 (정산 집계용)
+      // 3) Ledger: 고객 차감 + 제휴사 적립 각 1행
       const created = await Ledger.create(
         [
           {
+            // 고객 차감
             organizationId: orgId,
             accountId: customerAccountId,
             userId: customerAccountId,
@@ -117,6 +121,19 @@ export async function PATCH(req: Request, { params }: Params) {
             refType: "USE_REQUEST",
             refId: locked._id,
             note: `사용(차감) - ${finalNote}`,
+          },
+          {
+            // 제휴사 적립
+            organizationId: orgId,
+            accountId: partnerAccountId,
+            userId: partnerAccountId,
+            actorId: adminId,
+            counterpartyId: customerAccountId,
+            type: "USE",
+            amount: +amount,
+            refType: "USE_REQUEST",
+            refId: locked._id,
+            note: `고객 포인트 수신 - ${finalNote}`,
           },
         ],
         { session: dbSession, ordered: true }
