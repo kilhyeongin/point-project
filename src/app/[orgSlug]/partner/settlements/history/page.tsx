@@ -339,7 +339,7 @@ export default function SettlementHistoryPage() {
   const [activeTab, setActiveTab] = useState<HistoryTab>("points");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-2xl">
       <div>
         <h1 className="text-xl font-black text-foreground tracking-tight">정산내역</h1>
         <p className="text-sm text-muted-foreground mt-1">정산 내역을 확인하세요.</p>
