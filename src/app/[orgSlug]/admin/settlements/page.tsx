@@ -447,7 +447,10 @@ export default function AdminSettlementsPage() {
               <ChevronRight className="w-4 h-4 text-foreground" />
             </button>
 
-            <SettlementStatusBadge status={selectedPeriod?.status ?? "OPEN"} />
+            {selectedPeriod
+              ? <SettlementStatusBadge status={selectedPeriod.status} />
+              : <Badge className="bg-muted text-muted-foreground border border-border rounded-full text-xs font-extrabold">정산 전</Badge>
+            }
           </div>
 
           {/* 통계 */}
@@ -493,7 +496,10 @@ export default function AdminSettlementsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">아직 마감되지 않은 달입니다.</p>
               )}
             </div>
-            <SettlementStatusBadge status={selectedPeriod?.status ?? "OPEN"} />
+            {selectedPeriod
+              ? <SettlementStatusBadge status={selectedPeriod.status} />
+              : <Badge className="bg-muted text-muted-foreground border border-border rounded-full text-xs font-extrabold">정산 전</Badge>
+            }
           </div>
 
           {/* 요약 통계 */}
