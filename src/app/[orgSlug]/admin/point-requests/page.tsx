@@ -49,6 +49,7 @@ export default function AdminPointRequestsPage() {
   const [settlements, setSettlements] = useState<PointSettlementItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
 
@@ -90,6 +91,32 @@ export default function AdminPointRequestsPage() {
       else alert(data.message || "오류가 발생했습니다.");
     } finally {
       setConfirming(null);
+    }
+  }
+
+  async function cancelWithdrawal(id: string) {
+    if (!confirm("이 출금 요청을 거절하시겠습니까?")) return;
+    setCancelling(id);
+    try {
+      const res = await fetch(`/api/admin/withdrawal-requests/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i));
+      else alert(data.message || "오류가 발생했습니다.");
+    } finally {
+      setCancelling(null);
+    }
+  }
+
+  async function cancelSettlement(id: string) {
+    if (!confirm("이 정산 요청을 거절하시겠습니까?")) return;
+    setCancelling(id);
+    try {
+      const res = await fetch(`/api/admin/point-settlements/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) setSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i));
+      else alert(data.message || "오류가 발생했습니다.");
+    } finally {
+      setCancelling(null);
     }
   }
 
@@ -226,13 +253,20 @@ export default function AdminPointRequestsPage() {
                             <StatusChip status={item.status} />
                           </div>
                           {item.status === "PENDING" && (
-                            <button type="button" onClick={() => confirmWithdrawal(item.id)} disabled={confirming === item.id}
-                              className="w-full py-2.5 rounded-xl text-sm font-black text-white transition-all disabled:opacity-50"
-                              style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}>
-                              {confirming === item.id ? "처리 중..." : "출금 확정"}
-                            </button>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => confirmWithdrawal(item.id)} disabled={confirming === item.id || cancelling === item.id}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-black text-white transition-all disabled:opacity-50"
+                                style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}>
+                                {confirming === item.id ? "처리 중..." : "출금 확정"}
+                              </button>
+                              <button type="button" onClick={() => cancelWithdrawal(item.id)} disabled={confirming === item.id || cancelling === item.id}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-50 bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-600 border border-border hover:border-red-200">
+                                {cancelling === item.id ? "처리 중..." : "거절"}
+                              </button>
+                            </div>
                           )}
                           {item.confirmedAt && <p className="text-xs text-muted-foreground">확정일: {new Date(item.confirmedAt).toLocaleDateString("ko-KR")}</p>}
+                          {item.cancelledAt && <p className="text-xs text-muted-foreground">거절일: {new Date(item.cancelledAt).toLocaleDateString("ko-KR")}</p>}
                         </div>
                       ))}
                     </div>
@@ -285,13 +319,20 @@ export default function AdminPointRequestsPage() {
                             <StatusChip status={item.status} />
                           </div>
                           {item.status === "PENDING" && (
-                            <button type="button" onClick={() => confirmSettlement(item.id)} disabled={confirming === item.id}
-                              className="w-full py-2.5 rounded-xl text-sm font-black text-white transition-all disabled:opacity-50"
-                              style={{ background: "linear-gradient(135deg, oklch(0.44 0.24 280) 0%, oklch(0.52 0.27 264) 100%)" }}>
-                              {confirming === item.id ? "처리 중..." : "정산 확정"}
-                            </button>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => confirmSettlement(item.id)} disabled={confirming === item.id || cancelling === item.id}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-black text-white transition-all disabled:opacity-50"
+                                style={{ background: "linear-gradient(135deg, oklch(0.44 0.24 280) 0%, oklch(0.52 0.27 264) 100%)" }}>
+                                {confirming === item.id ? "처리 중..." : "정산 확정"}
+                              </button>
+                              <button type="button" onClick={() => cancelSettlement(item.id)} disabled={confirming === item.id || cancelling === item.id}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-50 bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-600 border border-border hover:border-red-200">
+                                {cancelling === item.id ? "처리 중..." : "거절"}
+                              </button>
+                            </div>
                           )}
                           {item.confirmedAt && <p className="text-xs text-muted-foreground">확정일: {new Date(item.confirmedAt).toLocaleDateString("ko-KR")}</p>}
+                          {item.cancelledAt && <p className="text-xs text-muted-foreground">거절일: {new Date(item.cancelledAt).toLocaleDateString("ko-KR")}</p>}
                         </div>
                       ))}
                     </div>

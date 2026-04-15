@@ -184,6 +184,7 @@ export default function PartnerPage() {
   const [settlementAmount, setSettlementAmountRaw] = useState("");
   const [settlementNote, setSettlementNote] = useState("");
   const [settlementSubmitting, setSettlementSubmitting] = useState(false);
+  const [pendingSettlementId, setPendingSettlementId] = useState<string | null>(null);
 
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -266,6 +267,8 @@ export default function PartnerPage() {
       setLockedBalance(locked);
       if (pendingW.length > 0) setPendingWithdrawalId(pendingW[0].id);
       else setPendingWithdrawalId(null);
+      if (pendingS.length > 0) setPendingSettlementId(pendingS[0].id);
+      else setPendingSettlementId(null);
     } finally {
       setBalanceLoading(false);
     }
@@ -287,6 +290,8 @@ export default function PartnerPage() {
       setLockedBalance(locked);
       if (pendingW.length > 0) setPendingWithdrawalId(pendingW[0].id);
       else setPendingWithdrawalId(null);
+      if (pendingS.length > 0) setPendingSettlementId(pendingS[0].id);
+      else setPendingSettlementId(null);
     } finally {
       setBalanceRefreshing(false);
     }
@@ -320,6 +325,22 @@ export default function PartnerPage() {
       const data = await res.json();
       if (data.ok) {
         toast.success("출금 신청이 취소되었습니다.");
+        await refreshMyBalance();
+      } else {
+        toast.error(data.message || "취소에 실패했습니다.");
+      }
+    } catch {
+      toast.error("오류가 발생했습니다.");
+    }
+  }
+
+  async function cancelSettlement() {
+    if (!pendingSettlementId) return;
+    try {
+      const res = await fetch(`/api/partner/point-settlements/${pendingSettlementId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success("정산 신청이 취소되었습니다.");
         await refreshMyBalance();
       } else {
         toast.error(data.message || "취소에 실패했습니다.");
@@ -653,13 +674,23 @@ export default function PartnerPage() {
                 <ArrowDownToLine className="w-3.5 h-3.5" />포인트 출금
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setSettlementModal(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
-            >
-              <Coins className="w-3.5 h-3.5" />포인트 정산
-            </button>
+            {pendingSettlementId ? (
+              <button
+                type="button"
+                onClick={cancelSettlement}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />정산 취소
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSettlementModal(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <Coins className="w-3.5 h-3.5" />포인트 정산
+              </button>
+            )}
           </div>
         </div>
         <div className="rounded-2xl p-4 bg-card shadow-card shrink-0 sm:shrink">
