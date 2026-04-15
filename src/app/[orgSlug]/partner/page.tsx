@@ -201,8 +201,7 @@ export default function PartnerPage() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visibleTopup, setVisibleTopup] = useState(5);
-  const [visibleReq, setVisibleReq] = useState(5);
-  const [visibleHistory, setVisibleHistory] = useState(5);
+  const [visibleHistory, setVisibleHistory] = useState(10);
   const [visibleCount, setVisibleCount] = useState(6);
   const [pageStep, setPageStep] = useState(6);
 
@@ -216,6 +215,34 @@ export default function PartnerPage() {
   const issueAmountNum = useMemo(() => onlyDigitsToNumber(issueAmountText), [issueAmountText]);
   const useAmountNum = useMemo(() => onlyDigitsToNumber(useAmountText), [useAmountText]);
   const topupAmountNum = useMemo(() => onlyDigitsToNumber(topupAmountText), [topupAmountText]);
+
+  const combinedHistory = useMemo(() => {
+    const pendingRejected = reqItems
+      .filter((r) => r.status !== "APPROVED")
+      .map((r) => ({
+        id: `req-${r.id}`,
+        kind: "req" as const,
+        status: r.status as "PENDING" | "REJECTED",
+        type: undefined,
+        amount: r.amount,
+        note: r.note,
+        createdAt: r.createdAt,
+        customer: r.to,
+      }));
+    const ledger = historyItems.map((h) => ({
+      id: `ledger-${h.id}`,
+      kind: "ledger" as const,
+      status: undefined,
+      type: h.type as "ISSUE" | "USE",
+      amount: h.amount,
+      note: h.note,
+      createdAt: h.createdAt,
+      customer: h.customer,
+    }));
+    return [...pendingRejected, ...ledger].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [reqItems, historyItems]);
 
   const likedCount = useMemo(
     () => items.filter((item) => item.relationStatus === "LIKED").length,
@@ -815,80 +842,63 @@ export default function PartnerPage() {
             </div>
           </section>
 
-          {/* ── 4. 이력 ── */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <section className="bg-card shadow-card rounded-2xl p-5">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-base font-black text-foreground">고객 지급 이력</h2>
-                <Button variant="outline" size="sm" onClick={fetchMyIssueRequests} className="font-bold h-8 px-3 text-xs">
-                  새로고침
-                </Button>
-              </div>
-              {reqLoading ? <EmptyText text="불러오는 중..." /> : reqItems.length === 0 ? <EmptyText text="지급 이력이 없습니다." /> : (
-                <>
-                  <div className="space-y-2">
-                    {reqItems.slice(0, visibleReq).map((it) => (
-                      <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
-                        <div className="min-w-0">
-                          <p className="text-sm font-black text-foreground truncate">{it.to ? <>{it.to.name}{(socialLabel(it.to.socialProvider) ?? it.to.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.to.socialProvider) ?? it.to.username})</span> : null}</> : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm font-black text-foreground">{formatNumber(it.amount)}P</span>
-                          <StatusBadge status={it.status} />
-                        </div>
+          {/* ── 4. 포인트 처리 이력 (통합) ── */}
+          <section className="bg-card shadow-card rounded-2xl p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-base font-black text-foreground">포인트 처리 이력</h2>
+              <Button variant="outline" size="sm" onClick={() => { fetchMyIssueRequests(); fetchPointHistory(); }} className="font-bold h-8 px-3 text-xs">
+                새로고침
+              </Button>
+            </div>
+            {reqLoading || historyLoading ? (
+              <EmptyText text="불러오는 중..." />
+            ) : combinedHistory.length === 0 ? (
+              <EmptyText text="처리 이력이 없습니다." />
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {combinedHistory.slice(0, visibleHistory).map((it) => (
+                    <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-foreground truncate">
+                          {it.customer
+                            ? <>{it.customer.name}{(socialLabel(it.customer.socialProvider) ?? it.customer.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.customer.socialProvider) ?? it.customer.username})</span> : null}</>
+                            : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
+                        {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
                       </div>
-                    ))}
-                  </div>
-                  {reqItems.length > visibleReq && (
-                    <button type="button" onClick={() => setVisibleReq(v => v + 5)} className="w-full mt-3 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-colors">
-                      더보기 ({reqItems.length - visibleReq}건 남음)
-                    </button>
-                  )}
-                </>
-              )}
-            </section>
-
-            <section className="bg-card shadow-card rounded-2xl p-5">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-base font-black text-foreground">포인트 처리 이력</h2>
-                <Button variant="outline" size="sm" onClick={fetchPointHistory} className="font-bold h-8 px-3 text-xs">
-                  새로고침
-                </Button>
-              </div>
-              {historyLoading ? <EmptyText text="불러오는 중..." /> : historyItems.length === 0 ? <EmptyText text="처리 이력이 없습니다." /> : (
-                <>
-                  <div className="space-y-2">
-                    {historyItems.slice(0, visibleHistory).map((it) => (
-                      <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
-                        <div className="min-w-0">
-                          <p className="text-sm font-black text-foreground truncate">{it.customer ? <>{it.customer.name}{(socialLabel(it.customer.socialProvider) ?? it.customer.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.customer.socialProvider) ?? it.customer.username})</span> : null}</> : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
-                          {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className={cn("text-sm font-black", it.type === "ISSUE" ? "text-blue-600" : "text-orange-500")}>
-                            {it.type === "ISSUE" ? "+" : "-"}{formatNumber(Math.abs(it.amount))}P
-                          </span>
-                          <Badge
-                            variant={it.type === "ISSUE" ? "secondary" : "outline"}
-                            className={cn("font-bold text-xs", it.type === "ISSUE" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-orange-600 border-orange-200 bg-orange-50")}
-                          >
-                            {pointHistoryTypeLabel(it.type, it.note)}
-                          </Badge>
-                        </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {it.kind === "ledger" ? (
+                          <>
+                            <span className={cn("text-sm font-black", it.type === "ISSUE" ? "text-blue-600" : "text-orange-500")}>
+                              {it.type === "ISSUE" ? "+" : "-"}{formatNumber(Math.abs(it.amount))}P
+                            </span>
+                            <Badge
+                              variant={it.type === "ISSUE" ? "secondary" : "outline"}
+                              className={cn("font-bold text-xs", it.type === "ISSUE" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-orange-600 border-orange-200 bg-orange-50")}
+                            >
+                              {pointHistoryTypeLabel(it.type!, it.note)}
+                            </Badge>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm font-black text-foreground">{formatNumber(it.amount)}P</span>
+                            <StatusBadge status={it.status!} />
+                          </>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                  {historyItems.length > visibleHistory && (
-                    <button type="button" onClick={() => setVisibleHistory(v => v + 5)} className="w-full mt-3 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-colors">
-                      더보기 ({historyItems.length - visibleHistory}건 남음)
-                    </button>
-                  )}
-                </>
-              )}
-            </section>
-          </div>
+                    </div>
+                  ))}
+                </div>
+                {combinedHistory.length > visibleHistory && (
+                  <button type="button" onClick={() => setVisibleHistory(v => v + 10)} className="w-full mt-3 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-colors">
+                    더보기 ({combinedHistory.length - visibleHistory}건 남음)
+                  </button>
+                )}
+              </>
+            )}
+          </section>
         </>
       )}
 
