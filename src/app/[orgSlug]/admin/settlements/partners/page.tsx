@@ -309,7 +309,7 @@ export default function AdminGeneralSettlementsPage() {
 
   // 연도 범위: 데스크탑 5개(-3~+1), 모바일 3개(-1~+1)
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
-  const mobileYearOptions = [currentYear - 1, currentYear, currentYear + 1];
+  const mobileYearOptions = [selectedYear - 1, selectedYear, selectedYear + 1];
 
   const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
 
