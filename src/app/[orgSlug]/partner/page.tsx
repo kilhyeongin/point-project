@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type RelationStatus = "LIKED" | "APPLIED";
 
@@ -187,6 +188,7 @@ export default function PartnerPage() {
   const [topupAmountText, setTopupAmountText] = useState("100,000");
   const [topupNote, setTopupNote] = useState("");
   const [topupMsg, setTopupMsg] = useState("");
+  const [topupConfirming, setTopupConfirming] = useState(false);
   const [topupItems, setTopupItems] = useState<TopupItem[]>([]);
 
   const [reqItems, setReqItems] = useState<IssueReqItem[]>([]);
@@ -453,14 +455,17 @@ export default function PartnerPage() {
     }
   }
 
-  async function createTopupRequest() {
+  function requestTopupConfirm() {
     setTopupMsg("");
-
     if (topupAmountNum <= 0) {
       setTopupMsg("충전 요청 금액을 1 이상 입력해주세요.");
       return;
     }
+    setTopupConfirming(true);
+  }
 
+  async function createTopupRequest() {
+    setTopupConfirming(false);
     try {
       const res = await fetch("/api/topup-requests", {
         method: "POST",
@@ -474,17 +479,17 @@ export default function PartnerPage() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setTopupMsg(data?.message ?? "충전 요청 생성 실패");
+        toast.error(data?.message ?? "충전 요청 생성 실패");
         return;
       }
 
-      setTopupMsg(`✅ 충전 요청이 등록되었습니다. (${formatNumber(topupAmountNum)}P)`);
+      toast.success(`${formatNumber(topupAmountNum)}P 충전 요청이 등록되었습니다.`);
       setTopupAmountText("100,000");
       setTopupNote("");
 
       await fetchMyTopups();
     } catch {
-      setTopupMsg("네트워크 오류");
+      toast.error("네트워크 오류가 발생했습니다.");
     }
   }
 
@@ -707,22 +712,42 @@ export default function PartnerPage() {
               <div className="flex gap-2.5 flex-wrap sm:flex-nowrap">
                 <Input
                   value={topupAmountText}
-                  onChange={(e) => setTopupAmountText(formatNumber(onlyDigitsToNumber(e.target.value)))}
+                  onChange={(e) => { setTopupAmountText(formatNumber(onlyDigitsToNumber(e.target.value))); setTopupConfirming(false); }}
                   inputMode="numeric"
                   placeholder="충전 요청 금액"
                   className="min-w-0 flex-1 h-11"
+                  disabled={topupConfirming}
                 />
-                <Button onClick={createTopupRequest} className="h-11 px-5 font-bold whitespace-nowrap">
+                <Button onClick={requestTopupConfirm} className="h-11 px-5 font-bold whitespace-nowrap" disabled={topupConfirming}>
                   요청
                 </Button>
               </div>
               <Input
                 value={topupNote}
-                onChange={(e) => setTopupNote(e.target.value)}
+                onChange={(e) => { setTopupNote(e.target.value); setTopupConfirming(false); }}
                 placeholder="메모(선택)"
                 className="mt-2.5 h-11"
+                disabled={topupConfirming}
               />
-              {topupMsg && <p className="mt-3 text-sm font-bold text-foreground">{topupMsg}</p>}
+              {topupMsg && <p className="mt-3 text-sm font-bold text-destructive">{topupMsg}</p>}
+
+              {/* 확인 단계 */}
+              {topupConfirming && (
+                <div className="mt-3 p-4 rounded-xl border border-border bg-muted/40 space-y-3">
+                  <p className="text-sm font-black text-foreground">
+                    <span style={{ color: "oklch(0.52 0.27 264)" }}>{formatNumber(topupAmountNum)}P</span> 충전을 관리자에게 요청하시겠습니까?
+                  </p>
+                  {topupNote && <p className="text-xs text-muted-foreground">메모: {topupNote}</p>}
+                  <div className="flex gap-2">
+                    <Button onClick={createTopupRequest} className="flex-1 h-10 font-bold">
+                      확인
+                    </Button>
+                    <Button variant="outline" onClick={() => setTopupConfirming(false)} className="flex-1 h-10 font-bold">
+                      취소
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-border pt-5">

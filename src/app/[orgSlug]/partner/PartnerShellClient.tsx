@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
+import { Toaster } from "sonner";
 
 type SessionInfo = {
   uid: string;
@@ -53,6 +54,7 @@ export default function PartnerShellClient({ session, children }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
+      <Toaster position="top-center" richColors />
       {/* ─── Desktop Layout ─── */}
       <div className="hidden lg:flex min-h-screen">
         {/* Sidebar — dark navy */}
