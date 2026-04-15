@@ -185,7 +185,7 @@ export async function POST(req: Request) {
             note: note ? `포인트 수취 / ${note}` : "포인트 수취",
           },
         ],
-        { session: dbSession }
+        { session: dbSession, ordered: true }
       );
 
       return {
