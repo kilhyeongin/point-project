@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
 
 type RelationStatus = "LIKED" | "APPLIED";
 
@@ -167,6 +168,7 @@ function EmptyText({ text }: { text: string }) {
 export default function PartnerPage() {
   const [myBalance, setMyBalance] = useState(0);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceRefreshing, setBalanceRefreshing] = useState(false);
 
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -245,6 +247,19 @@ export default function PartnerPage() {
       }
     } finally {
       setBalanceLoading(false);
+    }
+  }
+
+  async function refreshMyBalance() {
+    setBalanceRefreshing(true);
+    try {
+      const res = await fetch("/api/me/balance", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMyBalance(Number(data.balance ?? 0));
+      }
+    } finally {
+      setBalanceRefreshing(false);
     }
   }
 
@@ -517,7 +532,18 @@ export default function PartnerPage() {
           className="rounded-2xl p-4 text-white flex-1 sm:flex-none"
           style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}
         >
-          <p className="text-xs font-semibold opacity-75 mb-1">내 포인트 잔액</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-semibold opacity-75">내 포인트 잔액</p>
+            <button
+              type="button"
+              onClick={refreshMyBalance}
+              disabled={balanceRefreshing || balanceLoading}
+              className="flex items-center gap-1 text-white/60 hover:text-white/90 transition-colors disabled:opacity-40"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", balanceRefreshing && "animate-spin")} />
+              <span className="text-xs font-semibold">새로고침</span>
+            </button>
+          </div>
           <p className="text-2xl font-black leading-none">
             {balanceLoading ? "—" : `${formatNumber(myBalance)}`}
             <span className="text-base ml-1 opacity-80">P</span>
