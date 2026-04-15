@@ -196,11 +196,9 @@ export default function PartnerPage() {
 
   const [issueAmountText, setIssueAmountText] = useState("0");
   const [issueNote, setIssueNote] = useState("");
-  const [issueMsg, setIssueMsg] = useState("");
 
   const [useAmountText, setUseAmountText] = useState("0");
   const [useNote, setUseNote] = useState("");
-  const [useMsg, setUseMsg] = useState("");
 
   const [topupAmountText, setTopupAmountText] = useState("100,000");
   const [topupNote, setTopupNote] = useState("");
@@ -466,15 +464,13 @@ export default function PartnerPage() {
   }, [debouncedQ, customerFilter]);
 
   async function createIssueRequest(customer: CustomerItem) {
-    setIssueMsg("");
-
     if (customer.relationStatus !== "APPLIED") {
-      setIssueMsg("신청고객에게만 포인트를 지급할 수 있습니다.");
+      toast.error("신청고객에게만 포인트를 지급할 수 있습니다.");
       return;
     }
 
     if (issueAmountNum <= 0) {
-      setIssueMsg("지급 포인트를 1 이상 입력해주세요.");
+      toast.error("지급 포인트를 1 이상 입력해주세요.");
       return;
     }
 
@@ -492,14 +488,12 @@ export default function PartnerPage() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setIssueMsg(data?.message ?? "포인트 지급 실패");
+        toast.error(data?.message ?? "포인트 지급 실패");
         return;
       }
 
-      setIssueMsg(
-        `✅ ${socialLabel(customer.socialProvider) ?? customer.username} 고객에게 ${formatNumber(issueAmountNum)}P 지급 완료 / 내 잔액 ${formatNumber(
-          data.balanceAfter ?? 0
-        )}P`
+      toast.success(
+        `${socialLabel(customer.socialProvider) ?? customer.username} 고객에게 ${formatNumber(issueAmountNum)}P 지급 완료 / 내 잔액 ${formatNumber(data.balanceAfter ?? 0)}P`
       );
 
       setModal(null);
@@ -511,20 +505,18 @@ export default function PartnerPage() {
       await fetchMyIssueRequests();
       await fetchPointHistory();
     } catch {
-      setIssueMsg("네트워크 오류");
+      toast.error("네트워크 오류");
     }
   }
 
   async function useDirect(customer: CustomerItem) {
-    setUseMsg("");
-
     if (customer.relationStatus !== "APPLIED") {
-      setUseMsg("신청고객에게만 즉시 포인트 사용 처리할 수 있습니다.");
+      toast.error("신청고객에게만 즉시 포인트 사용 처리할 수 있습니다.");
       return;
     }
 
     if (useAmountNum <= 0) {
-      setUseMsg("사용 포인트를 1 이상 입력해주세요.");
+      toast.error("사용 포인트를 1 이상 입력해주세요.");
       return;
     }
 
@@ -542,14 +534,12 @@ export default function PartnerPage() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setUseMsg(data?.message ?? "포인트 사용 실패");
+        toast.error(data?.message ?? "포인트 사용 실패");
         return;
       }
 
-      setUseMsg(
-        `✅ ${socialLabel(customer.socialProvider) ?? customer.username} 고객 포인트 ${formatNumber(useAmountNum)}P 사용 완료 / 고객 잔액 ${formatNumber(
-          data.balanceAfter ?? 0
-        )}P`
+      toast.success(
+        `${socialLabel(customer.socialProvider) ?? customer.username} 고객 포인트 ${formatNumber(useAmountNum)}P 사용 완료 / 고객 잔액 ${formatNumber(data.balanceAfter ?? 0)}P`
       );
 
       setModal(null);
@@ -559,7 +549,7 @@ export default function PartnerPage() {
       await fetchCustomers();
       await fetchPointHistory();
     } catch {
-      setUseMsg("네트워크 오류");
+      toast.error("네트워크 오류");
     }
   }
 
@@ -1028,7 +1018,6 @@ export default function PartnerPage() {
                   <Button onClick={() => createIssueRequest(modal.customer)} className="h-11 px-5 font-bold whitespace-nowrap">즉시 지급</Button>
                 </div>
                 <Input value={issueNote} onChange={(e) => setIssueNote(e.target.value)} placeholder="메모(선택)" className="h-11" />
-                {issueMsg && <p className="text-sm font-bold text-foreground leading-relaxed">{issueMsg}</p>}
               </>
             ) : (
               <>
@@ -1037,7 +1026,6 @@ export default function PartnerPage() {
                   <Button onClick={() => useDirect(modal.customer)} className="h-11 px-5 font-bold whitespace-nowrap">포인트 사용</Button>
                 </div>
                 <Input value={useNote} onChange={(e) => setUseNote(e.target.value)} placeholder="메모(선택)" className="h-11" />
-                {useMsg && <p className="text-sm font-bold text-foreground leading-relaxed">{useMsg}</p>}
               </>
             )}
           </div>
@@ -1083,10 +1071,10 @@ export default function PartnerPage() {
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
-                <Button className="flex-1 font-bold h-10" onClick={() => { setIssueAmountText("0"); setIssueNote(""); setIssueMsg(""); setDetailModal(null); setModal({ type: "issue", customer: detailModal }); }}>
+                <Button className="flex-1 font-bold h-10" onClick={() => { setIssueAmountText("0"); setIssueNote(""); setDetailModal(null); setModal({ type: "issue", customer: detailModal }); }}>
                   포인트 지급
                 </Button>
-                <Button variant="outline" className="flex-1 font-bold h-10" onClick={() => { setUseAmountText("0"); setUseNote(""); setUseMsg(""); setDetailModal(null); setModal({ type: "use", customer: detailModal }); }}>
+                <Button variant="outline" className="flex-1 font-bold h-10" onClick={() => { setUseAmountText("0"); setUseNote(""); setDetailModal(null); setModal({ type: "use", customer: detailModal }); }}>
                   포인트 사용
                 </Button>
               </div>

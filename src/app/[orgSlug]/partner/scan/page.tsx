@@ -4,7 +4,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QrCode } from "lucide-react";
+import { QrCode, CheckCircle2, XCircle } from "lucide-react";
 
 function onlyDigitsToNumber(v: string) {
   const digits = v.replace(/[^\d]/g, "");
@@ -18,6 +18,12 @@ function formatNumber(n: number) {
 
 type CameraState = "idle" | "loading" | "active" | "error";
 
+type ResultOverlay = {
+  type: "success" | "error";
+  title: string;
+  lines: string[];
+};
+
 export default function PartnerScanPage() {
   const [mode, setMode] = useState<"USE" | "GRANT">("USE");
   const [scanned, setScanned] = useState<string>("");
@@ -26,6 +32,8 @@ export default function PartnerScanPage() {
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string>("");
   const [loadingRetries, setLoadingRetries] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<ResultOverlay | null>(null);
 
   const amountNum = useMemo(() => onlyDigitsToNumber(amountText), [amountText]);
 
@@ -34,6 +42,21 @@ export default function PartnerScanPage() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scanningRef = useRef(false);
   const cancelLoadingRef = useRef(false);
+  const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showResult(overlay: ResultOverlay, autoRestartCamera = true) {
+    setResult(overlay);
+    if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+    resultTimerRef.current = setTimeout(() => {
+      setResult(null);
+      if (autoRestartCamera && overlay.type === "success") {
+        setScanned("");
+        setAmountText("0");
+        setNote("");
+        startCamera((text) => setScanned(text));
+      }
+    }, 3000);
+  }
 
   function stopCamera() {
     scanningRef.current = false;
@@ -51,7 +74,6 @@ export default function PartnerScanPage() {
     setCameraError("");
     setLoadingRetries(0);
 
-    // 명시적으로 차단된 경우 즉시 안내
     try {
       const perm = await navigator.permissions.query({ name: "camera" as PermissionName });
       if (perm.state === "denied") {
@@ -63,8 +85,6 @@ export default function PartnerScanPage() {
       // permissions API 미지원 브라우저는 그냥 진행
     }
 
-    // 삼성 인터넷 등: 권한 허용 후에도 첫 호출이 실패하는 버그 대응
-    // 취소 전까지 1초 간격으로 재시도
     async function tryGetStream(): Promise<MediaStream | null> {
       const constraints = [
         { video: { facingMode: { ideal: "environment" } } },
@@ -88,7 +108,7 @@ export default function PartnerScanPage() {
 
     try {
       const stream = await tryGetStream();
-      if (!stream) return; // 취소됨
+      if (!stream) return;
       streamRef.current = stream;
       const video = videoRef.current;
       if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -126,7 +146,7 @@ export default function PartnerScanPage() {
                 onFound(result);
               }
             } catch {
-              // QR not found in this frame, continue
+              // QR not found in this frame
             }
             resolve();
           }, "image/jpeg", 0.8);
@@ -156,9 +176,16 @@ export default function PartnerScanPage() {
   }
 
   async function submitRequest() {
-    if (!scanned) { alert("먼저 QR을 스캔해주세요."); return; }
-    if (amountNum <= 0) { alert("금액을 1 이상 입력해주세요."); return; }
+    if (!scanned) {
+      showResult({ type: "error", title: "스캔 필요", lines: ["먼저 QR을 스캔해주세요."] }, false);
+      return;
+    }
+    if (amountNum <= 0) {
+      showResult({ type: "error", title: "금액 오류", lines: ["금액을 1 이상 입력해주세요."] }, false);
+      return;
+    }
 
+    setSubmitting(true);
     try {
       const isGrant = mode === "GRANT";
       const url = isGrant ? "/api/partner/grant-requests" : "/api/partner/use-requests";
@@ -168,8 +195,13 @@ export default function PartnerScanPage() {
         body: JSON.stringify({ qrPayload: scanned, amount: amountNum, note: note.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        alert(data?.message ?? (isGrant ? "적립 실패" : "사용 실패"));
+
+      if (!res.ok || !data.ok) {
+        showResult({
+          type: "error",
+          title: isGrant ? "적립 실패" : "사용 실패",
+          lines: [data?.message ?? "오류가 발생했습니다."],
+        }, false);
         setScanned("");
         setAmountText("0");
         startCamera((text) => setScanned(text));
@@ -177,30 +209,105 @@ export default function PartnerScanPage() {
       }
 
       if (isGrant) {
-        alert(`적립 완료!\n${formatNumber(amountNum)}P 지급 → 내 잔액 ${formatNumber(data?.partnerBalanceAfter ?? 0)}P`);
+        showResult({
+          type: "success",
+          title: "적립 완료 ✓",
+          lines: [
+            `${formatNumber(amountNum)}P 지급`,
+            `내 잔액 ${formatNumber(data?.partnerBalanceAfter ?? 0)}P`,
+          ],
+        });
       } else {
         const instant = data?.instant ?? false;
-        alert(
-          instant
-            ? `포인트 사용 완료!\n${formatNumber(amountNum)}P 사용 → 고객 잔액 ${formatNumber(data?.balanceAfter ?? 0)}P`
-            : `사용요청 생성됨\n${formatNumber(amountNum)}P (승인 대기 중)`
-        );
+        showResult({
+          type: "success",
+          title: instant ? "포인트 사용 완료 ✓" : "사용 요청 접수 ✓",
+          lines: instant
+            ? [
+                `${formatNumber(amountNum)}P 사용`,
+                `고객 잔액 ${formatNumber(data?.balanceAfter ?? 0)}P`,
+              ]
+            : [
+                `${formatNumber(amountNum)}P`,
+                "승인 대기 중",
+              ],
+        });
       }
-
-      setScanned("");
-      setAmountText("0");
-      setNote("");
-      startCamera((text) => setScanned(text));
     } catch {
-      alert("네트워크 오류가 발생했습니다.");
+      showResult({
+        type: "error",
+        title: "네트워크 오류",
+        lines: ["잠시 후 다시 시도해주세요."],
+      }, false);
       setScanned("");
       setAmountText("0");
       startCamera((text) => setScanned(text));
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
     <div className="space-y-5 max-w-lg">
+      {/* 결과 오버레이 */}
+      {result && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.65)" }}
+          onClick={() => {
+            if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+            setResult(null);
+          }}
+        >
+          <div
+            className="mx-4 w-full max-w-xs rounded-3xl p-8 flex flex-col items-center gap-4 shadow-2xl"
+            style={{
+              background: result.type === "success"
+                ? "oklch(0.97 0.05 150)"
+                : "oklch(0.97 0.05 20)",
+            }}
+          >
+            {result.type === "success" ? (
+              <CheckCircle2
+                className="w-16 h-16"
+                style={{ color: "oklch(0.52 0.18 160)" }}
+              />
+            ) : (
+              <XCircle
+                className="w-16 h-16"
+                style={{ color: "oklch(0.55 0.22 25)" }}
+              />
+            )}
+            <p
+              className="text-xl font-black text-center"
+              style={{
+                color: result.type === "success"
+                  ? "oklch(0.35 0.15 160)"
+                  : "oklch(0.40 0.18 25)",
+              }}
+            >
+              {result.title}
+            </p>
+            {result.lines.map((line, i) => (
+              <p
+                key={i}
+                className="text-base font-bold text-center"
+                style={{
+                  color: result.type === "success"
+                    ? "oklch(0.45 0.12 160)"
+                    : "oklch(0.50 0.14 25)",
+                }}
+              >
+                {line}
+              </p>
+            ))}
+            <p className="text-xs text-center mt-1" style={{ color: "oklch(0.60 0.05 150)" }}>
+              탭하면 닫힙니다
+            </p>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-xl font-black text-foreground tracking-tight">QR 스캔</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -242,7 +349,6 @@ export default function PartnerScanPage() {
         </div>
         <div id="qr-decoder-hidden" style={{ display: "none" }} />
 
-        {/* 카메라 대기 상태 */}
         {cameraState === "idle" && (
           <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-4 py-10">
             <QrCode className="w-12 h-12 text-muted-foreground/40" />
@@ -258,7 +364,6 @@ export default function PartnerScanPage() {
           </div>
         )}
 
-        {/* 카메라 로딩 */}
         {cameraState === "loading" && (
           <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center gap-3 py-10 px-4">
             <p className="text-sm text-muted-foreground font-semibold">카메라 여는 중...</p>
@@ -288,7 +393,6 @@ export default function PartnerScanPage() {
           </div>
         )}
 
-        {/* 카메라 에러 */}
         {cameraState === "error" && (
           <div className="w-full rounded-xl bg-red-50 border border-red-200 flex flex-col items-center justify-center gap-3 py-8 px-4">
             {cameraError === "blocked" ? (
@@ -312,7 +416,6 @@ export default function PartnerScanPage() {
           </div>
         )}
 
-        {/* 카메라 활성 */}
         <video
           ref={videoRef}
           autoPlay
@@ -322,7 +425,6 @@ export default function PartnerScanPage() {
           style={{ minHeight: "200px", background: "#000" }}
         />
 
-        {/* 스캔 완료 후 다시 스캔 버튼 */}
         {scanned && cameraState === "idle" && (
           <button
             type="button"
@@ -381,9 +483,10 @@ export default function PartnerScanPage() {
           <Button
             type="button"
             onClick={submitRequest}
+            disabled={submitting}
             className={`w-full h-11 font-bold ${mode === "GRANT" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""}`}
           >
-            {mode === "GRANT" ? "포인트 적립" : "포인트 사용요청"}
+            {submitting ? "처리 중..." : mode === "GRANT" ? "포인트 적립" : "포인트 사용요청"}
           </Button>
         </div>
       </div>
