@@ -152,7 +152,7 @@ export default function AdminShellClient({ session, children }: Props) {
           {/* Top bar */}
           <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
             {/* Brand */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            <Link href={`/${orgSlug}/admin`} className="flex items-center gap-2.5 shrink-0">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ background: "oklch(0.52 0.27 264)" }}
@@ -165,7 +165,7 @@ export default function AdminShellClient({ session, children }: Props) {
               >
                 관리자 센터
               </span>
-            </div>
+            </Link>
 
             {/* Group nav */}
             <nav
@@ -265,7 +265,7 @@ export default function AdminShellClient({ session, children }: Props) {
         >
           <div className="px-4 h-14 flex items-center justify-between gap-3">
             {/* Brand */}
-            <div className="flex items-center gap-2.5">
+            <Link href={`/${orgSlug}/admin`} className="flex items-center gap-2.5">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                 style={{ background: "oklch(0.52 0.27 264)" }}
@@ -275,7 +275,7 @@ export default function AdminShellClient({ session, children }: Props) {
               <span className="text-foreground font-black text-sm tracking-tight">
                 관리자 센터
               </span>
-            </div>
+            </Link>
 
             {/* 현재 위치 표시 */}
             <span className="flex-1 text-center text-xs font-bold text-muted-foreground truncate px-2">
