@@ -185,6 +185,8 @@ export default function AdminGeneralSettlementsPage() {
   const [q, setQ] = useState("");
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [startMonth, setStartMonth] = useState(1);
+  const [endMonth, setEndMonth] = useState(12);
 
   async function load() {
     setLoading(true);
@@ -229,8 +231,11 @@ export default function AdminGeneralSettlementsPage() {
     });
   }
 
-  // 선택 연도 기준 필터
-  const yearItems = useMemo(() => items.filter((i) => i.year === selectedYear), [items, selectedYear]);
+  // 선택 연도 + 월 범위 기준 필터
+  const yearItems = useMemo(
+    () => items.filter((i) => i.year === selectedYear && i.month >= startMonth && i.month <= endMonth),
+    [items, selectedYear, startMonth, endMonth]
+  );
 
   // 통계 (선택 연도)
   const stats = useMemo(() => {
@@ -245,9 +250,9 @@ export default function AdminGeneralSettlementsPage() {
     };
   }, [yearItems]);
 
-  // 월별 통계 (선택 연도)
+  // 월별 통계 (선택 연도 + 월 범위)
   const monthlyStats = useMemo(() => {
-    return MONTHS.map((m) => {
+    return MONTHS.filter((m) => m >= startMonth && m <= endMonth).map((m) => {
       const mItems = yearItems.filter((i) => i.month === m && i.status !== "DRAFT");
       const confirmed = mItems.filter((i) => i.status === "CONFIRMED");
       return {
@@ -258,7 +263,7 @@ export default function AdminGeneralSettlementsPage() {
         confirmedCount: confirmed.length,
       };
     });
-  }, [yearItems]);
+  }, [yearItems, startMonth, endMonth]);
 
   // 업체별 그룹핑 (선택 연도 기준)
   const groups = useMemo<PartnerGroup[]>(() => {
@@ -351,6 +356,49 @@ export default function AdminGeneralSettlementsPage() {
         </div>
       </div>
 
+      {/* 월 범위 선택 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-bold text-muted-foreground shrink-0">기간</span>
+        <div className="flex items-center gap-1.5">
+          <select
+            value={startMonth}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setStartMonth(v);
+              if (v > endMonth) setEndMonth(v);
+            }}
+            className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            {MONTHS.map((m) => (
+              <option key={m} value={m}>{m}월</option>
+            ))}
+          </select>
+          <span className="text-sm text-muted-foreground font-semibold">~</span>
+          <select
+            value={endMonth}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setEndMonth(v);
+              if (v < startMonth) setStartMonth(v);
+            }}
+            className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            {MONTHS.map((m) => (
+              <option key={m} value={m}>{m}월</option>
+            ))}
+          </select>
+          {(startMonth !== 1 || endMonth !== 12) && (
+            <button
+              type="button"
+              onClick={() => { setStartMonth(1); setEndMonth(12); }}
+              className="h-8 px-2.5 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors"
+            >
+              초기화
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* 통계 카드 */}
       {!loading && (
         <div className="grid grid-cols-3 gap-3">
@@ -376,7 +424,9 @@ export default function AdminGeneralSettlementsPage() {
               {stats.allCount}
               <span className="text-xs font-bold text-muted-foreground ml-1">건</span>
             </p>
-            <p className="text-xs text-muted-foreground">{selectedYear}년</p>
+            <p className="text-xs text-muted-foreground">
+              {selectedYear}년 {startMonth === 1 && endMonth === 12 ? "전체" : `${startMonth}월~${endMonth}월`}
+            </p>
           </div>
         </div>
       )}
@@ -385,7 +435,9 @@ export default function AdminGeneralSettlementsPage() {
       {!loading && hasMonthlyData && (
         <div className="bg-card shadow-card rounded-2xl overflow-hidden">
           <div className="px-5 py-3 border-b border-border">
-            <span className="text-sm font-black text-foreground">{selectedYear}년 월별 현황</span>
+            <span className="text-sm font-black text-foreground">
+              {selectedYear}년 {startMonth === 1 && endMonth === 12 ? "월별 현황" : `${startMonth}월~${endMonth}월 현황`}
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-xs">
@@ -458,7 +510,10 @@ export default function AdminGeneralSettlementsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
-          {q ? "검색 결과가 없습니다." : `${selectedYear}년 제출된 정산서가 없습니다.`}
+          {q
+            ? "검색 결과가 없습니다."
+            : `${selectedYear}년 ${startMonth === 1 && endMonth === 12 ? "" : `${startMonth}월~${endMonth}월 `}제출된 정산서가 없습니다.`}
+
         </div>
       ) : (
         <div className="space-y-2">
