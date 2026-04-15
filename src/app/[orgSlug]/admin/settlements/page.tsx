@@ -421,14 +421,14 @@ export default function AdminSettlementsPage() {
         <div className="bg-card shadow-card rounded-2xl py-10 text-center text-sm text-muted-foreground">
           마감된 정산이 없습니다.
         </div>
-      ) : selectedPeriod ? (
+      ) : selectedPeriodKey ? (
         <div className="bg-card shadow-card rounded-2xl px-6 py-5">
           {/* 월 타이틀 + 화살표 */}
           <div className="flex items-center gap-2 mb-4">
             <button
               type="button"
               onClick={goPrev}
-              disabled={monthRangeIndex >= monthRange.length - 1}
+              disabled={monthRangeIndex < 0 || monthRangeIndex >= monthRange.length - 1}
               className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4 text-foreground" />
