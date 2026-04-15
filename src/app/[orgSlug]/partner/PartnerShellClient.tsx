@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode, useEffect } from "react";
-import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
+import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck, Coins, ClipboardList, ChevronRight } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 import { Toaster } from "sonner";
 
@@ -23,6 +23,13 @@ export default function PartnerShellClient({ session, children }: Props) {
   const pathname = usePathname();
   const orgSlug = pathname.split('/')[1];
   const displayName = session.name?.trim() || session.username || "파트너";
+  const [settlementHover, setSettlementHover] = useState(false);
+
+  const SETTLEMENT_SUB = [
+    { href: `/${orgSlug}/partner/settlements/points`, label: "포인트 정산", icon: Coins },
+    { href: `/${orgSlug}/partner/settlements/general`, label: "일반 정산", icon: FileText },
+    { href: `/${orgSlug}/partner/settlements/history`, label: "정산내역", icon: ClipboardList },
+  ];
 
   const MENU_ITEMS = [
     { href: `/${orgSlug}/partner`, label: "대시보드", icon: LayoutDashboard },
@@ -104,33 +111,68 @@ export default function PartnerShellClient({ session, children }: Props) {
             {/* Nav */}
             <nav className="flex flex-col gap-0.5 flex-1 px-3">
               {MENU_ITEMS.filter(item => !item.mobileOnly).map((item) => {
+                const isSettlement = item.href === `/${orgSlug}/partner/settlements`;
                 const active = isActive(item.href);
                 const Icon = item.icon;
+
+                if (isSettlement) {
+                  return (
+                    <div
+                      key={item.href}
+                      onMouseEnter={() => setSettlementHover(true)}
+                      onMouseLeave={() => setSettlementHover(false)}
+                      className="relative"
+                    >
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                          active ? "text-white" : "text-white/50 hover:text-white/80 hover:bg-white/6"
+                        }`}
+                        style={active ? { background: "oklch(0.52 0.27 264 / 0.25)" } : undefined}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" style={active ? { color: "oklch(0.72 0.2 240)" } : undefined} />
+                        {item.label}
+                        <ChevronRight className={`ml-auto w-3.5 h-3.5 transition-transform ${settlementHover ? "rotate-90" : ""}`} style={{ color: "oklch(0.72 0.2 240 / 0.5)" }} />
+                      </Link>
+                      {/* 서브메뉴 */}
+                      {settlementHover && (
+                        <div className="mt-0.5 ml-4 flex flex-col gap-0.5">
+                          {SETTLEMENT_SUB.map((sub) => {
+                            const subActive = pathname.startsWith(sub.href);
+                            const SubIcon = sub.icon;
+                            return (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                                  subActive ? "text-white" : "text-white/40 hover:text-white/70 hover:bg-white/6"
+                                }`}
+                                style={subActive ? { background: "oklch(0.52 0.27 264 / 0.2)" } : undefined}
+                              >
+                                <SubIcon className="w-3.5 h-3.5 shrink-0" style={subActive ? { color: "oklch(0.72 0.2 240)" } : undefined} />
+                                {sub.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                      active
-                        ? "text-white"
-                        : "text-white/50 hover:text-white/80 hover:bg-white/6"
+                      active ? "text-white" : "text-white/50 hover:text-white/80 hover:bg-white/6"
                     }`}
-                    style={
-                      active
-                        ? { background: "oklch(0.52 0.27 264 / 0.25)" }
-                        : undefined
-                    }
+                    style={active ? { background: "oklch(0.52 0.27 264 / 0.25)" } : undefined}
                   >
-                    <Icon
-                      className="w-4 h-4 shrink-0"
-                      style={active ? { color: "oklch(0.72 0.2 240)" } : undefined}
-                    />
+                    <Icon className="w-4 h-4 shrink-0" style={active ? { color: "oklch(0.72 0.2 240)" } : undefined} />
                     {item.label}
                     {active && (
-                      <span
-                        className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ background: "oklch(0.52 0.27 264)" }}
-                      />
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "oklch(0.52 0.27 264)" }} />
                     )}
                   </Link>
                 );

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
+import { Coins, FileText, ClipboardList } from "lucide-react";
 
 const TABS = [
-  { label: "포인트 정산", href: "points" },
-  { label: "일반 정산", href: "general" },
-  { label: "정산내역", href: "history" },
+  { label: "포인트 정산", href: "points", icon: Coins },
+  { label: "일반 정산", href: "general", icon: FileText },
+  { label: "정산내역", href: "history", icon: ClipboardList },
 ] as const;
 
 export default function SettlementsLayout({ children }: { children: React.ReactNode }) {
@@ -15,22 +16,25 @@ export default function SettlementsLayout({ children }: { children: React.ReactN
   const orgSlug = params?.orgSlug as string;
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-5">
       {/* Sub-tab navigation */}
-      <div className="flex gap-1 bg-muted rounded-xl p-1 w-fit">
+      <div className="flex gap-2 flex-wrap">
         {TABS.map((tab) => {
           const href = `/${orgSlug}/partner/settlements/${tab.href}`;
           const isActive = pathname.startsWith(href);
+          const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={href}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                 isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-white shadow-sm"
+                  : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
               }`}
+              style={isActive ? { background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" } : undefined}
             >
+              <Icon className="w-4 h-4" />
               {tab.label}
             </Link>
           );

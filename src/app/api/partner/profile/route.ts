@@ -87,6 +87,7 @@ export async function GET() {
       item: {
         username: String((me as any).username ?? ""),
         name: String((me as any).name ?? ""),
+        businessName: String(profile.businessName ?? ""),
         category: String(profile.category ?? ""),
         categories,
         intro: String(profile.intro ?? ""),
