@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QrCode, CheckCircle2, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
 function onlyDigitsToNumber(v: string) {
   const digits = v.replace(/[^\d]/g, "");
@@ -172,6 +173,9 @@ export default function PartnerScanPage() {
   function handleStartCamera() {
     startCamera((text) => {
       setScanned(text);
+      toast.success("QR 스캔 완료! 금액을 입력 후 처리해주세요.", { duration: 3000 });
+      // 모바일 진동 피드백
+      try { navigator.vibrate?.(100); } catch {}
     });
   }
 
