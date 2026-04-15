@@ -79,7 +79,17 @@ function getPeriodRange(period: PeriodFilter, anchor: Date): { start: string | n
   return { start: toYMD(first), end: toYMD(last) };
 }
 
-function StatGrid({ items }: { items: { label: string; value: number; color: string; desc: string }[] }) {
+type StatKey = "today" | "pending" | "todayCancel" | "total";
+
+function StatGrid({
+  items,
+  activeFilter,
+  onFilter,
+}: {
+  items: { key: StatKey; label: string; value: number; color: string; desc: string }[];
+  activeFilter: StatKey | null;
+  onFilter: (key: StatKey | null) => void;
+}) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -94,29 +104,42 @@ function StatGrid({ items }: { items: { label: string; value: number; color: str
 
   return (
     <div className="grid grid-cols-4 gap-2">
-      {items.map(({ label, value, color, desc }, idx) => (
-        <div key={label} data-stat-card className="relative bg-muted/40 rounded-xl px-2 py-2 text-center group">
-          <div className={cn("text-lg font-black leading-tight", color)}>{value}</div>
-          <div className="flex items-center justify-center gap-0.5 mt-0.5">
-            <div className="text-[10px] text-muted-foreground font-semibold">{label}</div>
-            <button
-              type="button"
-              onMouseEnter={() => setOpenIdx(idx)}
-              onMouseLeave={() => setOpenIdx(null)}
-              onClick={(e) => { e.stopPropagation(); setOpenIdx(openIdx === idx ? null : idx); }}
-              className="w-3.5 h-3.5 rounded-full border border-muted-foreground/40 flex items-center justify-center text-[8px] font-black text-muted-foreground/60 hover:border-muted-foreground/70 hover:text-muted-foreground transition-colors shrink-0"
-            >
-              i
-            </button>
-          </div>
-          {openIdx === idx && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 bg-foreground text-background text-[11px] font-medium leading-relaxed rounded-xl px-3 py-2 shadow-lg z-50 text-left pointer-events-none">
-              {desc}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-foreground" />
+      {items.map(({ key, label, value, color, desc }, idx) => {
+        const isActive = activeFilter === key;
+        return (
+          <div
+            key={label}
+            data-stat-card
+            onClick={() => onFilter(isActive ? null : key)}
+            className={cn(
+              "relative rounded-xl px-2 py-2 text-center cursor-pointer transition-all",
+              isActive
+                ? "ring-2 ring-primary bg-primary/8"
+                : "bg-muted/40 hover:bg-muted/70"
+            )}
+          >
+            <div className={cn("text-lg font-black leading-tight", color)}>{value}</div>
+            <div className="flex items-center justify-center gap-0.5 mt-0.5">
+              <div className="text-[10px] text-muted-foreground font-semibold">{label}</div>
+              <button
+                type="button"
+                onMouseEnter={() => setOpenIdx(idx)}
+                onMouseLeave={() => setOpenIdx(null)}
+                onClick={(e) => { e.stopPropagation(); setOpenIdx(openIdx === idx ? null : idx); }}
+                className="w-3.5 h-3.5 rounded-full border border-muted-foreground/40 flex items-center justify-center text-[8px] font-black text-muted-foreground/60 hover:border-muted-foreground/70 hover:text-muted-foreground transition-colors shrink-0"
+              >
+                i
+              </button>
             </div>
-          )}
-        </div>
-      ))}
+            {openIdx === idx && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 bg-foreground text-background text-[11px] font-medium leading-relaxed rounded-xl px-3 py-2 shadow-lg z-50 text-left pointer-events-none">
+                {desc}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-foreground" />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -130,6 +153,7 @@ export default function PartnerAppointmentsPage() {
   const [q, setQ] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [selected, setSelected] = useState<Appointment | null>(null);
+  const [statFilter, setStatFilter] = useState<StatKey | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [calMonth, setCalMonth] = useState(new Date());
   const [calItems, setCalItems] = useState<Appointment[]>([]);
@@ -166,22 +190,30 @@ export default function PartnerAppointmentsPage() {
 
   useEffect(() => { loadCal(calMonth); }, [calMonth]);
 
-  const filtered = useMemo(() => {
-    if (!q.trim()) return items;
-    const lower = q.toLowerCase();
-    return items.filter(
-      (i) => i.customerName.toLowerCase().includes(lower) || i.customerPhone.includes(q)
-    );
-  }, [items, q]);
-
   const today = toYMD(new Date());
   const todayItems = items.filter(
     (i) => i.appointmentAt && i.appointmentAt.startsWith(today) && i.appointmentStatus !== "COMPLETED"
   );
-  const pendingCount = items.filter((i) => i.appointmentStatus === "PENDING").length;
-  const todayCancelCount = items.filter(
+  const pendingItems = items.filter((i) => i.appointmentStatus === "PENDING");
+  const todayCancelItems = items.filter(
     (i) => i.appointmentAt?.startsWith(today) && (i.appointmentStatus === "CANCELLED" || i.appointmentStatus === "NOSHOW")
-  ).length;
+  );
+
+  const filtered = useMemo(() => {
+    // 1단계: stat 필터
+    let base = items;
+    if (statFilter === "today") base = todayItems;
+    else if (statFilter === "pending") base = pendingItems;
+    else if (statFilter === "todayCancel") base = todayCancelItems;
+    // statFilter === "total" → base = items (전체)
+
+    // 2단계: 검색어 필터
+    if (!q.trim()) return base;
+    const lower = q.toLowerCase();
+    return base.filter(
+      (i) => i.customerName.toLowerCase().includes(lower) || i.customerPhone.includes(q)
+    );
+  }, [items, q, statFilter, todayItems, pendingItems, todayCancelItems]);
 
   async function updateStatus(id: string, status: AppointmentStatus) {
     setUpdatingId(id);
@@ -284,7 +316,7 @@ export default function PartnerAppointmentsPage() {
                   <button
                     key={v}
                     type="button"
-                    onClick={() => { setPeriod(v); setAnchor(new Date()); }}
+                    onClick={() => { setPeriod(v); setAnchor(new Date()); setStatFilter(null); }}
                     className={cn(
                       "flex-1 sm:flex-none px-2 sm:px-3 h-7 rounded-md text-xs font-black transition-colors",
                       period === v ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -340,11 +372,13 @@ export default function PartnerAppointmentsPage() {
 
             {/* 요약 수치 */}
             <StatGrid
+              activeFilter={statFilter}
+              onFilter={(key) => { setStatFilter(key); setSelected(null); }}
               items={[
-                { label: "오늘이용", value: todayItems.length, color: "text-foreground", desc: "오늘 방문 예정인 예약 건으로, 이용완료 처리되면 집계에서 제외됩니다." },
-                { label: "확정대기", value: pendingCount, color: "text-amber-600", desc: "예약 신청 상태인 건들입니다. 고객이 기다리지 않도록 빠르게 확정해주세요." },
-                { label: "오늘취소", value: todayCancelCount, color: "text-red-500", desc: "오늘 방문 예정이었으나 당일 취소된 예약 건들입니다." },
-                { label: "총 예약", value: filtered.length, color: "text-primary", desc: "현재 조회 조건에 해당하는 전체 예약 건수입니다." },
+                { key: "today", label: "오늘이용", value: todayItems.length, color: "text-foreground", desc: "오늘 방문 예정인 예약 건으로, 이용완료 처리되면 집계에서 제외됩니다." },
+                { key: "pending", label: "확정대기", value: pendingItems.length, color: "text-amber-600", desc: "예약 신청 상태인 건들입니다. 고객이 기다리지 않도록 빠르게 확정해주세요." },
+                { key: "todayCancel", label: "오늘취소", value: todayCancelItems.length, color: "text-red-500", desc: "오늘 방문 예정이었으나 당일 취소된 예약 건들입니다." },
+                { key: "total", label: "총 예약", value: items.length, color: "text-primary", desc: "현재 조회 조건에 해당하는 전체 예약 건수입니다." },
               ]}
             />
           </div>
