@@ -488,6 +488,21 @@ export default function PartnerPage() {
     }
   }
 
+  async function cancelTopupRequest(id: string) {
+    if (!confirm("충전 요청을 취소하시겠습니까?")) return;
+    try {
+      const res = await fetch(`/api/topup-requests/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data?.message ?? "취소에 실패했습니다.");
+        return;
+      }
+      await fetchMyTopups();
+    } catch {
+      alert("네트워크 오류가 발생했습니다.");
+    }
+  }
+
   return (
     <main className="min-w-0 space-y-5 max-w-5xl">
 
@@ -685,9 +700,9 @@ export default function PartnerPage() {
         </section>
       ) : (
         <>
-          {/* ── 3. 충전 요청 + 충전 내역 ── */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <section className="bg-card shadow-card rounded-2xl p-5">
+          {/* ── 3. 충전 요청 + 충전 내역 (통합) ── */}
+          <section className="bg-card shadow-card rounded-2xl p-5 space-y-5">
+            <div>
               <h2 className="text-base font-black text-foreground mb-4">관리자에게 포인트 충전 요청</h2>
               <div className="flex gap-2.5 flex-wrap sm:flex-nowrap">
                 <Input
@@ -708,10 +723,10 @@ export default function PartnerPage() {
                 className="mt-2.5 h-11"
               />
               {topupMsg && <p className="mt-3 text-sm font-bold text-foreground">{topupMsg}</p>}
-            </section>
+            </div>
 
-            <section className="bg-card shadow-card rounded-2xl p-5">
-              <h2 className="text-base font-black text-foreground mb-4">관리자에게 충전 요청 내역</h2>
+            <div className="border-t border-border pt-5">
+              <h2 className="text-base font-black text-foreground mb-4">충전 요청 내역</h2>
               {topupItems.length === 0 ? (
                 <EmptyText text="충전 요청 내역이 없습니다." />
               ) : (
@@ -722,8 +737,20 @@ export default function PartnerPage() {
                         <div>
                           <p className="text-sm font-black text-foreground">{formatNumber(it.amount)}P</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
+                          {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
                         </div>
-                        <StatusBadge status={it.status} />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <StatusBadge status={it.status} />
+                          {it.status === "PENDING" && (
+                            <button
+                              type="button"
+                              onClick={() => cancelTopupRequest(it.id)}
+                              className="h-7 px-2.5 rounded-lg text-xs font-bold text-destructive border border-destructive/30 hover:bg-destructive/8 transition-colors"
+                            >
+                              취소
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -734,8 +761,8 @@ export default function PartnerPage() {
                   )}
                 </>
               )}
-            </section>
-          </div>
+            </div>
+          </section>
 
           {/* ── 4. 이력 ── */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
