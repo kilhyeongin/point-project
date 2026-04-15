@@ -63,7 +63,7 @@ export async function GET(req: Request) {
         const rows = await Ledger.find(
           {
             organizationId: orgId,
-            type: "ISSUE",
+            type: "TOPUP",
             accountId: partner._id,
             createdAt: {
               $gte: startDate,

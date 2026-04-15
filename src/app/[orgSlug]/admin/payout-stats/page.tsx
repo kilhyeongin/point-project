@@ -157,7 +157,7 @@ export default function PayoutStatsPage() {
               지급 현황
             </h1>
             <div className="payout-stats__desc">
-              제휴사별 포인트 지급 건수 및 금액을 기간별로 확인합니다.
+              관리자가 제휴사에 충전 승인한 포인트 건수 및 금액을 기간별로 확인합니다.
             </div>
           </div>
 
