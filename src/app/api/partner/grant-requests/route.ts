@@ -17,6 +17,9 @@ import { Ledger } from "@/models/Ledger";
 import { FavoritePartner } from "@/models/FavoritePartner";
 import { debitWallet, creditWallet } from "@/services/wallet";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { WithdrawalRequest } from "@/models/WithdrawalRequest";
+import { PointSettlementPayment } from "@/models/PointSettlementPayment";
+import { Wallet } from "@/models/Wallet";
 
 function parseQrPayload(v: string) {
   const s = String(v || "").trim();
@@ -116,6 +119,28 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { ok: false, message: "신청한 고객에게만 포인트를 지급할 수 있습니다." },
       { status: 403 }
+    );
+  }
+
+  // 가용 잔액 체크 (잠긴 금액 제외)
+  const [wallet, pendingWithdrawals, pendingSettlements] = await Promise.all([
+    Wallet.findOne({ accountId: partnerId }).lean() as any,
+    WithdrawalRequest.aggregate([
+      { $match: { partnerId: String(partnerId), status: "PENDING" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+    PointSettlementPayment.aggregate([
+      { $match: { partnerId: String(partnerId), status: "PENDING" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+  ]);
+  const balance = Number(wallet?.balance ?? 0);
+  const lockedAmount = Number(pendingWithdrawals[0]?.total ?? 0) + Number(pendingSettlements[0]?.total ?? 0);
+  const available = balance - lockedAmount;
+  if (available < amount) {
+    return NextResponse.json(
+      { ok: false, message: `가용 포인트가 부족합니다. (가용: ${available.toLocaleString()}P, 잠긴 금액: ${lockedAmount.toLocaleString()}P)` },
+      { status: 400 }
     );
   }
 
