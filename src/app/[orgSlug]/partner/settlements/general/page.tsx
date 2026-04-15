@@ -223,9 +223,9 @@ export default function GeneralSettlementPage() {
       {/* 상태 배너 */}
       {submitted && (
         <div className="flex items-center gap-2.5 rounded-2xl px-5 py-3.5 text-sm font-semibold"
-          style={{ background: "oklch(0.95 0.05 160)", color: "oklch(0.4 0.15 155)", border: "1px solid oklch(0.88 0.08 160)" }}>
+          style={{ background: "oklch(0.98 0.03 85)", color: "oklch(0.45 0.12 75)", border: "1px solid oklch(0.90 0.06 85)" }}>
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          {year}년 {month}월 정산이 전송 완료되었습니다.
+          {year}년 {month}월 정산이 전송되었습니다. 관리자 확인을 기다리는 중입니다.
         </div>
       )}
       {savedDraft && !submitted && (

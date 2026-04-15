@@ -66,11 +66,15 @@ const GeneralSettlementSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["DRAFT", "SUBMITTED"],
+      enum: ["DRAFT", "SUBMITTED", "CONFIRMED"],
       default: "DRAFT",
       index: true,
     },
     submittedAt: {
+      type: Date,
+      default: null,
+    },
+    confirmedAt: {
       type: Date,
       default: null,
     },

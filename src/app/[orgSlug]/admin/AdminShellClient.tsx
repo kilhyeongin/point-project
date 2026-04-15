@@ -44,6 +44,7 @@ export default function AdminShellClient({ session, children }: Props) {
       label: "거래·정산",
       items: [
         { href: `/${orgSlug}/admin/settlements`, label: "거래처 정산관리" },
+        { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
         { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 현황" },
         { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
       ],

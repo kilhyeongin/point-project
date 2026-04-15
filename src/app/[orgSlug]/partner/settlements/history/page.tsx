@@ -173,10 +173,17 @@ function PointHistoryTab() {
 // ── 일반 정산 내역 ────────────────────────────────────────────
 
 function GeneralStatusChip({ status }: { status: string }) {
+  if (status === "CONFIRMED") {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        확인완료
+      </span>
+    );
+  }
   if (status === "SUBMITTED") {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-[oklch(0.52_0.27_264)]/15 text-[oklch(0.52_0.27_264)]">
-        전송완료
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+        대기중
       </span>
     );
   }
