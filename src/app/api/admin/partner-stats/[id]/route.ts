@@ -115,7 +115,7 @@ export async function GET(
       .map((uid) => new mongoose.Types.ObjectId(uid));
 
     const users = userIds.length > 0
-      ? await User.find({ _id: { $in: userIds } }, { username: 1, name: 1 }).lean() as any[]
+      ? await User.find({ _id: { $in: userIds }, organizationId: orgId }, { username: 1, name: 1 }).lean() as any[]
       : [];
     const userMap = new Map(users.map((u) => [String(u._id), u]));
 

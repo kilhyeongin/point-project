@@ -110,6 +110,7 @@ export async function GET(req: Request) {
     let user = await User.findOne({
       "socialAccounts.provider": "kakao",
       "socialAccounts.providerId": kakaoId,
+      organizationId: resolvedOrgSlug,
     });
 
     if (!user && kakaoEmail) {

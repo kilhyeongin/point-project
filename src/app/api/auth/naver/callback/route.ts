@@ -102,6 +102,7 @@ export async function GET(req: Request) {
     let user = await User.findOne({
       "socialAccounts.provider": "naver",
       "socialAccounts.providerId": naverId,
+      organizationId: resolvedOrgSlug,
     });
 
     if (!user && naverEmail) {
