@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatUsername } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { toast } from "sonner";
+import { Loader2, RefreshCw, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { formatUsername } from "@/lib/utils";
 
 type Item = {
   id: string;
@@ -18,103 +18,105 @@ type Item = {
   approvedBy?: { username: string; name: string; role: string } | null;
 };
 
-function formatNumber(n: number) {
+type Tab = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
+
+function fmt(n: number) {
   return Number(n || 0).toLocaleString();
 }
 
-function roleLabel(role?: string) {
-  if (role === "PARTNER") return "제휴사";
-  if (role === "CUSTOMER") return "고객";
-  if (role === "ADMIN") return "총괄관리자";
-  return role || "-";
+function fmtDate(v?: string | null) {
+  if (!v) return "-";
+  const d = new Date(v);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd} ${hh}:${min}`;
 }
 
-function statusLabel(status?: string) {
-  if (status === "PENDING") return "대기";
-  if (status === "APPROVED") return "승인완료";
-  if (status === "REJECTED") return "거절";
-  return status || "-";
-}
-
-function StatusBadge({ status }: { status: string }) {
+function StatusChip({ status }: { status: string }) {
   if (status === "APPROVED")
     return (
-      <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-extrabold">
-        {statusLabel(status)}
-      </Badge>
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <CheckCircle2 className="w-3 h-3" />
+        승인완료
+      </span>
     );
   if (status === "PENDING")
     return (
-      <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full text-xs font-extrabold">
-        {statusLabel(status)}
-      </Badge>
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+        <Clock className="w-3 h-3" />
+        대기 중
+      </span>
     );
   if (status === "REJECTED")
     return (
-      <Badge className="bg-red-50 text-red-700 border border-red-200 rounded-full text-xs font-extrabold">
-        {statusLabel(status)}
-      </Badge>
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+        <XCircle className="w-3 h-3" />
+        거절
+      </span>
     );
-  return <Badge>{statusLabel(status)}</Badge>;
+  return <span className="text-xs text-muted-foreground">{status}</span>;
 }
 
-export default function Page() {
+export default function TopupRequestsPage() {
   const pathname = usePathname();
-  const orgSlug = pathname.split('/')[1];
+  const orgSlug = pathname.split("/")[1];
 
   const [items, setItems] = useState<Item[]>([]);
-  const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("PENDING");
 
-  const pendingCount = useMemo(
-    () => items.filter((it) => it.status === "PENDING").length,
-    [items]
-  );
+  const counts = useMemo(() => ({
+    all: items.length,
+    pending: items.filter((i) => i.status === "PENDING").length,
+    approved: items.filter((i) => i.status === "APPROVED").length,
+    rejected: items.filter((i) => i.status === "REJECTED").length,
+  }), [items]);
 
-  async function load() {
-    setLoading(true);
-    setMsg("");
+  const filtered = useMemo(() => {
+    const list = tab === "ALL" ? items : items.filter((i) => i.status === tab);
+    return [...list].sort((a, b) => {
+      // PENDING 항목을 항상 위로
+      if (a.status === "PENDING" && b.status !== "PENDING") return -1;
+      if (b.status === "PENDING" && a.status !== "PENDING") return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [items, tab]);
 
+  async function load(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch("/api/admin/topup-requests");
       const data = await res.json();
-
       if (!res.ok) {
-        setItems([]);
-        setMsg(data?.message ?? "목록 조회 실패");
+        toast.error(data?.message ?? "목록 조회 실패");
         return;
       }
-
       setItems(data.items || []);
     } catch {
-      setItems([]);
-      setMsg("네트워크 오류");
+      toast.error("네트워크 오류");
     } finally {
       setLoading(false);
     }
   }
 
   async function approve(id: string) {
-    setMsg("");
     setWorkingId(id);
-
     try {
       const res = await fetch(`/api/admin/topup-requests/${id}/approve`, {
         method: "PATCH",
       });
-
       const data = await res.json();
-
       if (!res.ok || !data.ok) {
-        setMsg(data?.message ?? "승인 실패");
+        toast.error(data?.message ?? "승인 실패");
         return;
       }
-
-      setMsg("✅ 충전 요청을 승인했습니다.");
-      await load();
+      toast.success("충전 요청을 승인했습니다.");
+      await load(true);
     } catch {
-      setMsg("네트워크 오류");
+      toast.error("네트워크 오류");
     } finally {
       setWorkingId(null);
     }
@@ -124,140 +126,175 @@ export default function Page() {
     load();
   }, []);
 
+  const TABS: { key: Tab; label: string; count: number }[] = [
+    { key: "PENDING", label: "대기 중", count: counts.pending },
+    { key: "ALL", label: "전체", count: counts.all },
+    { key: "APPROVED", label: "승인완료", count: counts.approved },
+    { key: "REJECTED", label: "거절", count: counts.rejected },
+  ];
+
   return (
-    <main className="space-y-5">
-      <section className="bg-card shadow-card rounded-2xl p-5">
-        <div className="flex justify-between items-start gap-3 flex-wrap">
+    <main className="space-y-5 max-w-3xl mx-auto">
+      {/* ── 헤더 ── */}
+      <section className="bg-card shadow-card rounded-2xl p-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-xl font-black text-foreground tracking-tight">포인트 충전 승인</h1>
-            <div className="mt-2 text-muted-foreground text-sm leading-relaxed">
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest mb-1">
+              포인트 관리
+            </p>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">
+              충전 요청 승인
+            </h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
               제휴사의 충전 요청을 승인하면 해당 계정 잔액에 즉시 반영됩니다.
-            </div>
+            </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={load} type="button">
-              새로고침
-            </Button>
-            <a
-              href={`/${orgSlug}/admin`}
-              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-xl border border-border bg-card text-foreground font-bold text-sm hover:bg-muted transition-colors"
-            >
-              대시보드로
-            </a>
+          <button
+            onClick={() => load()}
+            disabled={loading}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-xl border border-border bg-card text-sm font-bold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            새로고침
+          </button>
+        </div>
+
+        {/* 요약 수치 */}
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-muted/50 px-4 py-3 text-center">
+            <div className="text-xl font-black text-foreground">{counts.all}</div>
+            <div className="text-xs text-muted-foreground mt-0.5 font-semibold">전체</div>
+          </div>
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-center">
+            <div className="text-xl font-black text-amber-700">{counts.pending}</div>
+            <div className="text-xs text-amber-600 mt-0.5 font-semibold">대기 중</div>
+          </div>
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-center">
+            <div className="text-xl font-black text-emerald-700">{counts.approved}</div>
+            <div className="text-xs text-emerald-600 mt-0.5 font-semibold">승인완료</div>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-muted/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-foreground">{formatNumber(items.length)}건</div>
-          <div className="text-xs text-muted-foreground mt-1">전체 요청</div>
-          <div className="text-xs text-muted-foreground">현재 조회된 충전 요청</div>
-        </div>
-        <div className="bg-muted/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-foreground">{formatNumber(pendingCount)}건</div>
-          <div className="text-xs text-muted-foreground mt-1">승인 대기</div>
-          <div className="text-xs text-muted-foreground">처리가 필요한 요청 수</div>
-        </div>
-        <div className="bg-muted/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-foreground">{loading ? "조회중" : "완료"}</div>
-          <div className="text-xs text-muted-foreground mt-1">로딩 상태</div>
-          <div className="text-xs text-muted-foreground">목록 동기화 상태</div>
-        </div>
+      {/* ── 탭 필터 ── */}
+      <div className="flex gap-2 flex-wrap">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`h-9 px-4 rounded-xl text-sm font-bold transition-colors ${
+              tab === t.key
+                ? "bg-foreground text-background"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+            }`}
+          >
+            {t.label}
+            <span className={`ml-1.5 text-xs ${tab === t.key ? "opacity-70" : "opacity-50"}`}>
+              {t.count}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {msg && (
-        <div className="p-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-semibold">
-          {msg}
+      {/* ── 목록 ── */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+          <span className="text-sm font-semibold">불러오는 중...</span>
         </div>
-      )}
-
-      <section className="space-y-3">
-        {loading ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">불러오는 중...</div>
-        ) : items.length === 0 ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">
-            충전 요청이 없습니다.
-          </div>
-        ) : (
-          items.map((it) => (
+      ) : filtered.length === 0 ? (
+        <div className="py-16 text-center text-sm text-muted-foreground bg-card shadow-card rounded-2xl">
+          {tab === "PENDING" ? "대기 중인 충전 요청이 없습니다." : "해당 조건의 요청이 없습니다."}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((it) => (
             <article
               key={it.id}
-              className="bg-card shadow-card rounded-2xl p-5 space-y-4"
+              className={`bg-card shadow-card rounded-2xl overflow-hidden ${
+                it.status === "PENDING" ? "ring-1 ring-amber-300" : ""
+              }`}
             >
-              <div className="flex justify-between items-start gap-4">
-                <div>
-                  <div className="text-base font-black text-foreground">
-                    {it.account?.name ?? "-"} ({it.account ? formatUsername(it.account.username) : "-"})
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    대상 역할: {roleLabel(it.account?.role)}
-                  </div>
-                </div>
-                <div className="text-2xl font-black text-foreground whitespace-nowrap tracking-tight">
-                  {formatNumber(it.amount)}P
-                </div>
-              </div>
+              {/* 카드 상단 강조 바 (PENDING만) */}
+              {it.status === "PENDING" && (
+                <div className="h-1 bg-gradient-to-r from-amber-400 to-orange-400" />
+              )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="border border-border rounded-xl p-3 bg-muted/50">
-                  <div className="text-xs text-muted-foreground">상태</div>
-                  <div className="mt-1 text-sm font-bold leading-snug">
-                    <StatusBadge status={it.status} />
+              <div className="p-5">
+                {/* 1행: 제휴사 정보 + 금액 */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base font-black text-foreground">
+                        {it.account?.name ?? "-"}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {it.account ? formatUsername(it.account.username) : "-"}
+                      </span>
+                      <StatusChip status={it.status} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      요청일 {fmtDate(it.createdAt)}
+                      {it.requestedBy && (
+                        <> · 요청자 {it.requestedBy.name}</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-2xl font-black text-foreground tracking-tight">
+                      {fmt(it.amount)}
+                      <span className="text-base font-bold ml-0.5">P</span>
+                    </div>
                   </div>
                 </div>
-                <div className="border border-border rounded-xl p-3 bg-muted/50">
-                  <div className="text-xs text-muted-foreground">요청일</div>
-                  <div className="mt-1 text-sm font-bold leading-snug break-words">
-                    {it.createdAt ? new Date(it.createdAt).toLocaleString() : "-"}
-                  </div>
-                </div>
-                <div className="border border-border rounded-xl p-3 bg-muted/50">
-                  <div className="text-xs text-muted-foreground">요청자</div>
-                  <div className="mt-1 text-sm font-bold leading-snug break-words">
-                    {it.requestedBy
-                      ? `${it.requestedBy.name} (${formatUsername(it.requestedBy.username)})`
-                      : "-"}
-                  </div>
-                </div>
-                <div className="border border-border rounded-xl p-3 bg-muted/50">
-                  <div className="text-xs text-muted-foreground">승인자 / 처리일</div>
-                  <div className="mt-1 text-sm font-bold leading-snug break-words">
-                    {it.approvedBy
-                      ? `${it.approvedBy.name} (${formatUsername(it.approvedBy.username)})`
-                      : "-"}
-                    <br />
-                    {it.decidedAt ? new Date(it.decidedAt).toLocaleString() : "-"}
-                  </div>
-                </div>
-                <div className="border border-border rounded-xl p-3 bg-muted/50 col-span-2">
-                  <div className="text-xs text-muted-foreground">메모</div>
-                  <div className="mt-1 text-sm font-bold leading-snug break-words">
-                    {it.note || "-"}
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex justify-between items-center gap-2 flex-wrap">
-                <StatusBadge status={it.status} />
-                {it.status === "PENDING" ? (
-                  <Button
-                    onClick={() => approve(it.id)}
-                    type="button"
-                    disabled={workingId === it.id}
-                  >
-                    {workingId === it.id ? "처리 중..." : "승인"}
-                  </Button>
-                ) : (
-                  <Button variant="outline" type="button" disabled>
-                    처리 완료
-                  </Button>
+                {/* 2행: 메모 (있을 때만) */}
+                {it.note && (
+                  <div className="mt-3 px-3 py-2 rounded-xl bg-muted/50 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground/60 mr-1">메모</span>
+                    {it.note}
+                  </div>
+                )}
+
+                {/* 3행: 승인완료/거절 처리 정보 */}
+                {it.status !== "PENDING" && (it.approvedBy || it.decidedAt) && (
+                  <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+                    {it.approvedBy && (
+                      <span>처리자 <strong className="text-foreground">{it.approvedBy.name}</strong></span>
+                    )}
+                    {it.decidedAt && (
+                      <span>처리일 <strong className="text-foreground">{fmtDate(it.decidedAt)}</strong></span>
+                    )}
+                  </div>
+                )}
+
+                {/* 4행: 액션 버튼 (PENDING만) */}
+                {it.status === "PENDING" && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => approve(it.id)}
+                      disabled={workingId === it.id}
+                      className="flex items-center gap-1.5 h-10 px-6 rounded-xl bg-foreground text-background text-sm font-bold hover:opacity-80 transition-opacity disabled:opacity-50"
+                    >
+                      {workingId === it.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          처리 중...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          승인하기
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </article>
-          ))
-        )}
-      </section>
+          ))}
+        </div>
+      )}
     </main>
   );
 }
