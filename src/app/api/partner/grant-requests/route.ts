@@ -52,8 +52,8 @@ export async function POST(req: Request) {
   const amount = Number(body?.amount ?? 0);
   const note = String(body?.note ?? "").trim();
 
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json({ ok: false, message: "amount는 1 이상 숫자여야 합니다." }, { status: 400 });
+  if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+    return NextResponse.json({ ok: false, message: "amount는 1 이상 정수여야 합니다." }, { status: 400 });
   }
   if (amount > 100_000_000) {
     return NextResponse.json({ ok: false, message: "요청 금액이 너무 큽니다." }, { status: 400 });
@@ -119,6 +119,15 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { ok: false, message: "신청한 고객에게만 포인트를 지급할 수 있습니다." },
       { status: 403 }
+    );
+  }
+
+  // QR 중복 스캔 방지: 동일 고객-제휴사 쌍은 15초 내 1회만 허용
+  const qrPairKey = `grant:${String(customerId)}:${String(partnerId)}`;
+  if (await isRateLimited(qrPairKey, 1, 15_000)) {
+    return NextResponse.json(
+      { ok: false, message: "잠시 후 다시 시도해주세요. (중복 처리 방지)" },
+      { status: 429 }
     );
   }
 

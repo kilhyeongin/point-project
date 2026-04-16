@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const username = normalizeUsername(String(body?.username ?? ""));
     const password = String(body?.password ?? "");
+    const orgSlug = String(body?.orgSlug ?? "").trim() || "4nwn";
 
     if (!username || !password) {
       return NextResponse.json(
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username, organizationId: orgSlug });
 
     if (!user) {
       return NextResponse.json(
