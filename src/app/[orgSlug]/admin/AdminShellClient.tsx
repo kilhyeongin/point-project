@@ -33,22 +33,19 @@ export default function AdminShellClient({ session, children }: Props) {
 
   const MENU_GROUPS: MenuGroup[] = [
     {
-      key: "ops",
+      key: "dashboard",
       label: "대시보드",
       items: [
         { href: `/${orgSlug}/admin`, label: "대시보드" },
-        { href: `/${orgSlug}/admin/accounts`, label: "계정 잔액" },
-        { href: `/${orgSlug}/admin/partner-stats`, label: "제휴사 현황" },
-        { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인" },
       ],
     },
     {
-      key: "settlement",
-      label: "제휴사 정산관리",
+      key: "partner",
+      label: "제휴사 현황",
       items: [
-        { href: `/${orgSlug}/admin/settlements`, label: "포인트 정산관리" },
-        { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
-        { href: `/${orgSlug}/admin/point-requests`, label: "포인트 출금/정산" },
+        { href: `/${orgSlug}/admin/settlements`, label: "제휴사 정산관리" },
+        { href: `/${orgSlug}/admin/accounts`, label: "계정 잔액" },
+        { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인/포인트 관리" },
       ],
     },
     {
@@ -101,7 +98,12 @@ export default function AdminShellClient({ session, children }: Props) {
 
   function isActive(href: string) {
     if (href === `/${orgSlug}/admin`) return pathname === `/${orgSlug}/admin`;
-    if (href === `/${orgSlug}/admin/settlements`) return pathname === `/${orgSlug}/admin/settlements`;
+    // 제휴사 정산관리: settlements 하위 페이지 + point-requests 모두 활성화
+    if (href === `/${orgSlug}/admin/settlements`) {
+      return pathname === `/${orgSlug}/admin/settlements`
+        || pathname.startsWith(`/${orgSlug}/admin/settlements/`)
+        || pathname === `/${orgSlug}/admin/point-requests`;
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
 
 type GeneralSettlementItem = {
@@ -178,6 +179,8 @@ type PartnerGroup = {
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 export default function AdminGeneralSettlementsPage() {
+  const pathname = usePathname();
+  const orgSlug = pathname.split("/")[1];
   const currentYear = new Date().getFullYear();
   const [items, setItems] = useState<GeneralSettlementItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -313,8 +316,34 @@ export default function AdminGeneralSettlementsPage() {
 
   const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
 
+  const settlementTabs = [
+    { href: `/${orgSlug}/admin/settlements`, label: "포인트 정산관리" },
+    { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
+    { href: `/${orgSlug}/admin/point-requests`, label: "포인트 출금·정산" },
+  ];
+
   return (
     <div className="space-y-5 max-w-3xl">
+      {/* ── 정산 탭 ── */}
+      <div className="flex gap-1 border-b border-border">
+        {settlementTabs.map((tab) => {
+          const active = pathname === tab.href;
+          return (
+            <a
+              key={tab.href}
+              href={tab.href}
+              className={`px-4 py-2 text-sm font-bold rounded-t-lg border border-b-0 relative bottom-[-1px] transition-colors whitespace-nowrap ${
+                active
+                  ? "bg-background border-border text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </a>
+          );
+        })}
+      </div>
+
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-4">
         <div>

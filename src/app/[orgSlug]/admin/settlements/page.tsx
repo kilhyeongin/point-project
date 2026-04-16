@@ -390,6 +390,30 @@ export default function AdminSettlementsPage() {
   return (
     <main className="space-y-5">
 
+      {/* ── 정산 탭 ── */}
+      <div className="flex gap-1 border-b border-border">
+        {[
+          { href: `/${orgSlug}/admin/settlements`, label: "포인트 정산관리" },
+          { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
+          { href: `/${orgSlug}/admin/point-requests`, label: "포인트 출금·정산" },
+        ].map((tab) => {
+          const active = pathname === tab.href;
+          return (
+            <a
+              key={tab.href}
+              href={tab.href}
+              className={`px-4 py-2 text-sm font-bold rounded-t-lg border border-b-0 relative bottom-[-1px] transition-colors whitespace-nowrap ${
+                active
+                  ? "bg-background border-border text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </a>
+          );
+        })}
+      </div>
+
       {/* ── 헤더 ───────────────────────────────────────── */}
       <section className="bg-card shadow-card rounded-2xl p-5">
         <div className="flex justify-between items-center gap-3 flex-wrap">
