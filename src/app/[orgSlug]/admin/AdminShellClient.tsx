@@ -55,7 +55,7 @@ export default function AdminShellClient({ session, children }: Props) {
       key: "finance",
       label: "포인트 및 내역",
       items: [
-        { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 현황" },
+        { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 지급 현황" },
         { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
       ],
     },
