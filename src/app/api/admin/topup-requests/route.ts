@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { TopupRequest } from "@/models/TopupRequest";
+import "@/models/User"; // populate("accountId") 시 User 스키마 등록 필요
 
 export async function GET() {
   const session = await getSessionFromCookies();

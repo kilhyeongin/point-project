@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Loader2, RefreshCw, Check } from "lucide-react";
 import { formatUsername } from "@/lib/utils";
 
 type Item = {
@@ -31,32 +31,33 @@ function fmtDate(v?: string | null) {
   const dd = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
-  return `${mm}/${dd} ${hh}:${min}`;
+  return `${mm}.${dd} ${hh}:${min}`;
 }
 
-function StatusChip({ status }: { status: string }) {
-  if (status === "APPROVED")
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <CheckCircle2 className="w-3 h-3" />
-        승인완료
-      </span>
-    );
+function StatusBadge({ status }: { status: string }) {
   if (status === "PENDING")
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-        <Clock className="w-3 h-3" />
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-600 text-white">
         대기 중
+      </span>
+    );
+  if (status === "APPROVED")
+    return (
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+        승인완료
       </span>
     );
   if (status === "REJECTED")
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-        <XCircle className="w-3 h-3" />
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600 border border-red-200">
         거절
       </span>
     );
-  return <span className="text-xs text-muted-foreground">{status}</span>;
+  return (
+    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-500">
+      {status}
+    </span>
+  );
 }
 
 export default function TopupRequestsPage() {
@@ -78,7 +79,6 @@ export default function TopupRequestsPage() {
   const filtered = useMemo(() => {
     const list = tab === "ALL" ? items : items.filter((i) => i.status === tab);
     return [...list].sort((a, b) => {
-      // PENDING 항목을 항상 위로
       if (a.status === "PENDING" && b.status !== "PENDING") return -1;
       if (b.status === "PENDING" && a.status !== "PENDING") return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -90,10 +90,7 @@ export default function TopupRequestsPage() {
     try {
       const res = await fetch("/api/admin/topup-requests");
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data?.message ?? "목록 조회 실패");
-        return;
-      }
+      if (!res.ok) { toast.error(data?.message ?? "목록 조회 실패"); return; }
       setItems(data.items || []);
     } catch {
       toast.error("네트워크 오류");
@@ -105,14 +102,9 @@ export default function TopupRequestsPage() {
   async function approve(id: string) {
     setWorkingId(id);
     try {
-      const res = await fetch(`/api/admin/topup-requests/${id}/approve`, {
-        method: "PATCH",
-      });
+      const res = await fetch(`/api/admin/topup-requests/${id}/approve`, { method: "PATCH" });
       const data = await res.json();
-      if (!res.ok || !data.ok) {
-        toast.error(data?.message ?? "승인 실패");
-        return;
-      }
+      if (!res.ok || !data.ok) { toast.error(data?.message ?? "승인 실패"); return; }
       toast.success("충전 요청을 승인했습니다.");
       await load(true);
     } catch {
@@ -122,179 +114,432 @@ export default function TopupRequestsPage() {
     }
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const TABS: { key: Tab; label: string; count: number }[] = [
     { key: "PENDING", label: "대기 중", count: counts.pending },
-    { key: "ALL", label: "전체", count: counts.all },
-    { key: "APPROVED", label: "승인완료", count: counts.approved },
-    { key: "REJECTED", label: "거절", count: counts.rejected },
+    { key: "ALL",     label: "전체",    count: counts.all },
+    { key: "APPROVED",label: "승인완료", count: counts.approved },
+    { key: "REJECTED",label: "거절",    count: counts.rejected },
   ];
 
   return (
-    <main className="space-y-5 max-w-3xl mx-auto">
+    <main className="tr-wrap">
+
       {/* ── 헤더 ── */}
-      <section className="bg-card shadow-card rounded-2xl p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest mb-1">
-              포인트 관리
-            </p>
-            <h1 className="text-2xl font-black text-foreground tracking-tight">
-              충전 요청 승인
-            </h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              제휴사의 충전 요청을 승인하면 해당 계정 잔액에 즉시 반영됩니다.
-            </p>
-          </div>
-          <button
-            onClick={() => load()}
-            disabled={loading}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-xl border border-border bg-card text-sm font-bold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            새로고침
-          </button>
+      <header className="tr-header">
+        <div className="tr-header__left">
+          <p className="tr-header__eyebrow">포인트 관리</p>
+          <h1 className="tr-header__title">충전 요청 승인</h1>
+          <p className="tr-header__desc">
+            제휴사의 포인트 충전 요청을 검토하고 승인합니다. 승인 즉시 잔액에 반영됩니다.
+          </p>
         </div>
+        <button
+          onClick={() => load()}
+          disabled={loading}
+          className="tr-refresh-btn"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          새로고침
+        </button>
+      </header>
 
-        {/* 요약 수치 */}
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          <div className="rounded-xl bg-muted/50 px-4 py-3 text-center">
-            <div className="text-xl font-black text-foreground">{counts.all}</div>
-            <div className="text-xs text-muted-foreground mt-0.5 font-semibold">전체</div>
-          </div>
-          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-center">
-            <div className="text-xl font-black text-amber-700">{counts.pending}</div>
-            <div className="text-xs text-amber-600 mt-0.5 font-semibold">대기 중</div>
-          </div>
-          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-center">
-            <div className="text-xl font-black text-emerald-700">{counts.approved}</div>
-            <div className="text-xs text-emerald-600 mt-0.5 font-semibold">승인완료</div>
-          </div>
+      {/* ── 요약 수치 ── */}
+      <div className="tr-kpi-row">
+        <div className="tr-kpi">
+          <span className="tr-kpi__num">{counts.all}</span>
+          <span className="tr-kpi__label">전체 요청</span>
         </div>
-      </section>
+        <div className="tr-kpi tr-kpi--accent">
+          <span className="tr-kpi__num">{counts.pending}</span>
+          <span className="tr-kpi__label">대기 중</span>
+        </div>
+        <div className="tr-kpi">
+          <span className="tr-kpi__num">{counts.approved}</span>
+          <span className="tr-kpi__label">승인완료</span>
+        </div>
+      </div>
 
-      {/* ── 탭 필터 ── */}
-      <div className="flex gap-2 flex-wrap">
+      {/* ── 탭 ── */}
+      <div className="tr-tabs" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`h-9 px-4 rounded-xl text-sm font-bold transition-colors ${
-              tab === t.key
-                ? "bg-foreground text-background"
-                : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
-            }`}
+            className={`tr-tab ${tab === t.key ? "tr-tab--active" : ""}`}
           >
             {t.label}
-            <span className={`ml-1.5 text-xs ${tab === t.key ? "opacity-70" : "opacity-50"}`}>
-              {t.count}
-            </span>
+            <span className="tr-tab__count">{t.count}</span>
           </button>
         ))}
       </div>
 
       {/* ── 목록 ── */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin mr-2" />
-          <span className="text-sm font-semibold">불러오는 중...</span>
+        <div className="tr-loading">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>불러오는 중</span>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 text-center text-sm text-muted-foreground bg-card shadow-card rounded-2xl">
+        <div className="tr-empty">
           {tab === "PENDING" ? "대기 중인 충전 요청이 없습니다." : "해당 조건의 요청이 없습니다."}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="tr-list">
           {filtered.map((it) => (
             <article
               key={it.id}
-              className={`bg-card shadow-card rounded-2xl overflow-hidden ${
-                it.status === "PENDING" ? "ring-1 ring-amber-300" : ""
-              }`}
+              className={`tr-card ${it.status === "PENDING" ? "tr-card--pending" : ""}`}
             >
-              {/* 카드 상단 강조 바 (PENDING만) */}
-              {it.status === "PENDING" && (
-                <div className="h-1 bg-gradient-to-r from-amber-400 to-orange-400" />
-              )}
-
-              <div className="p-5">
-                {/* 1행: 제휴사 정보 + 금액 */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-base font-black text-foreground">
-                        {it.account?.name ?? "-"}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {it.account ? formatUsername(it.account.username) : "-"}
-                      </span>
-                      <StatusChip status={it.status} />
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      요청일 {fmtDate(it.createdAt)}
-                      {it.requestedBy && (
-                        <> · 요청자 {it.requestedBy.name}</>
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-2xl font-black text-foreground tracking-tight">
-                      {fmt(it.amount)}
-                      <span className="text-base font-bold ml-0.5">P</span>
-                    </div>
-                  </div>
+              {/* 상단: 제휴사 + 상태 + 금액 */}
+              <div className="tr-card__top">
+                <div className="tr-card__who">
+                  <span className="tr-card__name">{it.account?.name ?? "-"}</span>
+                  <span className="tr-card__username">
+                    {it.account ? formatUsername(it.account.username) : "-"}
+                  </span>
+                  <StatusBadge status={it.status} />
                 </div>
+                <div className="tr-card__amount">
+                  {fmt(it.amount)}<span className="tr-card__amount-unit">P</span>
+                </div>
+              </div>
 
-                {/* 2행: 메모 (있을 때만) */}
-                {it.note && (
-                  <div className="mt-3 px-3 py-2 rounded-xl bg-muted/50 text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground/60 mr-1">메모</span>
-                    {it.note}
-                  </div>
-                )}
-
-                {/* 3행: 승인완료/거절 처리 정보 */}
-                {it.status !== "PENDING" && (it.approvedBy || it.decidedAt) && (
-                  <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                    {it.approvedBy && (
-                      <span>처리자 <strong className="text-foreground">{it.approvedBy.name}</strong></span>
-                    )}
-                    {it.decidedAt && (
-                      <span>처리일 <strong className="text-foreground">{fmtDate(it.decidedAt)}</strong></span>
-                    )}
-                  </div>
-                )}
-
-                {/* 4행: 액션 버튼 (PENDING만) */}
-                {it.status === "PENDING" && (
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      onClick={() => approve(it.id)}
-                      disabled={workingId === it.id}
-                      className="flex items-center gap-1.5 h-10 px-6 rounded-xl bg-foreground text-background text-sm font-bold hover:opacity-80 transition-opacity disabled:opacity-50"
-                    >
-                      {workingId === it.id ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          처리 중...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          승인하기
-                        </>
-                      )}
-                    </button>
-                  </div>
+              {/* 메타 정보 */}
+              <div className="tr-card__meta">
+                <span>요청 {fmtDate(it.createdAt)}</span>
+                {it.requestedBy && <span>· 요청자 {it.requestedBy.name}</span>}
+                {it.status !== "PENDING" && it.approvedBy && (
+                  <span>· 처리자 {it.approvedBy.name} {fmtDate(it.decidedAt)}</span>
                 )}
               </div>
+
+              {/* 메모 */}
+              {it.note && (
+                <p className="tr-card__note">{it.note}</p>
+              )}
+
+              {/* 승인 버튼 */}
+              {it.status === "PENDING" && (
+                <div className="tr-card__action">
+                  <button
+                    onClick={() => approve(it.id)}
+                    disabled={workingId === it.id}
+                    className="tr-approve-btn"
+                  >
+                    {workingId === it.id ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />처리 중</>
+                    ) : (
+                      <><Check className="w-3.5 h-3.5" />승인하기</>
+                    )}
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </div>
       )}
+
+      <style jsx>{`
+        /* ── 레이아웃 ── */
+        .tr-wrap {
+          max-width: 720px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        /* ── 헤더 ── */
+        .tr-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 16px;
+          padding: 24px 28px;
+        }
+        .tr-header__eyebrow {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #71717a;
+          margin-bottom: 6px;
+        }
+        .tr-header__title {
+          font-size: 22px;
+          font-weight: 900;
+          color: #09090b;
+          letter-spacing: -0.03em;
+          line-height: 1.2;
+        }
+        .tr-header__desc {
+          margin-top: 6px;
+          font-size: 13px;
+          color: #71717a;
+          line-height: 1.6;
+        }
+        .tr-refresh-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 36px;
+          padding: 0 14px;
+          border-radius: 8px;
+          border: 1px solid #e4e4e7;
+          background: #fafafa;
+          color: #3f3f46;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .tr-refresh-btn:hover { background: #f4f4f5; border-color: #a1a1aa; }
+        .tr-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── KPI ── */
+        .tr-kpi-row {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+        }
+        .tr-kpi {
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 12px;
+          padding: 16px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .tr-kpi--accent {
+          background: #2563eb;
+          border-color: #2563eb;
+        }
+        .tr-kpi--accent .tr-kpi__num { color: #fff; }
+        .tr-kpi--accent .tr-kpi__label { color: rgba(255,255,255,0.75); }
+        .tr-kpi__num {
+          font-size: 26px;
+          font-weight: 900;
+          color: #09090b;
+          letter-spacing: -0.04em;
+          line-height: 1;
+        }
+        .tr-kpi__label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #71717a;
+        }
+
+        /* ── 탭 ── */
+        .tr-tabs {
+          display: flex;
+          gap: 4px;
+          border-bottom: 1px solid #e4e4e7;
+          padding-bottom: 0;
+        }
+        .tr-tab {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 38px;
+          padding: 0 14px;
+          border-radius: 8px 8px 0 0;
+          border: 1px solid transparent;
+          border-bottom: none;
+          background: transparent;
+          font-size: 13px;
+          font-weight: 600;
+          color: #71717a;
+          cursor: pointer;
+          transition: color 0.15s;
+          position: relative;
+          bottom: -1px;
+        }
+        .tr-tab:hover { color: #2563eb; }
+        .tr-tab--active {
+          color: #2563eb;
+          background: #fff;
+          border-color: #e4e4e7;
+          border-bottom-color: #fff;
+        }
+        .tr-tab__count {
+          font-size: 11px;
+          font-weight: 700;
+          color: #a1a1aa;
+          background: #f4f4f5;
+          border-radius: 20px;
+          padding: 1px 7px;
+          min-width: 20px;
+          text-align: center;
+        }
+        .tr-tab--active .tr-tab__count {
+          background: #2563eb;
+          color: #fff;
+        }
+
+        /* ── 로딩 / 빈 상태 ── */
+        .tr-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 60px 0;
+          color: #71717a;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        .tr-empty {
+          padding: 60px 0;
+          text-align: center;
+          font-size: 13px;
+          color: #a1a1aa;
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 16px;
+        }
+
+        /* ── 카드 ── */
+        .tr-list { display: flex; flex-direction: column; gap: 8px; }
+        .tr-card {
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 14px;
+          padding: 20px 24px;
+          transition: border-color 0.15s;
+        }
+        .tr-card--pending {
+          border-left: 3px solid #2563eb;
+        }
+        .tr-card__top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .tr-card__who {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .tr-card__name {
+          font-size: 15px;
+          font-weight: 800;
+          color: #09090b;
+          letter-spacing: -0.02em;
+        }
+        .tr-card__username {
+          font-size: 12px;
+          color: #a1a1aa;
+          font-weight: 500;
+        }
+        .tr-card__amount {
+          font-size: 22px;
+          font-weight: 900;
+          color: #09090b;
+          letter-spacing: -0.04em;
+          white-space: nowrap;
+          line-height: 1;
+        }
+        .tr-card__amount-unit {
+          font-size: 14px;
+          font-weight: 700;
+          margin-left: 2px;
+          color: #71717a;
+        }
+        .tr-card__meta {
+          margin-top: 8px;
+          font-size: 12px;
+          color: #a1a1aa;
+          font-weight: 500;
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .tr-card__note {
+          margin-top: 10px;
+          font-size: 13px;
+          color: #52525b;
+          padding: 10px 14px;
+          background: #fafafa;
+          border: 1px solid #f4f4f5;
+          border-radius: 8px;
+          line-height: 1.5;
+        }
+        .tr-card__action {
+          margin-top: 16px;
+          display: flex;
+          justify-content: flex-end;
+          padding-top: 14px;
+          border-top: 1px solid #f4f4f5;
+        }
+        .tr-approve-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 38px;
+          padding: 0 20px;
+          border-radius: 8px;
+          border: none;
+          background: #2563eb;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: opacity 0.15s;
+        }
+        .tr-approve-btn:hover { opacity: 0.85; }
+        .tr-approve-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── 상태 뱃지 ── */
+        .tr-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          padding: 4px 10px;
+          border-radius: 6px;
+          border: 1px solid transparent;
+          white-space: nowrap;
+          line-height: 1;
+        }
+        .tr-badge--pending {
+          background: #2563eb;
+          color: #fff;
+          border-color: #2563eb;
+        }
+        .tr-badge--approved {
+          background: #fff;
+          color: #16a34a;
+          border-color: #bbf7d0;
+        }
+        .tr-badge--rejected {
+          background: #fff;
+          color: #dc2626;
+          border-color: #fecaca;
+        }
+
+        /* ── 반응형 ── */
+        @media (max-width: 600px) {
+          .tr-header { padding: 18px 20px; }
+          .tr-card { padding: 16px 18px; }
+          .tr-kpi-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+          .tr-kpi { padding: 12px 14px; }
+          .tr-kpi__num { font-size: 22px; }
+        }
+      `}</style>
     </main>
   );
 }
