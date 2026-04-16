@@ -173,7 +173,7 @@ export default function PartnerPage() {
 
   // 출금 신청
   const [withdrawalModal, setWithdrawalModal] = useState(false);
-  const [withdrawalAmount, setWithdrawalAmount] = useState(1_000_000);
+  const [withdrawalAmount, setWithdrawalAmount] = useState(500_000);
   const [withdrawalSubmitting, setWithdrawalSubmitting] = useState(false);
   const [pendingWithdrawalId, setPendingWithdrawalId] = useState<string | null>(null);
 
@@ -675,7 +675,7 @@ export default function PartnerPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => { setWithdrawalAmount(1_000_000); setWithdrawalModal(true); }}
+                onClick={() => { setWithdrawalAmount(500_000); setWithdrawalModal(true); }}
                 className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 transition-colors"
               >
                 <ArrowDownToLine className="w-3.5 h-3.5" />포인트 출금
@@ -1136,9 +1136,9 @@ export default function PartnerPage() {
                 <div className="flex justify-between mt-1"><span className="text-muted-foreground">가용 잔액</span><span className="font-black text-primary">{formatNumber(myBalance - lockedBalance)}P</span></div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-2">출금 금액 (최소 100만P, 5만P 단위)</p>
+                <p className="text-xs text-muted-foreground mb-2">출금 금액 (최소 50만P, 5만P 단위)</p>
                 <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setWithdrawalAmount((v) => Math.max(1_000_000, v - 50_000))}
+                  <button type="button" onClick={() => setWithdrawalAmount((v) => Math.max(500_000, v - 50_000))}
                     className="w-10 h-10 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
                     <Minus className="w-4 h-4" />
                   </button>

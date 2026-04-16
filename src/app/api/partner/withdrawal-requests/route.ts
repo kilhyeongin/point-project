@@ -6,7 +6,7 @@ import { WithdrawalRequest } from "@/models/WithdrawalRequest";
 import { User } from "@/models/User";
 import { getWalletBalance } from "@/services/wallet";
 
-const MIN_AMOUNT = 1_000_000;
+const MIN_AMOUNT = 500_000;
 const STEP = 50_000;
 
 // GET: 내 출금 요청 목록
