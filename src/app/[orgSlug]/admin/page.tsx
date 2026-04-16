@@ -406,17 +406,33 @@ export default async function AdminDashboard({
 
       {/* ── KPI Cards ── */}
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Primary KPI — pending total */}
+        {/* Primary KPI — pending total (3개 유형별 링크로 분리) */}
         <div className="bg-primary rounded-2xl p-5 text-primary-foreground">
           <p className="text-sm font-semibold opacity-80">승인 대기 전체</p>
           <p className="text-3xl font-black tracking-tight mt-2">
             {formatNumber(totalPending)}
             <span className="text-lg font-bold">건</span>
           </p>
-          <p className="mt-2 text-xs opacity-70">
-            충전 {formatNumber(pendingTopupCount)} / 지급{" "}
-            {formatNumber(pendingIssueCount)} / 사용 {formatNumber(pendingUseCount)}
-          </p>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            <a
+              href={`/${orgSlug}/admin/topup-requests`}
+              className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
+            >
+              충전 {formatNumber(pendingTopupCount)}건
+            </a>
+            <a
+              href={`/${orgSlug}/admin/issue-requests`}
+              className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
+            >
+              지급 {formatNumber(pendingIssueCount)}건
+            </a>
+            <a
+              href={`/${orgSlug}/admin/use-requests`}
+              className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
+            >
+              사용 {formatNumber(pendingUseCount)}건
+            </a>
+          </div>
         </div>
 
         <div className="bg-card shadow-card rounded-2xl p-5">
