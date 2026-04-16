@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const username = String(body?.username ?? "").trim();
     const email = String(body?.email ?? "").trim().toLowerCase();
+    const orgSlug = String(body?.orgSlug ?? "").trim() || "4nwn";
 
     if (!username) {
       return NextResponse.json(
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const userByUsername = await User.findOne({ username }, { _id: 1, name: 1, email: 1, status: 1 }).lean();
+    const userByUsername = await User.findOne({ username, organizationId: orgSlug }, { _id: 1, name: 1, email: 1, status: 1 }).lean();
 
     // 유저 존재 여부 노출 방지: 유저가 없거나 이메일 불일치여도 동일한 성공 응답 반환
     if (!userByUsername || (userByUsername as any).email !== email) {
