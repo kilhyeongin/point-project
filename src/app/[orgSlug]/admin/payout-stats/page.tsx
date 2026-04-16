@@ -56,34 +56,31 @@ export default function PayoutStatsPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const [startDate, setStartDate] = useState(getMonthStartYmd());
-  const [endDate, setEndDate] = useState(getTodayYmd());
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [keyword, setKeyword] = useState("");
   const [sortType, setSortType] = useState<"amount" | "count">("amount");
 
-  async function load() {
+  async function fetchData(start: string, end: string) {
     setLoading(true);
     setMsg("");
 
     try {
-      if (!startDate || !endDate) {
-        setMsg("시작일과 종료일을 모두 선택해주세요.");
+      if ((start && !end) || (!start && end)) {
+        setMsg("시작일과 종료일을 모두 선택하거나 둘 다 비워두세요.");
         setItems([]);
-        setLoading(false);
         return;
       }
 
-      if (new Date(startDate) > new Date(endDate)) {
+      if (start && end && new Date(start) > new Date(end)) {
         setMsg("시작일은 종료일보다 늦을 수 없습니다.");
         setItems([]);
-        setLoading(false);
         return;
       }
 
-      const params = new URLSearchParams({
-        startDate,
-        endDate,
-      });
+      const params = new URLSearchParams();
+      if (start) params.set("startDate", start);
+      if (end) params.set("endDate", end);
 
       const res = await fetch(`/api/admin/payout-stats?${params.toString()}`, {
         cache: "no-store",
@@ -93,7 +90,6 @@ export default function PayoutStatsPage() {
       if (!res.ok || !data?.ok) {
         setMsg(data?.message ?? "조회 실패");
         setItems([]);
-        setLoading(false);
         return;
       }
 
@@ -101,9 +97,13 @@ export default function PayoutStatsPage() {
     } catch {
       setMsg("네트워크 오류");
       setItems([]);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    setLoading(false);
+  function load() {
+    fetchData(startDate, endDate);
   }
 
   useEffect(() => {
@@ -236,10 +236,15 @@ export default function PayoutStatsPage() {
 
             <button
               type="button"
-              onClick={() => setKeyword("")}
+              onClick={() => {
+                setStartDate("");
+                setEndDate("");
+                setKeyword("");
+                fetchData("", "");
+              }}
               className="payout-stats__secondary-btn"
             >
-              검색 초기화
+              전체 기간
             </button>
           </div>
         </div>
@@ -279,7 +284,7 @@ export default function PayoutStatsPage() {
 
       <section style={cardStyle()}>
         <div className="payout-stats__meta-line">
-          조회 기간: {startDate} ~ {endDate}
+          조회 기간: {startDate && endDate ? `${startDate} ~ ${endDate}` : "전체 기간"}
           {keyword.trim() ? ` / 검색어: ${keyword}` : ""}
           {` / 정렬: ${sortType === "amount" ? "지급 금액순" : "지급 건수순"}`}
         </div>

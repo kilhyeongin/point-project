@@ -37,14 +37,15 @@ export async function GET(req: Request) {
     const startDate = parseDateStart(startDateRaw);
     const endDate = parseDateEnd(endDateRaw);
 
-    if (!startDate || !endDate) {
+    // 둘 중 하나만 입력된 경우에만 오류
+    if ((startDateRaw && !startDate) || (endDateRaw && !endDate)) {
       return NextResponse.json(
-        { ok: false, message: "유효한 시작일/종료일이 필요합니다." },
+        { ok: false, message: "유효하지 않은 날짜 형식입니다." },
         { status: 400 }
       );
     }
 
-    if (startDate.getTime() > endDate.getTime()) {
+    if (startDate && endDate && startDate.getTime() > endDate.getTime()) {
       return NextResponse.json(
         { ok: false, message: "시작일은 종료일보다 늦을 수 없습니다." },
         { status: 400 }
@@ -60,16 +61,19 @@ export async function GET(req: Request) {
 
     const results = await Promise.all(
       partners.map(async (partner: any) => {
+        const ledgerFilter: any = {
+          organizationId: orgId,
+          type: "TOPUP",
+          accountId: partner._id,
+        };
+
+        // 날짜 필터가 있을 때만 기간 조건 추가
+        if (startDate && endDate) {
+          ledgerFilter.createdAt = { $gte: startDate, $lte: endDate };
+        }
+
         const rows = await Ledger.find(
-          {
-            organizationId: orgId,
-            type: "TOPUP",
-            accountId: partner._id,
-            createdAt: {
-              $gte: startDate,
-              $lte: endDate,
-            },
-          },
+          ledgerFilter,
           {
             amount: 1,
             createdAt: 1,
