@@ -45,6 +45,7 @@ export interface IFavoritePartner {
   appointmentHistory?: IAppointmentHistory[];
   statusHistory?: IStatusHistory[];
   staffMemo?: string;
+  contractedAt?: Date | null;
 }
 
 const FavoritePartnerSchema = new Schema<IFavoritePartner>(
@@ -119,6 +120,11 @@ const FavoritePartnerSchema = new Schema<IFavoritePartner>(
     staffMemo: {
       type: String,
       default: "",
+    },
+
+    contractedAt: {
+      type: Date,
+      default: null,
     },
 
     statusHistory: {

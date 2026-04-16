@@ -82,6 +82,7 @@ export async function GET(req: Request) {
       updatedAt: 1,
       appliedAt: 1,
       appointmentAt: 1,
+      contractedAt: 1,
     }
   )
     .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
@@ -149,10 +150,12 @@ export async function GET(req: Request) {
 
       const base = {
         id: String(customer._id),
+        relationId: String(relation._id),
         relationStatus,
         likedAt: relation.createdAt,
         appliedAt: relation.appliedAt ?? null,
         appointmentAt: relation.appointmentAt ?? null,
+        contractedAt: relation.contractedAt ?? null,
         createdAt: customer.createdAt,
       };
 

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { RefreshCw, ArrowDownToLine, Coins, X, Plus, Minus } from "lucide-react";
+import { RefreshCw, ArrowDownToLine, Coins, X, Plus, Minus, CheckCircle2 } from "lucide-react";
 
 type RelationStatus = "LIKED" | "APPLIED";
 
 type CustomerItem = {
   id: string;
+  relationId: string;
   username: string;
   name: string;
   socialProvider?: string | null;
@@ -19,6 +20,7 @@ type CustomerItem = {
   likedAt?: string;
   appliedAt?: string | null;
   appointmentAt?: string | null;
+  contractedAt?: string | null;
   balance?: number;
   relationStatus: RelationStatus;
   isMasked?: boolean;
@@ -55,7 +57,7 @@ type PointHistoryItem = {
   customer: { username: string; name: string; socialProvider?: string | null } | null;
 };
 
-type CustomerFilter = "ALL" | "APPLIED" | "LIKED" | "COMPLETED";
+type CustomerFilter = "ALL" | "APPLIED" | "CONSULTATION_DONE" | "CONTRACTED" | "LIKED";
 
 function onlyDigitsToNumber(v: string) {
   const digits = String(v ?? "").replace(/[^\d]/g, "");
@@ -194,6 +196,7 @@ export default function PartnerPage() {
 
   const [modal, setModal] = useState<{ type: "issue" | "use"; customer: CustomerItem } | null>(null);
   const [detailModal, setDetailModal] = useState<CustomerItem | null>(null);
+  const [contractingId, setContractingId] = useState<string | null>(null);
 
   const [issueAmountText, setIssueAmountText] = useState("0");
   const [issueNote, setIssueNote] = useState("");
@@ -231,23 +234,32 @@ export default function PartnerPage() {
   const topupAmountNum = useMemo(() => onlyDigitsToNumber(topupAmountText), [topupAmountText]);
 
   const likedCount = useMemo(
-    () => items.filter((item) => item.relationStatus === "LIKED").length,
+    () => items.filter((i) => i.relationStatus === "LIKED").length,
     [items]
   );
   const appliedCount = useMemo(
-    () => items.filter((item) => item.relationStatus === "APPLIED").length,
+    () => items.filter((i) => i.relationStatus === "APPLIED" && !i.contractedAt && (!i.appointmentAt || new Date(i.appointmentAt) >= new Date())).length,
     [items]
   );
-  const completedCount = useMemo(
-    () => items.filter((item) => item.relationStatus === "APPLIED" && item.appointmentAt && new Date(item.appointmentAt) < new Date()).length,
+  const consultationDoneCount = useMemo(
+    () => items.filter((i) => i.relationStatus === "APPLIED" && !i.contractedAt && i.appointmentAt && new Date(i.appointmentAt) < new Date()).length,
+    [items]
+  );
+  const contractedCount = useMemo(
+    () => items.filter((i) => i.contractedAt != null).length,
     [items]
   );
 
   const filteredCustomers = useMemo(() => {
     const now = new Date();
-    if (customerFilter === "LIKED") return items.filter(c => c.relationStatus === "LIKED");
-    if (customerFilter === "COMPLETED") return items.filter(c => c.relationStatus === "APPLIED" && c.appointmentAt && new Date(c.appointmentAt) < now);
-    return items.filter(c => c.relationStatus === "APPLIED");
+    if (customerFilter === "LIKED")
+      return items.filter((c) => c.relationStatus === "LIKED");
+    if (customerFilter === "CONTRACTED")
+      return items.filter((c) => c.contractedAt != null);
+    if (customerFilter === "CONSULTATION_DONE")
+      return items.filter((c) => c.relationStatus === "APPLIED" && !c.contractedAt && c.appointmentAt && new Date(c.appointmentAt) < now);
+    // APPLIED: 방문일 아직 안 지났거나 방문일 없는 상담신청 고객
+    return items.filter((c) => c.relationStatus === "APPLIED" && !c.contractedAt && (!c.appointmentAt || new Date(c.appointmentAt) >= now));
   }, [items, customerFilter]);
 
   async function fetchMyBalance() {
@@ -580,6 +592,27 @@ export default function PartnerPage() {
     }
   }
 
+  async function contractCustomer(customer: CustomerItem) {
+    if (!customer.relationId) return;
+    setContractingId(customer.relationId);
+    try {
+      const res = await fetch(`/api/partner/customers/${customer.relationId}/contract`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        toast.error(data?.message ?? "계약완료 처리 실패");
+        return;
+      }
+      toast.success(`${customer.name} 고객을 계약완료로 처리했습니다.`);
+      await fetchCustomers();
+    } catch {
+      toast.error("네트워크 오류");
+    } finally {
+      setContractingId(null);
+    }
+  }
+
   function requestTopupConfirm() {
     setTopupMsg("");
     if (topupAmountNum <= 0) {
@@ -730,11 +763,12 @@ export default function PartnerPage() {
               </Button>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {([
               { value: "APPLIED" as CustomerFilter, label: `상담신청 ${appliedCount}` },
+              { value: "CONSULTATION_DONE" as CustomerFilter, label: `상담완료 ${consultationDoneCount}` },
+              { value: "CONTRACTED" as CustomerFilter, label: `계약완료 ${contractedCount}` },
               { value: "LIKED" as CustomerFilter, label: `잠재고객 ${likedCount}` },
-              { value: "COMPLETED" as CustomerFilter, label: `계약 완료 ${completedCount}` },
             ]).map(({ value, label }) => (
               <button
                 key={value}
@@ -798,17 +832,31 @@ export default function PartnerPage() {
                 <Button size="sm" className="w-full font-bold h-9 mt-2" onClick={() => setDetailModal(c)}>
                   고객 포인트 관리
                 </Button>
+                {customerFilter === "CONSULTATION_DONE" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full font-bold h-9 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    disabled={contractingId === c.relationId}
+                    onClick={() => contractCustomer(c)}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                    {contractingId === c.relationId ? "처리 중..." : "계약완료 처리"}
+                  </Button>
+                )}
               </div>
             </article>
           ))}
           {!loading && filteredCustomers.length === 0 && (
             <div className="col-span-full py-6 text-center text-sm text-muted-foreground font-semibold">
-              {customerFilter === "COMPLETED" ? "계약 완료 고객이 없습니다." : "신청고객이 없습니다."}
+              {customerFilter === "CONSULTATION_DONE" ? "상담완료 고객이 없습니다." :
+               customerFilter === "CONTRACTED" ? "계약완료 고객이 없습니다." :
+               "신청고객이 없습니다."}
             </div>
           )}
         </div>
         )}
-        {customerFilter !== "LIKED" && (() => {
+        {customerFilter !== "LIKED" && customerFilter !== "CONTRACTED" && (() => {
           if (filteredCustomers.length > visibleCount) {
             return (
               <button
