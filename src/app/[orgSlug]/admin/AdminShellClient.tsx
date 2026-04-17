@@ -41,18 +41,19 @@ export default function AdminShellClient({ session, children }: Props) {
     },
     {
       key: "partner",
-      label: "제휴사 현황",
+      label: "제휴사 관리",
       items: [
+        { href: `/${orgSlug}/admin/partner-stats`, label: "제휴사 현황" },
+        { href: `/${orgSlug}/admin/accounts`, label: "제휴사 계정관리" },
         { href: `/${orgSlug}/admin/settlements/partners`, label: "제휴사 정산관리" },
-        { href: `/${orgSlug}/admin/accounts`, label: "계정 잔액" },
         { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인" },
       ],
     },
     {
       key: "finance",
-      label: "포인트 및 내역",
+      label: "제휴사 포인트 관리",
       items: [
-        { href: `/${orgSlug}/admin/partner-points`, label: "제휴사 포인트 관리" },
+        { href: `/${orgSlug}/admin/partner-points`, label: "제휴사 포인트 충전·차감" },
         { href: `/${orgSlug}/admin/customer-points`, label: "고객 포인트 관리" },
         { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 지급 현황" },
         { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },

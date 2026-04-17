@@ -348,8 +348,8 @@ export default function AdminGeneralSettlementsPage() {
   const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
 
   const settlementTabs = [
-    { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
-    { href: `/${orgSlug}/admin/point-requests`, label: "포인트 출금·정산" },
+    { href: `/${orgSlug}/admin/settlements/partners`, label: "제휴사 수수료 정산 관리" },
+    { href: `/${orgSlug}/admin/point-requests`, label: "제휴사 포인트 출금정산" },
   ];
 
   return (
@@ -377,7 +377,7 @@ export default function AdminGeneralSettlementsPage() {
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-foreground tracking-tight">일반 정산 관리</h1>
+          <h1 className="text-xl font-black text-foreground tracking-tight">제휴사 수수료 정산 관리</h1>
           <p className="text-sm text-muted-foreground mt-1">제휴사가 제출한 정산서를 확인하고 처리합니다.</p>
         </div>
         {totalPending > 0 && (

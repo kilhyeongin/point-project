@@ -89,7 +89,7 @@ export default function AdminAccountsPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"ALL" | "PARTNER" | "CUSTOMER" | "ADMIN">("ALL");
+  const [roleFilter] = useState<"ALL" | "PARTNER" | "CUSTOMER" | "ADMIN">("PARTNER");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -230,9 +230,9 @@ export default function AdminAccountsPage() {
       <section className="bg-card shadow-card rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-black text-foreground tracking-tight">계정 잔액</h1>
+            <h1 className="text-xl font-black text-foreground tracking-tight">제휴사 계정관리</h1>
             <p className="mt-2 text-muted-foreground text-sm">
-              모든 계정의 포인트 잔액을 확인하고 계정 상태를 관리합니다.
+              제휴사 계정의 포인트 잔액을 확인하고 계정 상태를 관리합니다.
             </p>
           </div>
           <Button
@@ -291,25 +291,13 @@ export default function AdminAccountsPage() {
         </section>
       )}
 
-      <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
         <Input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           placeholder="아이디 / 이름 검색"
           className="h-10"
         />
-        <select
-          value={roleFilter}
-          onChange={(e) =>
-            setRoleFilter(e.target.value as "ALL" | "PARTNER" | "CUSTOMER" | "ADMIN")
-          }
-          className="h-10 border border-border rounded-xl bg-background px-3 text-sm font-bold outline-none whitespace-nowrap"
-        >
-          <option value="ALL">전체 역할</option>
-          <option value="PARTNER">제휴사</option>
-          <option value="CUSTOMER">고객</option>
-          <option value="ADMIN">관리자</option>
-        </select>
         <Button type="button" onClick={() => load(page, keyword, roleFilter)}>
           새로고침
         </Button>

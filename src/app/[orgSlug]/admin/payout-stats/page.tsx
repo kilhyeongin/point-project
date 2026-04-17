@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatUsername } from "@/lib/utils";
 
 type Item = {
@@ -55,6 +55,7 @@ export default function PayoutStatsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [searched, setSearched] = useState(false);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -64,6 +65,7 @@ export default function PayoutStatsPage() {
   async function fetchData(start: string, end: string) {
     setLoading(true);
     setMsg("");
+    setSearched(true);
 
     try {
       if ((start && !end) || (!start && end)) {
@@ -106,9 +108,6 @@ export default function PayoutStatsPage() {
     fetchData(startDate, endDate);
   }
 
-  useEffect(() => {
-    load();
-  }, []);
 
   const filteredItems = useMemo(() => {
     const q = keyword.trim().toLowerCase();
@@ -240,7 +239,9 @@ export default function PayoutStatsPage() {
                 setStartDate("");
                 setEndDate("");
                 setKeyword("");
-                fetchData("", "");
+                setItems([]);
+                setSearched(false);
+                setMsg("");
               }}
               className="payout-stats__secondary-btn"
             >
@@ -252,7 +253,13 @@ export default function PayoutStatsPage() {
         {msg ? <div className="payout-stats__msg">{msg}</div> : null}
       </section>
 
-      <section className="payout-stats__summary-grid">
+      {!searched && (
+        <div style={{ padding: "48px 0", textAlign: "center", color: "#9ca3af", fontSize: 14, border: "1px dashed #e5e7eb", borderRadius: 16 }}>
+          필터를 입력하고 조회 버튼을 눌러주세요.
+        </div>
+      )}
+
+      {searched && <section className="payout-stats__summary-grid">
         <div style={cardStyle()}>
           <div className="payout-stats__summary-label">조회 제휴사</div>
           <div className="payout-stats__summary-value">
@@ -280,9 +287,9 @@ export default function PayoutStatsPage() {
             {format(summary.totalIssueAmount)}P
           </div>
         </div>
-      </section>
+      </section>}
 
-      <section style={cardStyle()}>
+      {searched && <section style={cardStyle()}>
         <div className="payout-stats__meta-line">
           조회 기간: {startDate && endDate ? `${startDate} ~ ${endDate}` : "전체 기간"}
           {keyword.trim() ? ` / 검색어: ${keyword}` : ""}
@@ -361,7 +368,7 @@ export default function PayoutStatsPage() {
             </div>
           </>
         )}
-      </section>
+      </section>}
 
       <style jsx>{`
         .payout-stats__header-row {
