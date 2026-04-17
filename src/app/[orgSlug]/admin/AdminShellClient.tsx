@@ -43,15 +43,17 @@ export default function AdminShellClient({ session, children }: Props) {
       key: "partner",
       label: "제휴사 현황",
       items: [
-        { href: `/${orgSlug}/admin/settlements`, label: "제휴사 정산관리" },
+        { href: `/${orgSlug}/admin/settlements/partners`, label: "제휴사 정산관리" },
         { href: `/${orgSlug}/admin/accounts`, label: "계정 잔액" },
-        { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인/포인트 관리" },
+        { href: `/${orgSlug}/admin/partner-approvals`, label: "제휴사 승인" },
       ],
     },
     {
       key: "finance",
       label: "포인트 및 내역",
       items: [
+        { href: `/${orgSlug}/admin/partner-points`, label: "제휴사 포인트 관리" },
+        { href: `/${orgSlug}/admin/customer-points`, label: "고객 포인트 관리" },
         { href: `/${orgSlug}/admin/payout-stats`, label: "포인트 지급 현황" },
         { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
       ],
@@ -98,12 +100,6 @@ export default function AdminShellClient({ session, children }: Props) {
 
   function isActive(href: string) {
     if (href === `/${orgSlug}/admin`) return pathname === `/${orgSlug}/admin`;
-    // 제휴사 정산관리: settlements 하위 페이지 + point-requests 모두 활성화
-    if (href === `/${orgSlug}/admin/settlements`) {
-      return pathname === `/${orgSlug}/admin/settlements`
-        || pathname.startsWith(`/${orgSlug}/admin/settlements/`)
-        || pathname === `/${orgSlug}/admin/point-requests`;
-    }
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
@@ -222,7 +218,7 @@ export default function AdminShellClient({ session, children }: Props) {
           </div>
 
           {/* Sub nav */}
-          <div style={{ borderTop: "1px solid oklch(0.918 0.008 250 / 0.6)" }}>
+          {activeGroup.items.length > 1 && <div style={{ borderTop: "1px solid oklch(0.918 0.008 250 / 0.6)" }}>
             <nav
               className="max-w-screen-xl mx-auto px-4 sm:px-6 flex items-center gap-0.5 h-10 overflow-x-auto scrollbar-none"
               aria-label="관리자 하위 메뉴"
@@ -245,7 +241,7 @@ export default function AdminShellClient({ session, children }: Props) {
                 );
               })}
             </nav>
-          </div>
+          </div>}
         </header>
 
         {/* Desktop Content */}
@@ -363,7 +359,20 @@ export default function AdminShellClient({ session, children }: Props) {
               const isGroupActive = group.key === activeGroupKey;
               return (
                 <div key={group.key} className="mb-1">
-                  {/* 그룹 헤더 (클릭 시 펼치기/접기) */}
+                  {/* 그룹 헤더 */}
+                  {group.items.length === 1 ? (
+                    <Link
+                      href={group.items[0].href}
+                      className={`w-full flex items-center px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                        isGroupActive
+                          ? "text-white"
+                          : "text-white/50 hover:text-white/80 hover:bg-white/6"
+                      }`}
+                      style={isGroupActive ? { background: "oklch(0.52 0.27 264 / 0.2)" } : undefined}
+                    >
+                      {group.label}
+                    </Link>
+                  ) : (
                   <button
                     type="button"
                     onClick={() => toggleGroup(group.key)}
@@ -380,9 +389,10 @@ export default function AdminShellClient({ session, children }: Props) {
                       : <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-40" />
                     }
                   </button>
+                  )}
 
                   {/* 하위 메뉴 */}
-                  {isExpanded && (
+                  {group.items.length > 1 && isExpanded && (
                     <div className="mt-0.5 ml-3 flex flex-col gap-0.5">
                       {group.items.map((item) => {
                         const active = isActive(item.href);

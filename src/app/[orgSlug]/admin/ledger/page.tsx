@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -74,16 +74,7 @@ export default function AdminLedgerPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-
-  const queryString = useMemo(() => {
-    const sp = new URLSearchParams();
-    if (q.trim()) sp.set("q", q.trim());
-    if (type !== "ALL") sp.set("type", type);
-    if (start) sp.set("start", start);
-    if (end) sp.set("end", end);
-    sp.set("page", String(page));
-    return sp.toString();
-  }, [q, type, start, end, page]);
+  const [searched, setSearched] = useState(false);
 
   const stats = useMemo(() => {
     const topup = items.filter((it) => it.type === "TOPUP").length;
@@ -110,12 +101,20 @@ export default function AdminLedgerPage() {
     };
   }, [items, total]);
 
-  async function load() {
+  async function load(p = page) {
     setLoading(true);
     setMsg("");
+    setSearched(true);
+
+    const sp = new URLSearchParams();
+    if (q.trim()) sp.set("q", q.trim());
+    if (type !== "ALL") sp.set("type", type);
+    if (start) sp.set("start", start);
+    if (end) sp.set("end", end);
+    sp.set("page", String(p));
 
     try {
-      const res = await fetch(`/api/admin/ledger?${queryString}`);
+      const res = await fetch(`/api/admin/ledger?${sp.toString()}`);
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
@@ -127,6 +126,7 @@ export default function AdminLedgerPage() {
       setItems(data.items ?? []);
       setTotalPages(data.totalPages ?? 1);
       setTotal(data.total ?? 0);
+      setPage(p);
     } catch {
       setMsg("네트워크 오류");
       setItems([]);
@@ -135,9 +135,10 @@ export default function AdminLedgerPage() {
     }
   }
 
-  useEffect(() => {
-    load();
-  }, [queryString]);
+  function handleReset() {
+    setQ(""); setType("ALL"); setStart(""); setEnd("");
+    setItems([]); setTotal(0); setTotalPages(1); setPage(1); setSearched(false); setMsg("");
+  }
 
   return (
     <main className="space-y-5">
@@ -150,13 +151,14 @@ export default function AdminLedgerPage() {
         <div className="flex gap-2 flex-wrap items-center">
           <Input
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); }}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && load(1)}
             placeholder="이름 검색"
             className="h-10 flex-1 min-w-[160px]"
           />
           <select
             value={type}
-            onChange={(e) => { setType(e.target.value); setPage(1); }}
+            onChange={(e) => setType(e.target.value)}
             className="h-10 min-w-[120px] border border-border rounded-xl bg-background px-3 text-sm outline-none"
           >
             <option value="ALL">전체 유형</option>
@@ -167,17 +169,20 @@ export default function AdminLedgerPage() {
           <input
             type="date"
             value={start}
-            onChange={(e) => { setStart(e.target.value); setPage(1); }}
+            onChange={(e) => setStart(e.target.value)}
             className="h-10 border border-border rounded-xl bg-background px-3 text-sm outline-none"
           />
           <span className="text-muted-foreground text-sm">~</span>
           <input
             type="date"
             value={end}
-            onChange={(e) => { setEnd(e.target.value); setPage(1); }}
+            onChange={(e) => setEnd(e.target.value)}
             className="h-10 border border-border rounded-xl bg-background px-3 text-sm outline-none"
           />
-          <Button onClick={() => { setStart(""); setEnd(""); setQ(""); setType("ALL"); setPage(1); }} variant="outline" type="button" className="text-xs">
+          <Button onClick={() => load(1)} type="button" className="text-sm font-bold">
+            조회
+          </Button>
+          <Button onClick={handleReset} variant="outline" type="button" className="text-xs">
             초기화
           </Button>
         </div>
@@ -186,7 +191,7 @@ export default function AdminLedgerPage() {
             <button
               key={t}
               type="button"
-              onClick={() => { setType(t); setPage(1); }}
+              onClick={() => setType(t)}
               className={cn(
                 "min-h-[36px] px-3 rounded-xl border text-sm font-bold transition-colors",
                 type === t
@@ -200,7 +205,13 @@ export default function AdminLedgerPage() {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {!searched && (
+        <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
+          필터를 입력하고 조회 버튼을 눌러주세요.
+        </div>
+      )}
+
+      {searched && <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-foreground text-background rounded-xl p-4 text-center">
           <div className="text-2xl font-black">{formatNumber(stats.total)}건</div>
           <div className="text-xs opacity-80 mt-1">조회 건수</div>
@@ -221,15 +232,15 @@ export default function AdminLedgerPage() {
           </div>
           <div className="text-xs text-muted-foreground mt-1">총 사용·차감</div>
         </div>
-      </div>
+      </div>}
 
-      {msg && (
+      {searched && msg && (
         <div className="p-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm font-semibold">
           {msg}
         </div>
       )}
 
-      <section className="bg-card shadow-card rounded-2xl overflow-hidden">
+      {searched && <section className="bg-card shadow-card rounded-2xl overflow-hidden">
         {loading ? (
           <div className="py-10 text-center text-sm text-muted-foreground">불러오는 중...</div>
         ) : items.length === 0 ? (
@@ -345,10 +356,10 @@ export default function AdminLedgerPage() {
             </div>
           </>
         )}
-      </section>
+      </section>}
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
+      {searched && totalPages > 1 && (
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             총 {total.toLocaleString()}건 · {page} / {totalPages} 페이지
@@ -359,7 +370,7 @@ export default function AdminLedgerPage() {
               variant="outline"
               size="sm"
               disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => load(Math.max(1, page - 1))}
             >
               이전
             </Button>
@@ -371,7 +382,7 @@ export default function AdminLedgerPage() {
               variant="outline"
               size="sm"
               disabled={page >= totalPages || loading}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => load(Math.min(totalPages, page + 1))}
             >
               다음
             </Button>

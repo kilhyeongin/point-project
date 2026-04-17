@@ -17,10 +17,16 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Ledger } from "@/models/Ledger";
 import { TopupRequest } from "@/models/TopupRequest";
-import { IssueRequest } from "@/models/IssueRequest";
-import { UseRequest } from "@/models/UseRequest";
+import { WithdrawalRequest } from "@/models/WithdrawalRequest";
+import { PointSettlementPayment } from "@/models/PointSettlementPayment";
+import { GeneralSettlement } from "@/models/GeneralSettlement";
+import { FavoritePartner } from "@/models/FavoritePartner";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatUsername } from "@/lib/utils";
+import RecentActivities from "./RecentActivities";
+import UserList from "./UserList";
+import PointStatToggle from "./PointStatToggle";
+import ContractStats from "./ContractStats";
 
 type Role = "CUSTOMER" | "PARTNER" | "ADMIN";
 type Status = "ACTIVE" | "PENDING" | "BLOCKED";
@@ -63,13 +69,6 @@ function formatKrDateTime(v: unknown) {
   return `${yy}.${mm}.${dd} ${ampm}${h12}시${min}분`;
 }
 
-function startOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function endOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-}
 
 export default async function AdminDashboard({
   params,
@@ -97,8 +96,8 @@ export default async function AdminDashboard({
   await connectDB();
 
   const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const thisMonthEnd = new Date(
     now.getFullYear(),
@@ -114,75 +113,72 @@ export default async function AdminDashboard({
 
   const [
     pendingTopupCount,
-    pendingIssueCount,
-    pendingUseCount,
+    pendingPartnerCount,
+    pendingWithdrawalCount,
+    pendingPointSettlementCount,
+    pendingGeneralSettlementCount,
     totalUsers,
     customerCount,
     partnerCount,
   ] = await Promise.all([
     TopupRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
-    IssueRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
-    UseRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
+    User.countDocuments({ organizationId: orgId, role: "PARTNER", status: "PENDING" }),
+    WithdrawalRequest.countDocuments({ organizationId: orgId, status: "PENDING" }),
+    PointSettlementPayment.countDocuments({ organizationId: orgId, status: "PENDING" }),
+    GeneralSettlement.countDocuments({ organizationId: orgId, status: "SUBMITTED" }),
     User.countDocuments({ organizationId: orgId }),
     User.countDocuments({ organizationId: orgId, role: "CUSTOMER" }),
     User.countDocuments({ organizationId: orgId, role: "PARTNER" }),
   ]);
 
-  const [todayLedgerRows, monthLedgerRows] = await Promise.all([
-    Ledger.aggregate([
-      {
-        $match: {
-          organizationId: orgId,
-          createdAt: { $gte: todayStart, $lte: todayEnd },
-        },
-      },
-      {
-        $group: {
-          _id: "$type",
-          count: { $sum: 1 },
-          amount: { $sum: { $abs: "$amount" } },
-        },
-      },
-    ]),
-    Ledger.aggregate([
-      {
-        $match: {
-          organizationId: orgId,
-          createdAt: { $gte: thisMonthStart, $lte: thisMonthEnd },
-        },
-      },
-      {
-        $group: {
-          _id: "$type",
-          count: { $sum: 1 },
-          amount: { $sum: { $abs: "$amount" } },
-        },
-      },
+
+  // 계약 현황 (FavoritePartner.contractedAt != null 기준)
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const [todayContractCount, monthlyContractRaw] = await Promise.all([
+    FavoritePartner.countDocuments({ organizationId: orgId, contractedAt: { $gte: todayStart, $lte: todayEnd } }),
+    FavoritePartner.aggregate([
+      { $match: { organizationId: orgId, contractedAt: { $gte: twelveMonthsAgo, $ne: null } } },
+      { $group: { _id: { year: { $year: "$contractedAt" }, month: { $month: "$contractedAt" } }, count: { $sum: 1 } } },
+      { $sort: { "_id.year": -1, "_id.month": -1 } },
     ]),
   ]);
 
-  const todayMap = new Map<string, { count: number; amount: number }>();
-  for (const row of todayLedgerRows) {
-    todayMap.set(String(row._id), {
-      count: Number(row.count ?? 0),
-      amount: Number(row.amount ?? 0),
-    });
-  }
+  const monthlyStats = monthlyContractRaw.map((r: any) => ({
+    year: r._id.year,
+    month: r._id.month,
+    count: r.count,
+  }));
 
-  const monthMap = new Map<string, { count: number; amount: number }>();
-  for (const row of monthLedgerRows) {
-    monthMap.set(String(row._id), {
-      count: Number(row.count ?? 0),
-      amount: Number(row.amount ?? 0),
-    });
-  }
+  const ledgerStatRows = await Ledger.aggregate([
+    {
+      $match: {
+        organizationId: orgId,
+        type: { $in: ["USE", "ISSUE"] },
+      },
+    },
+    {
+      $facet: {
+        today: [
+          { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
+          { $group: { _id: "$type", amount: { $sum: { $abs: "$amount" } } } },
+        ],
+        month: [
+          { $match: { createdAt: { $gte: thisMonthStart, $lte: thisMonthEnd } } },
+          { $group: { _id: "$type", amount: { $sum: { $abs: "$amount" } } } },
+        ],
+      },
+    },
+  ]);
 
-  const todayIssueAmount = todayMap.get("ISSUE")?.amount ?? 0;
-  const todayUseAmount = todayMap.get("USE")?.amount ?? 0;
-  const monthUseCount = monthMap.get("USE")?.count ?? 0;
-  const monthUsedPoints = monthMap.get("USE")?.amount ?? 0;
+  const todayStatMap = new Map<string, number>();
+  for (const r of ledgerStatRows[0]?.today ?? []) todayStatMap.set(r._id, Number(r.amount ?? 0));
+  const monthStatMap = new Map<string, number>();
+  for (const r of ledgerStatRows[0]?.month ?? []) monthStatMap.set(r._id, Number(r.amount ?? 0));
 
-  const monthExpectedPayout = monthUsedPoints;
+  const todayUseAmount = todayStatMap.get("USE") ?? 0;
+  const todayIssueAmount = todayStatMap.get("ISSUE") ?? 0;
+  const monthUseAmount = monthStatMap.get("USE") ?? 0;
+  const monthIssueAmount = monthStatMap.get("ISSUE") ?? 0;
 
   const topCounterpartiesRaw = await Ledger.aggregate([
     {
@@ -231,7 +227,7 @@ export default async function AdminDashboard({
     };
   });
 
-  const recentLedger = await Ledger.find({ organizationId: orgId }).sort({ createdAt: -1 }).limit(8).lean();
+  const recentLedger = await Ledger.find({ organizationId: orgId }).sort({ createdAt: -1 }).limit(20).lean();
 
   const relationIds = new Set<string>();
   for (const row of recentLedger as any[]) {
@@ -261,17 +257,19 @@ export default async function AdminDashboard({
     relationUserMap.set(String(u._id), u);
   }
 
+  function toUserPlain(u: any) {
+    if (!u) return null;
+    return { name: String(u.name ?? "-"), role: String(u.role ?? "") };
+  }
+
   const recentActivities = (recentLedger as any[]).map((row) => ({
     id: String(row._id),
     type: String(row.type ?? "-"),
     amount: Number(row.amount ?? 0),
-    createdAt: row.createdAt,
-    account: row.accountId ? relationUserMap.get(String(row.accountId)) : null,
-    actor: row.actorId ? relationUserMap.get(String(row.actorId)) : null,
-    counterparty: row.counterpartyId
-      ? relationUserMap.get(String(row.counterpartyId))
-      : null,
-    note: row.note ?? "",
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt ?? ""),
+    account: toUserPlain(row.accountId ? relationUserMap.get(String(row.accountId)) : null),
+    actor: toUserPlain(row.actorId ? relationUserMap.get(String(row.actorId)) : null),
+    counterparty: toUserPlain(row.counterpartyId ? relationUserMap.get(String(row.counterpartyId)) : null),
   }));
 
   const filter: any = { organizationId: orgId };
@@ -373,7 +371,7 @@ export default async function AdminDashboard({
     },
   ];
 
-  const totalPending = pendingTopupCount + pendingIssueCount + pendingUseCount;
+  const totalPending = pendingTopupCount + pendingPartnerCount + pendingWithdrawalCount + pendingPointSettlementCount + pendingGeneralSettlementCount;
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 md:px-8 md:py-8 space-y-5">
@@ -388,25 +386,28 @@ export default async function AdminDashboard({
             관리자 대시보드
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            승인 대기, 운영 KPI, 거래 현황, 정산 흐름을 한 번에 확인합니다.
+            승인 대기·포인트 현황·계약 현황·거래 내역을 한 번에 확인합니다.
           </p>
         </div>
 
-        <div className="bg-muted/50 rounded-2xl px-5 py-4 min-w-[180px]">
-          <p className="text-sm text-muted-foreground font-semibold mb-1">전체 사용자</p>
-          <p className="text-3xl font-black text-foreground tracking-tight">
-            {formatNumber(totalUsers)}
-            <span className="text-lg font-bold">명</span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            고객 {formatNumber(customerCount)} / 제휴사 {formatNumber(partnerCount)}
-          </p>
+        <div className="flex gap-3">
+          <div className="bg-muted/50 rounded-2xl px-4 py-3 flex-[2] min-w-0">
+            <p className="text-xs sm:text-sm text-muted-foreground font-semibold mb-1">전체 사용자</p>
+            <p className="text-xl sm:text-3xl font-black text-foreground tracking-tight">
+              {formatNumber(totalUsers)}
+              <span className="text-sm sm:text-lg font-bold">명</span>
+            </p>
+            <p className="mt-1 text-[10px] sm:text-xs text-muted-foreground">
+              고객 {formatNumber(customerCount)} / 제휴사 {formatNumber(partnerCount)}
+            </p>
+          </div>
+          <ContractStats todayCount={todayContractCount} monthlyStats={monthlyStats} />
         </div>
       </section>
 
       {/* ── KPI Cards ── */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Primary KPI — pending total (3개 유형별 링크로 분리) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* 승인 대기 전체 */}
         <div className="bg-primary rounded-2xl p-5 text-primary-foreground">
           <p className="text-sm font-semibold opacity-80">승인 대기 전체</p>
           <p className="text-3xl font-black tracking-tight mt-2">
@@ -414,253 +415,68 @@ export default async function AdminDashboard({
             <span className="text-lg font-bold">건</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-            <a
-              href={`/${orgSlug}/admin/topup-requests`}
-              className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
-            >
+            <a href={`/${orgSlug}/admin/topup-requests`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
               충전 {formatNumber(pendingTopupCount)}건
             </a>
+            <a href={`/${orgSlug}/admin/partner-approvals`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
+              제휴사 승인 {formatNumber(pendingPartnerCount)}건
+            </a>
+            <a href={`/${orgSlug}/admin/point-requests`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
+              출금 {formatNumber(pendingWithdrawalCount)}건
+            </a>
+            <a href={`/${orgSlug}/admin/point-requests`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
+              포인트 정산 {formatNumber(pendingPointSettlementCount)}건
+            </a>
+            <a href={`/${orgSlug}/admin/settlements/partners`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
+              일반 정산 확인 {formatNumber(pendingGeneralSettlementCount)}건
+            </a>
+          </div>
+        </div>
+
+        {/* 전체 포인트 관리 */}
+        <div className="bg-card shadow-card rounded-2xl p-5 flex flex-col justify-between">
+          <p className="text-sm text-muted-foreground font-semibold mb-3">전체 포인트 관리</p>
+          <div className="grid grid-cols-2 gap-2">
             <a
-              href={`/${orgSlug}/admin/issue-requests`}
-              className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
+              href={`/${orgSlug}/admin/partner-points`}
+              className="flex items-center justify-center px-4 py-2.5 bg-muted hover:bg-muted/60 text-foreground rounded-xl text-sm font-bold transition-colors border border-border"
             >
-              지급 {formatNumber(pendingIssueCount)}건
+              제휴사 포인트 관리
             </a>
             <a
-              href={`/${orgSlug}/admin/use-requests`}
-              className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity"
+              href={`/${orgSlug}/admin/customer-points`}
+              className="flex items-center justify-center px-4 py-2.5 bg-muted hover:bg-muted/60 text-foreground rounded-xl text-sm font-bold transition-colors border border-border"
             >
-              사용 {formatNumber(pendingUseCount)}건
+              고객 포인트 관리
             </a>
           </div>
         </div>
 
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <p className="text-sm text-muted-foreground font-semibold">오늘 지급 포인트</p>
-          <p className="text-3xl font-black text-foreground tracking-tight mt-2">
-            {formatNumber(todayIssueAmount)}
-            <span className="text-lg font-bold">P</span>
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">지급 내역 기준</p>
-        </div>
-
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <p className="text-sm text-muted-foreground font-semibold">오늘 사용 포인트</p>
-          <p className="text-3xl font-black text-foreground tracking-tight mt-2">
-            {formatNumber(todayUseAmount)}
-            <span className="text-lg font-bold">P</span>
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">사용 내역 기준</p>
-        </div>
-
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <p className="text-sm text-muted-foreground font-semibold">이번달 예상 지급액</p>
-          <p className="text-3xl font-black text-foreground tracking-tight mt-2">
-            {formatNumber(monthExpectedPayout)}
-            <span className="text-lg font-bold">P</span>
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">이번달 사용포인트 기준</p>
-        </div>
       </section>
 
-      {/* ── Main Two-Column Grid ── */}
-      <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-5">
+      {/* ── 포인트 사용내역 ── */}
+      <PointStatToggle
+        todayUse={todayUseAmount}
+        todayIssue={todayIssueAmount}
+        monthUse={monthUseAmount}
+        monthIssue={monthIssueAmount}
+      />
 
-        {/* Recent Ledger Activity */}
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black text-foreground">최근 거래 내역</h2>
-            <span className="text-xs text-muted-foreground font-semibold">가장 최근 8건</span>
-          </div>
+      {/* ── Recent Ledger Activity + TOP 사용처 ── */}
+      <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-5 items-start">
+        <RecentActivities activities={recentActivities} />
 
-          <div className="space-y-0">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center py-3 border-b border-border last:border-0 gap-4"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <Badge
-                        className={cn(
-                          "text-[10px] font-black",
-                          r.type === "ISSUE" && "bg-blue-100 text-blue-700 border-blue-200",
-                          r.type === "USE" && "bg-violet-100 text-violet-700 border-violet-200",
-                          r.type === "TOPUP" && "bg-emerald-100 text-emerald-700 border-emerald-200",
-                          r.type !== "ISSUE" && r.type !== "USE" && r.type !== "TOPUP" && "bg-muted text-muted-foreground"
-                        )}
-                        variant="outline"
-                      >
-                        {(LEDGER_TYPE_LABEL as Record<string, string>)[r.type] ?? r.type}
-                      </Badge>
-                      <span className="text-sm font-bold text-foreground truncate">
-                        {r.account?.name ?? "계정 정보 없음"}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {r.counterparty?.name ?? r.actor?.name ?? "상대 정보 없음"}
-                      {" · "}
-                      {formatKrDateTime(r.createdAt)}
-                    </p>
-                  </div>
-                  <span className="text-base font-black text-foreground whitespace-nowrap shrink-0">
-                    {formatNumber(Math.abs(r.amount))}P
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="py-10 text-center text-sm text-muted-foreground border border-dashed border-border rounded-xl">
-                최근 활동이 없습니다.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Approvals + Quick Actions */}
-        <div className="bg-card shadow-card rounded-2xl p-5 flex flex-col gap-5">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-foreground">승인 대기</h2>
-              <span className="text-xs text-muted-foreground font-semibold">자주 쓰는 운영 액션</span>
-            </div>
-
-            <div className="space-y-2">
-              {[
-                {
-                  href: `/${orgSlug}/admin/topup-requests`,
-                  label: "충전요청 승인 대기",
-                  count: pendingTopupCount,
-                  sub: "충전 승인 처리 화면으로 이동",
-                },
-                {
-                  href: `/${orgSlug}/admin/issue-requests`,
-                  label: "지급요청 승인 대기",
-                  count: pendingIssueCount,
-                  sub: "고객 포인트 지급 승인 처리",
-                },
-                {
-                  href: `/${orgSlug}/admin/use-requests`,
-                  label: "사용요청 승인 대기",
-                  count: pendingUseCount,
-                  sub: "사용 승인 / 거절 처리",
-                },
-              ].map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center justify-between bg-muted/40 hover:bg-muted/70 border border-border rounded-xl px-4 py-3 transition-colors group"
-                >
-                  <div>
-                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xl font-black tracking-tight shrink-0",
-                      item.count > 0 ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    {formatNumber(item.count)}건
-                  </span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Action Chips */}
-          <div>
-            <p className="text-xs text-muted-foreground font-semibold mb-2">빠른 이동</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { href: `/${orgSlug}/admin/topup`, label: "관리자 수동 충전" },
-                { href: `/${orgSlug}/admin/adjust`, label: "포인트 조정" },
-                { href: `/${orgSlug}/admin/ledger`, label: "전체 내역" },
-                { href: `/${orgSlug}/admin/settlements`, label: "제휴사 관리" },
-                { href: `/${orgSlug}/admin/accounts`, label: "계정 조회" },
-              ].map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center justify-center text-center text-sm font-bold text-foreground bg-background shadow-card rounded-xl py-2.5 px-3 hover:border-primary hover:text-primary transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Summary mini stats */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-muted/40 rounded-xl p-3">
-              <p className="text-xs text-muted-foreground font-semibold">전체 사용자</p>
-              <p className="text-lg font-black text-foreground mt-1">{formatNumber(totalUsers)}명</p>
-            </div>
-            <div className="bg-muted/40 rounded-xl p-3">
-              <p className="text-xs text-muted-foreground font-semibold">고객</p>
-              <p className="text-lg font-black text-foreground mt-1">{formatNumber(customerCount)}명</p>
-            </div>
-            <div className="bg-muted/40 rounded-xl p-3">
-              <p className="text-xs text-muted-foreground font-semibold">제휴사</p>
-              <p className="text-lg font-black text-foreground mt-1">{formatNumber(partnerCount)}명</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Monthly Summary + Top Counterparties ── */}
-      <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-5">
-
-        {/* Monthly Summary */}
-        <div className="bg-card shadow-card rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black text-foreground">이번달 운영 요약</h2>
-            <span className="text-xs text-muted-foreground font-semibold">월 누적 기준</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-muted/40 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground font-semibold">이번달 사용건수</p>
-              <p className="text-2xl font-black text-foreground tracking-tight mt-2">
-                {formatNumber(monthUseCount)}
-                <span className="text-base font-bold">건</span>
-              </p>
-            </div>
-            <div className="bg-muted/40 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground font-semibold">이번달 사용포인트</p>
-              <p className="text-2xl font-black text-foreground tracking-tight mt-2">
-                {formatNumber(monthUsedPoints)}
-                <span className="text-base font-bold">P</span>
-              </p>
-            </div>
-            <div className="bg-muted/40 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground font-semibold">이번달 지급포인트</p>
-              <p className="text-2xl font-black text-foreground tracking-tight mt-2">
-                {formatNumber(monthMap.get("ISSUE")?.amount ?? 0)}
-                <span className="text-base font-bold">P</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Counterparties */}
+        {/* TOP 사용처 */}
         <div className="bg-card shadow-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-black text-foreground">이번달 TOP 사용처</h2>
             <span className="text-xs text-muted-foreground font-semibold">사용포인트 기준</span>
           </div>
-
           <div className="space-y-0">
             {topCounterparties.length > 0 ? (
               topCounterparties.map((row, idx) => (
-                <div
-                  key={row.id}
-                  className="flex items-center py-3 border-b border-border last:border-0 gap-3"
-                >
-                  <span className="text-xs font-black text-muted-foreground w-5 shrink-0 text-center">
-                    {idx + 1}
-                  </span>
+                <div key={row.id} className="flex items-center py-3 border-b border-border last:border-0 gap-3">
+                  <span className="text-xs font-black text-muted-foreground w-5 shrink-0 text-center">{idx + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground truncate">{row.name}</p>
                     <p className="text-xs text-muted-foreground truncate">
@@ -681,11 +497,12 @@ export default async function AdminDashboard({
         </div>
       </section>
 
+
       {/* ── User Management ── */}
       <section className="bg-card shadow-card rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-black text-foreground">사용자 관리</h2>
-          <span className="text-xs text-muted-foreground font-semibold">검색 / 역할 필터 / 역할 변경</span>
+          <span className="text-xs text-muted-foreground font-semibold">총 {users.length}명</span>
         </div>
 
         {/* Search Bar */}
@@ -697,17 +514,14 @@ export default async function AdminDashboard({
             name="q"
             defaultValue={q}
             placeholder="아이디 또는 이름 검색"
-            className="flex-1 min-w-[200px] h-11 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+            className="flex-1 min-w-[200px] h-10 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
           />
-          <button
-            type="submit"
-            className="h-11 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors"
-          >
+          <button type="submit" className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors">
             검색
           </button>
           <a
             href={activeRole === "ALL" ? `/${orgSlug}/admin` : `/${orgSlug}/admin?role=${activeRole}`}
-            className="inline-flex items-center h-11 px-5 rounded-xl border border-border bg-background text-sm font-bold text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center h-10 px-4 rounded-xl border border-border bg-background text-sm font-bold text-foreground hover:bg-muted transition-colors"
           >
             초기화
           </a>
@@ -731,184 +545,7 @@ export default async function AdminDashboard({
           ))}
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          현재:{" "}
-          <span className="font-bold text-foreground">
-            {activeRole === "ALL" ? "전체" : ROLE_LABEL[activeRole]}
-          </span>{" "}
-          / 표시 {users.length}명
-        </p>
-
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto rounded-xl shadow-card">
-          <div className="min-w-[900px]">
-            {/* Table Header */}
-            <div className="grid grid-cols-[180px_140px_100px_100px_220px_120px_160px] gap-3 items-center px-4 py-3 bg-muted/50 border-b border-border text-xs font-black text-muted-foreground uppercase tracking-wide">
-              <div>아이디</div>
-              <div>이름</div>
-              <div>역할</div>
-              <div>상태</div>
-              <div>역할 변경</div>
-              <div>잔액</div>
-              <div>가입일</div>
-            </div>
-
-            {users.length > 0 ? (
-              users.map((u) => (
-                <div
-                  key={u.id}
-                  className="grid grid-cols-[180px_140px_100px_100px_220px_120px_160px] gap-3 items-center px-4 py-3.5 border-b border-border last:border-0 text-sm hover:bg-muted/30 transition-colors"
-                >
-                  <div className="truncate font-medium text-foreground">{formatUsername(u.username)}</div>
-                  <div className="truncate text-foreground">{u.name}</div>
-                  <div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs font-bold",
-                        u.role === "ADMIN" && "bg-amber-50 text-amber-700 border-amber-200",
-                        u.role === "PARTNER" && "bg-blue-50 text-blue-700 border-blue-200",
-                        u.role === "CUSTOMER" && "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      )}
-                    >
-                      {ROLE_LABEL[u.role]}
-                    </Badge>
-                  </div>
-                  <div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs font-bold",
-                        u.status === "ACTIVE" && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                        u.status === "PENDING" && "bg-yellow-50 text-yellow-700 border-yellow-200",
-                        u.status === "BLOCKED" && "bg-red-50 text-red-700 border-red-200"
-                      )}
-                    >
-                      {STATUS_LABEL[u.status]}
-                    </Badge>
-                  </div>
-                  <div>
-                    {u.role === "ADMIN" ? (
-                      <span className="text-xs text-muted-foreground font-semibold">변경 불가</span>
-                    ) : (
-                      <form action={updateUserRole} className="flex gap-2 items-center">
-                        <input type="hidden" name="userId" value={u.id} />
-                        <select
-                          name="role"
-                          defaultValue={u.role}
-                          className="h-9 rounded-lg border border-border bg-background px-2 text-sm font-semibold text-foreground outline-none focus:border-primary"
-                        >
-                          <option value="CUSTOMER">고객</option>
-                          <option value="PARTNER">제휴사</option>
-                        </select>
-                        <button
-                          type="submit"
-                          className="h-9 px-3 rounded-lg border border-border bg-background text-sm font-bold text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                        >
-                          적용
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                  <div className="font-black text-foreground">
-                    {formatNumber(u.balance)}P
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {formatKrDateTime(u.createdAt)}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                사용자가 없습니다.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile User Cards */}
-        <div className="flex flex-col gap-3 md:hidden">
-          {users.length > 0 ? (
-            users.map((u) => (
-              <div
-                key={u.id}
-                className="bg-card shadow-card rounded-xl p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-base font-black text-foreground">{u.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{formatUsername(u.username)}</p>
-                  </div>
-                  <p className="text-lg font-black text-foreground whitespace-nowrap shrink-0">
-                    {formatNumber(u.balance)}P
-                  </p>
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs font-bold",
-                      u.role === "ADMIN" && "bg-amber-50 text-amber-700 border-amber-200",
-                      u.role === "PARTNER" && "bg-blue-50 text-blue-700 border-blue-200",
-                      u.role === "CUSTOMER" && "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    )}
-                  >
-                    {ROLE_LABEL[u.role]}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs font-bold",
-                      u.status === "ACTIVE" && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                      u.status === "PENDING" && "bg-yellow-50 text-yellow-700 border-yellow-200",
-                      u.status === "BLOCKED" && "bg-red-50 text-red-700 border-red-200"
-                    )}
-                  >
-                    {STATUS_LABEL[u.status]}
-                  </Badge>
-                </div>
-
-                <div className="mt-3 grid gap-1.5 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground text-xs font-semibold">가입일</span>
-                    <span className="text-xs text-foreground">
-                      {formatKrDateTime(u.createdAt)}
-                    </span>
-                  </div>
-                </div>
-
-                {u.role === "ADMIN" ? (
-                  <p className="mt-3 text-xs text-muted-foreground font-semibold">
-                    총괄관리자는 역할 변경 불가
-                  </p>
-                ) : (
-                  <form action={updateUserRole} className="mt-3 flex gap-2 flex-wrap">
-                    <input type="hidden" name="userId" value={u.id} />
-                    <select
-                      name="role"
-                      defaultValue={u.role}
-                      className="flex-1 min-w-[120px] h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary"
-                    >
-                      <option value="CUSTOMER">고객</option>
-                      <option value="PARTNER">제휴사</option>
-                    </select>
-                    <button
-                      type="submit"
-                      className="h-9 px-4 rounded-lg border border-border bg-background text-sm font-bold text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                    >
-                      적용
-                    </button>
-                  </form>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="py-10 text-center text-sm text-muted-foreground border border-dashed border-border rounded-xl">
-              사용자가 없습니다.
-            </div>
-          )}
-        </div>
+        <UserList users={users.map((u) => ({ ...u, createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt ?? "") }))} updateUserRole={updateUserRole} />
       </section>
     </main>
   );

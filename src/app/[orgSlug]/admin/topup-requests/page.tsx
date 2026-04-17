@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Check } from "lucide-react";
+import { Loader2, RefreshCw, Check, Search, X } from "lucide-react";
 import { formatUsername } from "@/lib/utils";
 
 type Item = {
@@ -68,6 +68,9 @@ export default function TopupRequestsPage() {
   const [loading, setLoading] = useState(false);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("PENDING");
+  const [searchQ, setSearchQ] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const counts = useMemo(() => ({
     all: items.length,
@@ -77,13 +80,42 @@ export default function TopupRequestsPage() {
   }), [items]);
 
   const filtered = useMemo(() => {
-    const list = tab === "ALL" ? items : items.filter((i) => i.status === tab);
+    let list = tab === "ALL" ? items : items.filter((i) => i.status === tab);
+
+    // 이름/아이디 검색
+    if (searchQ.trim()) {
+      const q = searchQ.trim().toLowerCase();
+      list = list.filter((i) =>
+        i.account?.name?.toLowerCase().includes(q) ||
+        i.account?.username?.toLowerCase().includes(q)
+      );
+    }
+
+    // 날짜 범위 필터 (요청일 기준)
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      list = list.filter((i) => new Date(i.createdAt) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      list = list.filter((i) => new Date(i.createdAt) <= to);
+    }
+
     return [...list].sort((a, b) => {
       if (a.status === "PENDING" && b.status !== "PENDING") return -1;
       if (b.status === "PENDING" && a.status !== "PENDING") return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [items, tab]);
+  }, [items, tab, searchQ, dateFrom, dateTo]);
+
+  function clearFilters() {
+    setSearchQ("");
+    setDateFrom("");
+    setDateTo("");
+  }
+
+  const hasFilter = searchQ.trim() !== "" || dateFrom !== "" || dateTo !== "";
 
   async function load(silent = false) {
     if (!silent) setLoading(true);
@@ -147,101 +179,139 @@ export default function TopupRequestsPage() {
 
       {/* ── 요약 수치 ── */}
       <div className="tr-kpi-row">
-        <div className="tr-kpi">
+        <button className="tr-kpi tr-kpi--btn" onClick={() => setTab("ALL")}>
           <span className="tr-kpi__num">{counts.all}</span>
           <span className="tr-kpi__label">전체 요청</span>
-        </div>
-        <div className="tr-kpi tr-kpi--accent">
+        </button>
+        <button className="tr-kpi tr-kpi--accent tr-kpi--btn" onClick={() => setTab("PENDING")}>
           <span className="tr-kpi__num">{counts.pending}</span>
           <span className="tr-kpi__label">대기 중</span>
-        </div>
-        <div className="tr-kpi">
+        </button>
+        <button className="tr-kpi tr-kpi--btn" onClick={() => setTab("APPROVED")}>
           <span className="tr-kpi__num">{counts.approved}</span>
           <span className="tr-kpi__label">승인완료</span>
-        </div>
+        </button>
       </div>
 
-      {/* ── 탭 ── */}
-      <div className="tr-tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            className={`tr-tab ${tab === t.key ? "tr-tab--active" : ""}`}
-          >
-            {t.label}
-            <span className="tr-tab__count">{t.count}</span>
+      {/* ── 필터 ── */}
+      <div className="tr-filter-bar">
+        <div className="relative flex-1" style={{ minWidth: 180 }}>
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="제휴사 이름 또는 아이디 검색"
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            className="tr-filter-search__input"
+            style={{ paddingLeft: 32 }}
+          />
+        </div>
+        <div className="tr-filter-dates">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="tr-filter-date"
+          />
+          <span className="tr-filter-sep">~</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="tr-filter-date"
+          />
+        </div>
+        {hasFilter && (
+          <button onClick={clearFilters} className="tr-filter-clear">
+            <X className="w-3.5 h-3.5" />
+            초기화
           </button>
-        ))}
+        )}
       </div>
 
-      {/* ── 목록 ── */}
-      {loading ? (
-        <div className="tr-loading">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>불러오는 중</span>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="tr-empty">
-          {tab === "PENDING" ? "대기 중인 충전 요청이 없습니다." : "해당 조건의 요청이 없습니다."}
-        </div>
-      ) : (
-        <div className="tr-list">
-          {filtered.map((it) => (
-            <article
-              key={it.id}
-              className={`tr-card ${it.status === "PENDING" ? "tr-card--pending" : ""}`}
+      {/* ── 탭 + 목록 묶음 ── */}
+      <div className="tr-panel">
+        <div className="tr-tabs" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => setTab(t.key)}
+              className={`tr-tab ${tab === t.key ? "tr-tab--active" : ""}`}
             >
-              {/* 상단: 제휴사 + 상태 + 금액 */}
-              <div className="tr-card__top">
-                <div className="tr-card__who">
-                  <span className="tr-card__name">{it.account?.name ?? "-"}</span>
-                  <span className="tr-card__username">
-                    {it.account ? formatUsername(it.account.username) : "-"}
-                  </span>
-                  <StatusBadge status={it.status} />
-                </div>
-                <div className="tr-card__amount">
-                  {fmt(it.amount)}<span className="tr-card__amount-unit">P</span>
-                </div>
-              </div>
-
-              {/* 메타 정보 */}
-              <div className="tr-card__meta">
-                <span>요청 {fmtDate(it.createdAt)}</span>
-                {it.requestedBy && <span>· 요청자 {it.requestedBy.name}</span>}
-                {it.status !== "PENDING" && it.approvedBy && (
-                  <span>· 처리자 {it.approvedBy.name} {fmtDate(it.decidedAt)}</span>
-                )}
-              </div>
-
-              {/* 메모 */}
-              {it.note && (
-                <p className="tr-card__note">{it.note}</p>
-              )}
-
-              {/* 승인 버튼 */}
-              {it.status === "PENDING" && (
-                <div className="tr-card__action">
-                  <button
-                    onClick={() => approve(it.id)}
-                    disabled={workingId === it.id}
-                    className="tr-approve-btn"
-                  >
-                    {workingId === it.id ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />처리 중</>
-                    ) : (
-                      <><Check className="w-3.5 h-3.5" />승인하기</>
-                    )}
-                  </button>
-                </div>
-              )}
-            </article>
+              {t.label}
+              <span className="tr-tab__count">{t.count}</span>
+            </button>
           ))}
         </div>
-      )}
+
+        {/* ── 목록 ── */}
+        {loading ? (
+          <div className="tr-loading">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>불러오는 중</span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="tr-empty">
+            {tab === "PENDING" ? "대기 중인 충전 요청이 없습니다." : "해당 조건의 요청이 없습니다."}
+          </div>
+        ) : (
+          <div className="tr-list">
+            {filtered.map((it) => (
+              <article
+                key={it.id}
+                className={`tr-card ${it.status === "PENDING" ? "tr-card--pending" : ""}`}
+              >
+                {/* 상단: 제휴사 + 상태 + 금액 */}
+                <div className="tr-card__top">
+                  <div className="tr-card__who">
+                    <span className="tr-card__name">{it.account?.name ?? "-"}</span>
+                    <span className="tr-card__username">
+                      {it.account ? formatUsername(it.account.username) : "-"}
+                    </span>
+                    <StatusBadge status={it.status} />
+                  </div>
+                  <div className="tr-card__amount">
+                    {fmt(it.amount)}<span className="tr-card__amount-unit">P</span>
+                  </div>
+                </div>
+
+                {/* 메타 정보 */}
+                <div className="tr-card__meta">
+                  <span>요청 {fmtDate(it.createdAt)}</span>
+                  {it.requestedBy && <span>· 요청자 {it.requestedBy.name}</span>}
+                  {it.status !== "PENDING" && it.approvedBy && (
+                    <span>· 처리자 {it.approvedBy.name} {fmtDate(it.decidedAt)}</span>
+                  )}
+                </div>
+
+                {/* 메모 */}
+                {it.note && (
+                  <p className="tr-card__note">{it.note}</p>
+                )}
+
+                {/* 승인 버튼 */}
+                {it.status === "PENDING" && (
+                  <div className="tr-card__action">
+                    <button
+                      onClick={() => approve(it.id)}
+                      disabled={workingId === it.id}
+                      className="tr-approve-btn"
+                    >
+                      {workingId === it.id ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" />처리 중</>
+                      ) : (
+                        <><Check className="w-3.5 h-3.5" />승인하기</>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
         /* ── 레이아웃 ── */
@@ -321,6 +391,10 @@ export default function TopupRequestsPage() {
           flex-direction: column;
           gap: 4px;
         }
+        .tr-kpi--btn {
+          cursor: pointer;
+          text-align: left;
+        }
         .tr-kpi--accent {
           background: #2563eb;
           border-color: #2563eb;
@@ -340,37 +414,106 @@ export default function TopupRequestsPage() {
           color: #71717a;
         }
 
-        /* ── 탭 ── */
+        /* ── 필터 ── */
+        .tr-filter-bar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 12px;
+          padding: 14px 18px;
+        }
+        .tr-filter-search__input {
+          width: 100%;
+          height: 36px;
+          padding: 0 12px 0 32px;
+          border: 1px solid #e4e4e7;
+          border-radius: 8px;
+          font-size: 13px;
+          color: #09090b;
+          background: #fafafa;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .tr-filter-search__input::placeholder { color: #a1a1aa; }
+        .tr-filter-search__input:focus { border-color: #2563eb; background: #fff; }
+        .tr-filter-dates {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .tr-filter-date {
+          height: 36px;
+          padding: 0 10px;
+          border: 1px solid #e4e4e7;
+          border-radius: 8px;
+          font-size: 13px;
+          color: #09090b;
+          background: #fafafa;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.15s;
+        }
+        .tr-filter-date:focus { border-color: #2563eb; background: #fff; }
+        .tr-filter-sep {
+          font-size: 13px;
+          color: #a1a1aa;
+          font-weight: 600;
+        }
+        .tr-filter-clear {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          height: 36px;
+          padding: 0 12px;
+          border: 1px solid #e4e4e7;
+          border-radius: 8px;
+          background: #fafafa;
+          color: #71717a;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s;
+          white-space: nowrap;
+        }
+        .tr-filter-clear:hover { border-color: #dc2626; color: #dc2626; background: #fff5f5; }
+
+        /* ── 탭 + 목록 패널 ── */
+        .tr-panel {
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 16px;
+          overflow: hidden;
+        }
         .tr-tabs {
           display: flex;
-          gap: 4px;
+          gap: 0;
           border-bottom: 1px solid #e4e4e7;
-          padding-bottom: 0;
+          padding: 0 4px;
+          background: #fafafa;
         }
         .tr-tab {
           display: flex;
           align-items: center;
           gap: 6px;
-          height: 38px;
-          padding: 0 14px;
-          border-radius: 8px 8px 0 0;
-          border: 1px solid transparent;
-          border-bottom: none;
+          height: 42px;
+          padding: 0 16px;
+          border: none;
+          border-bottom: 2px solid transparent;
           background: transparent;
           font-size: 13px;
           font-weight: 600;
           color: #71717a;
           cursor: pointer;
-          transition: color 0.15s;
-          position: relative;
-          bottom: -1px;
+          transition: color 0.15s, border-color 0.15s;
         }
         .tr-tab:hover { color: #2563eb; }
         .tr-tab--active {
           color: #2563eb;
-          background: #fff;
-          border-color: #e4e4e7;
-          border-bottom-color: #fff;
+          border-bottom-color: #2563eb;
         }
         .tr-tab__count {
           font-size: 11px;
@@ -403,18 +546,16 @@ export default function TopupRequestsPage() {
           text-align: center;
           font-size: 13px;
           color: #a1a1aa;
-          background: #fff;
-          border: 1px solid #e4e4e7;
-          border-radius: 16px;
         }
 
         /* ── 카드 ── */
-        .tr-list { display: flex; flex-direction: column; gap: 8px; }
+        .tr-list { display: flex; flex-direction: column; gap: 0; padding: 8px 16px 16px; }
         .tr-card {
           background: #fff;
           border: 1px solid #e4e4e7;
-          border-radius: 14px;
-          padding: 20px 24px;
+          border-radius: 12px;
+          padding: 18px 22px;
+          margin-top: 8px;
           transition: border-color 0.15s;
         }
         .tr-card--pending {

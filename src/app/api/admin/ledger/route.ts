@@ -29,6 +29,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const typeParam = String(searchParams.get("type") ?? "ALL").toUpperCase();
   const q = String(searchParams.get("q") ?? "").trim();
+  const roleParam = String(searchParams.get("role") ?? "").toUpperCase();
   const startParam = searchParams.get("start") ?? "";
   const endParam = searchParams.get("end") ?? "";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
@@ -50,18 +51,18 @@ export async function GET(req: Request) {
     if (endParam) filter.createdAt.$lte = new Date(endParam + "T23:59:59.999+09:00");
   }
 
-  if (q) {
-    const users = await User.find(
-      {
-        organizationId: orgId,
-        $or: [
-          { username: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
-          { name: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\$&"), $options: "i" } },
-        ],
-      },
-      { _id: 1 }
-    ).limit(50);
-
+  // role 필터 또는 이름/아이디 검색
+  if (q || ["PARTNER", "CUSTOMER", "ADMIN"].includes(roleParam)) {
+    const userFilter: any = { organizationId: orgId };
+    if (["PARTNER", "CUSTOMER", "ADMIN"].includes(roleParam)) userFilter.role = roleParam;
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      userFilter.$or = [
+        { username: { $regex: escaped, $options: "i" } },
+        { name: { $regex: escaped, $options: "i" } },
+      ];
+    }
+    const users = await User.find(userFilter, { _id: 1 }).limit(200);
     const ids = users.map((u: any) => u._id);
     filter.accountId = { $in: ids };
   }

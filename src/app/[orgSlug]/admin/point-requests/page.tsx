@@ -169,7 +169,6 @@ export default function AdminPointRequestsPage() {
   const totalSPending = settlements.filter((i) => i.status === "PENDING").length;
 
   const settlementTabs = [
-    { href: `/${orgSlug}/admin/settlements`, label: "포인트 정산관리" },
     { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
     { href: `/${orgSlug}/admin/point-requests`, label: "포인트 출금·정산" },
   ];

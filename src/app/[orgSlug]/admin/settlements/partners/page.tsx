@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
 
@@ -191,6 +191,29 @@ export default function AdminGeneralSettlementsPage() {
   const [startMonth, setStartMonth] = useState(1);
   const [endMonth, setEndMonth] = useState(12);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "CONFIRMED" | "SUBMITTED">("ALL");
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  function applyStatusFilter(f: "CONFIRMED" | "SUBMITTED" | "ALL") {
+    const next = f !== "ALL" && statusFilter === f ? "ALL" : f;
+    setStatusFilter(next);
+    if (next !== "ALL") {
+      // 해당 상태의 파트너 그룹 전체 펼치기
+      const matchedPartnerIds = items
+        .filter((i) =>
+          i.year === selectedYear &&
+          i.month >= startMonth &&
+          i.month <= endMonth &&
+          (selectedPartnerId === "all" || i.partnerId === selectedPartnerId) &&
+          i.status === next
+        )
+        .map((i) => i.partnerId);
+      setExpandedPartners(new Set(matchedPartnerIds));
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -302,10 +325,18 @@ export default function AdminGeneralSettlementsPage() {
   }, [yearItems]);
 
   const filtered = useMemo(() => {
-    if (!q.trim()) return groups;
-    const lower = q.toLowerCase();
-    return groups.filter((g) => g.partnerName.toLowerCase().includes(lower));
-  }, [groups, q]);
+    let result = groups;
+    if (q.trim()) {
+      const lower = q.toLowerCase();
+      result = result.filter((g) => g.partnerName.toLowerCase().includes(lower));
+    }
+    if (statusFilter !== "ALL") {
+      result = result
+        .map((g) => ({ ...g, items: g.items.filter((i) => i.status === statusFilter) }))
+        .filter((g) => g.items.length > 0);
+    }
+    return result;
+  }, [groups, q, statusFilter]);
 
   // 전체 대기중 (연도 무관)
   const totalPending = items.filter((i) => i.status === "SUBMITTED").length;
@@ -317,7 +348,6 @@ export default function AdminGeneralSettlementsPage() {
   const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
 
   const settlementTabs = [
-    { href: `/${orgSlug}/admin/settlements`, label: "포인트 정산관리" },
     { href: `/${orgSlug}/admin/settlements/partners`, label: "일반 정산 관리" },
     { href: `/${orgSlug}/admin/point-requests`, label: "포인트 출금·정산" },
   ];
@@ -513,23 +543,35 @@ export default function AdminGeneralSettlementsPage() {
       {/* 통계 카드 */}
       {!loading && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-card shadow-card rounded-2xl px-4 py-4 space-y-1">
+          <button
+            type="button"
+            onClick={() => applyStatusFilter("CONFIRMED")}
+            className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "CONFIRMED" ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-border"}`}
+          >
             <p className="text-xs font-semibold text-muted-foreground">확인완료 총액</p>
             <p className="text-lg font-black text-foreground leading-tight">
               {formatMoney(stats.confirmedTotal)}
               <span className="text-xs font-bold text-muted-foreground ml-1">원</span>
             </p>
             <p className="text-xs text-muted-foreground">{stats.confirmedCount}건</p>
-          </div>
-          <div className="bg-card shadow-card rounded-2xl px-4 py-4 space-y-1">
+          </button>
+          <button
+            type="button"
+            onClick={() => applyStatusFilter("SUBMITTED")}
+            className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "SUBMITTED" ? "ring-2 ring-amber-400" : "hover:ring-1 hover:ring-border"}`}
+          >
             <p className="text-xs font-semibold text-muted-foreground">대기중 총액</p>
             <p className="text-lg font-black leading-tight" style={{ color: "oklch(0.72 0.18 80)" }}>
               {formatMoney(stats.pendingTotal)}
               <span className="text-xs font-bold text-muted-foreground ml-1">원</span>
             </p>
             <p className="text-xs text-muted-foreground">{stats.pendingCount}건</p>
-          </div>
-          <div className="bg-card shadow-card rounded-2xl px-4 py-4 space-y-1">
+          </button>
+          <button
+            type="button"
+            onClick={() => applyStatusFilter("ALL")}
+            className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "ALL" ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-border"}`}
+          >
             <p className="text-xs font-semibold text-muted-foreground">전체 건수</p>
             <p className="text-lg font-black text-foreground leading-tight">
               {stats.allCount}
@@ -538,7 +580,7 @@ export default function AdminGeneralSettlementsPage() {
             <p className="text-xs text-muted-foreground">
               {selectedYear}년 {startMonth === 1 && endMonth === 12 ? "전체" : `${startMonth}월~${endMonth}월`}
             </p>
-          </div>
+          </button>
         </div>
       )}
 
@@ -627,7 +669,7 @@ export default function AdminGeneralSettlementsPage() {
 
         </div>
       ) : (
-        <div className="space-y-2">
+        <div ref={resultsRef} className="space-y-2" style={{ scrollMarginTop: "80px" }}>
           {filtered.map((group) => {
             const isOpen = expandedPartners.has(group.partnerId);
             return (
