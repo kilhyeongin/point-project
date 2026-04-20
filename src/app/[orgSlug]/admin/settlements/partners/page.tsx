@@ -2,8 +2,13 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X,
+  ChevronLeft, ChevronRight, BarChart3, FileText, Coins, XCircle,
+} from "lucide-react";
 
+// ─── 타입 ───────────────────────────────────────────────
 type GeneralSettlementItem = {
   id: string;
   partnerId: string;
@@ -23,27 +28,61 @@ type GeneralSettlementItem = {
   createdAt: string;
 };
 
+type WithdrawalItem = {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  amount: number;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  adminNote: string;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+};
+
+type PointSettlementItem = {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  year: number;
+  month: number;
+  amount: number;
+  note: string;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+};
+
+type PartnerGroup = {
+  partnerId: string;
+  partnerName: string;
+  items: GeneralSettlementItem[];
+  pendingCount: number;
+};
+
+type MainTab = "general" | "point";
+type PointSubTab = "withdrawal" | "settlement";
+
+// ─── 유틸 ───────────────────────────────────────────────
 function formatMoney(n: number) {
   return Number(n || 0).toLocaleString();
 }
 
-function StatusChip({ status }: { status: string }) {
-  if (status === "CONFIRMED") {
+// ─── 상태 칩 (수수료 정산용) ────────────────────────────
+function GeneralStatusChip({ status }: { status: string }) {
+  if (status === "CONFIRMED")
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <CheckCircle2 className="w-3 h-3" />
-        확인완료
+        <CheckCircle2 className="w-3 h-3" />확인완료
       </span>
     );
-  }
-  if (status === "SUBMITTED") {
+  if (status === "SUBMITTED")
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-        <Clock className="w-3 h-3" />
-        대기중
+        <Clock className="w-3 h-3" />대기중
       </span>
     );
-  }
   return (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-muted text-muted-foreground border border-border">
       임시저장
@@ -51,10 +90,30 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
+// ─── 상태 칩 (포인트 출금정산용) ────────────────────────
+function PointStatusChip({ status }: { status: string }) {
+  if (status === "CONFIRMED")
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <CheckCircle2 className="w-3 h-3" />확정
+      </span>
+    );
+  if (status === "CANCELLED")
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-muted text-muted-foreground border border-border">
+        <XCircle className="w-3 h-3" />취소
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+      <Clock className="w-3 h-3" />대기중
+    </span>
+  );
+}
+
+// ─── 수수료 정산서 행 ────────────────────────────────────
 function SettlementRow({
-  item,
-  onConfirm,
-  confirming,
+  item, onConfirm, confirming,
 }: {
   item: GeneralSettlementItem;
   onConfirm: (id: string) => void;
@@ -71,41 +130,28 @@ function SettlementRow({
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-bold text-foreground">
-              {item.year}년 {item.month}월
-            </span>
+            <span className="text-sm font-bold text-foreground">{item.year}년 {item.month}월</span>
             {item.periodStart && item.periodEnd && (
-              <span className="text-xs text-muted-foreground">
-                {item.periodStart} ~ {item.periodEnd}
-              </span>
+              <span className="text-xs text-muted-foreground">{item.periodStart} ~ {item.periodEnd}</span>
             )}
           </div>
-          <StatusChip status={item.status} />
+          <GeneralStatusChip status={item.status} />
         </div>
         <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-          <span className="text-sm font-black text-foreground">
-            {formatMoney(item.total)}원
-          </span>
-          {expanded ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
+          <span className="text-sm font-black text-foreground">{formatMoney(item.total)}원</span>
+          {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </div>
       </button>
 
       {expanded && (
         <div className="px-5 pb-4 space-y-3">
-          {/* 테이블 */}
           <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full border-collapse text-xs min-w-[400px]">
               <thead>
                 <tr>
                   <th className="border-b border-border bg-muted/50 px-2 py-1.5 text-center text-muted-foreground w-7">#</th>
                   {item.columns.map((col, ci) => (
-                    <th key={ci} className="border-b border-border bg-muted/50 px-3 py-1.5 text-left font-bold text-muted-foreground">
-                      {col}
-                    </th>
+                    <th key={ci} className="border-b border-border bg-muted/50 px-3 py-1.5 text-left font-bold text-muted-foreground">{col}</th>
                   ))}
                 </tr>
               </thead>
@@ -114,9 +160,7 @@ function SettlementRow({
                   <tr key={ri} className="even:bg-muted/10">
                     <td className="px-2 py-1.5 text-center text-muted-foreground">{ri + 1}</td>
                     {item.columns.map((_, ci) => (
-                      <td key={ci} className="px-3 py-1.5 text-foreground">
-                        {row.cells[ci] || ""}
-                      </td>
+                      <td key={ci} className="px-3 py-1.5 text-foreground">{row.cells[ci] || ""}</td>
                     ))}
                   </tr>
                 ))}
@@ -124,7 +168,6 @@ function SettlementRow({
             </table>
           </div>
 
-          {/* 합계 */}
           <div className="bg-muted/30 rounded-xl px-4 py-3 space-y-1.5">
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground font-semibold">합계</span>
@@ -140,17 +183,11 @@ function SettlementRow({
             </div>
           </div>
 
-          {/* 날짜 정보 */}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            {item.submittedAt && (
-              <span>전송일: {new Date(item.submittedAt).toLocaleDateString("ko-KR")}</span>
-            )}
-            {item.confirmedAt && (
-              <span>확인일: {new Date(item.confirmedAt).toLocaleDateString("ko-KR")}</span>
-            )}
+            {item.submittedAt && <span>전송일: {new Date(item.submittedAt).toLocaleDateString("ko-KR")}</span>}
+            {item.confirmedAt && <span>확인일: {new Date(item.confirmedAt).toLocaleDateString("ko-KR")}</span>}
           </div>
 
-          {/* 확인 버튼 */}
           {item.status === "SUBMITTED" && (
             <button
               type="button"
@@ -168,24 +205,23 @@ function SettlementRow({
   );
 }
 
-// 업체별 그룹
-type PartnerGroup = {
-  partnerId: string;
-  partnerName: string;
-  items: GeneralSettlementItem[];
-  pendingCount: number;
-};
-
+// ─── 상수 ───────────────────────────────────────────────
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-export default function AdminGeneralSettlementsPage() {
+// ─── 메인 페이지 ─────────────────────────────────────────
+export default function AdminSettlementsPage() {
   const pathname = usePathname();
   const orgSlug = pathname.split("/")[1];
   const currentYear = new Date().getFullYear();
-  const [items, setItems] = useState<GeneralSettlementItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [confirming, setConfirming] = useState<string | null>(null);
-  const [q, setQ] = useState("");
+
+  // 메인 탭
+  const [mainTab, setMainTab] = useState<MainTab>("general");
+
+  // ── 수수료 정산 상태 ──
+  const [gItems, setGItems] = useState<GeneralSettlementItem[]>([]);
+  const [gLoading, setGLoading] = useState(true);
+  const [gConfirming, setGConfirming] = useState<string | null>(null);
+  const [gQ, setGQ] = useState("");
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [startMonth, setStartMonth] = useState(1);
@@ -194,12 +230,54 @@ export default function AdminGeneralSettlementsPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "CONFIRMED" | "SUBMITTED">("ALL");
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // ── 포인트 출금정산 상태 ──
+  const [withdrawals, setWithdrawals] = useState<WithdrawalItem[]>([]);
+  const [pSettlements, setPSettlements] = useState<PointSettlementItem[]>([]);
+  const [pLoading, setPLoading] = useState(true);
+  const [pConfirming, setPConfirming] = useState<string | null>(null);
+  const [pCancelling, setPCancelling] = useState<string | null>(null);
+  const [pQ, setPQ] = useState("");
+  const [pSubTab, setPSubTab] = useState<PointSubTab>("withdrawal");
+  const [pExpandedPartners, setPExpandedPartners] = useState<Set<string>>(new Set());
+
+  // ── 데이터 로드 ──
+  async function loadGeneral() {
+    setGLoading(true);
+    try {
+      const res = await fetch("/api/admin/general-settlements");
+      const data = await res.json();
+      if (data.ok) setGItems(data.items);
+    } finally {
+      setGLoading(false);
+    }
+  }
+
+  async function loadPoint() {
+    setPLoading(true);
+    try {
+      const [wRes, sRes] = await Promise.all([
+        fetch("/api/admin/withdrawal-requests"),
+        fetch("/api/admin/point-settlements"),
+      ]);
+      const [wData, sData] = await Promise.all([wRes.json(), sRes.json()]);
+      if (wData.ok) setWithdrawals(wData.items);
+      if (sData.ok) setPSettlements(sData.items);
+    } finally {
+      setPLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadGeneral();
+    loadPoint();
+  }, []);
+
+  // ── 수수료 정산 핸들러 ──
   function applyStatusFilter(f: "CONFIRMED" | "SUBMITTED" | "ALL") {
     const next = f !== "ALL" && statusFilter === f ? "ALL" : f;
     setStatusFilter(next);
     if (next !== "ALL") {
-      // 해당 상태의 파트너 그룹 전체 펼치기
-      const matchedPartnerIds = items
+      const matchedPartnerIds = gItems
         .filter((i) =>
           i.year === selectedYear &&
           i.month >= startMonth &&
@@ -215,68 +293,119 @@ export default function AdminGeneralSettlementsPage() {
     }
   }
 
-  async function load() {
-    setLoading(true);
+  async function handleGeneralConfirm(id: string) {
+    setGConfirming(id);
     try {
-      const res = await fetch("/api/admin/general-settlements");
-      const data = await res.json();
-      if (data.ok) setItems(data.items);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
-
-  async function handleConfirm(id: string) {
-    setConfirming(id);
-    try {
-      const res = await fetch(`/api/admin/general-settlements/${id}`, {
-        method: "PATCH",
-      });
+      const res = await fetch(`/api/admin/general-settlements/${id}`, { method: "PATCH" });
       const data = await res.json();
       if (data.ok) {
-        setItems((prev) =>
+        setGItems((prev) =>
           prev.map((item) =>
-            item.id === id
-              ? { ...item, status: "CONFIRMED", confirmedAt: new Date().toISOString() }
-              : item
+            item.id === id ? { ...item, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : item
           )
         );
       }
     } finally {
-      setConfirming(null);
+      setGConfirming(null);
     }
   }
 
   function togglePartner(partnerId: string) {
     setExpandedPartners((prev) => {
       const next = new Set(prev);
-      if (next.has(partnerId)) next.delete(partnerId);
-      else next.add(partnerId);
+      if (next.has(partnerId)) next.delete(partnerId); else next.add(partnerId);
       return next;
     });
   }
 
-  // 전체 제휴사 목록 (드롭다운용, 연도 무관)
+  // ── 포인트 출금정산 핸들러 ──
+  async function confirmWithdrawal(id: string) {
+    setPConfirming(id);
+    try {
+      const res = await fetch(`/api/admin/withdrawal-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : i));
+        toast.success("출금 확정 완료");
+      } else toast.error(data.message || "오류가 발생했습니다.");
+    } finally {
+      setPConfirming(null);
+    }
+  }
+
+  async function cancelWithdrawal(id: string) {
+    if (!confirm("이 출금 요청을 거절하시겠습니까?")) return;
+    setPCancelling(id);
+    try {
+      const res = await fetch(`/api/admin/withdrawal-requests/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) {
+        setWithdrawals((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i));
+        toast.success("출금 요청 거절됨");
+      } else toast.error(data.message || "오류가 발생했습니다.");
+    } finally {
+      setPCancelling(null);
+    }
+  }
+
+  async function confirmSettlement(id: string) {
+    setPConfirming(id);
+    try {
+      const res = await fetch(`/api/admin/point-settlements/${id}`, { method: "PATCH" });
+      const data = await res.json();
+      if (data.ok) {
+        setPSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CONFIRMED", confirmedAt: new Date().toISOString() } : i));
+        toast.success("정산 확정 완료");
+      } else toast.error(data.message || "오류가 발생했습니다.");
+    } finally {
+      setPConfirming(null);
+    }
+  }
+
+  async function cancelSettlement(id: string) {
+    if (!confirm("이 정산 요청을 거절하시겠습니까?")) return;
+    setPCancelling(id);
+    try {
+      const res = await fetch(`/api/admin/point-settlements/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) {
+        setPSettlements((prev) => prev.map((i) => i.id === id ? { ...i, status: "CANCELLED", cancelledAt: new Date().toISOString() } : i));
+        toast.success("정산 요청 거절됨");
+      } else toast.error(data.message || "오류가 발생했습니다.");
+    } finally {
+      setPCancelling(null);
+    }
+  }
+
+  function togglePPartner(key: string) {
+    setPExpandedPartners((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  // ── 수수료 정산 계산 ──
   const allPartners = useMemo(() => {
     const map = new Map<string, string>();
-    items.forEach((i) => map.set(i.partnerId, i.partnerName));
+    gItems.forEach((i) => map.set(i.partnerId, i.partnerName));
     return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [items]);
+  }, [gItems]);
 
-  // 선택 연도 + 월 범위 + 제휴사 기준 필터
   const yearItems = useMemo(
-    () => items.filter((i) =>
+    () => gItems.filter((i) =>
       i.year === selectedYear &&
       i.month >= startMonth &&
       i.month <= endMonth &&
       (selectedPartnerId === "all" || i.partnerId === selectedPartnerId)
     ),
-    [items, selectedYear, startMonth, endMonth, selectedPartnerId]
+    [gItems, selectedYear, startMonth, endMonth, selectedPartnerId]
   );
 
-  // 통계 (선택 연도)
   const stats = useMemo(() => {
     const confirmed = yearItems.filter((i) => i.status === "CONFIRMED");
     const pending = yearItems.filter((i) => i.status === "SUBMITTED");
@@ -289,7 +418,6 @@ export default function AdminGeneralSettlementsPage() {
     };
   }, [yearItems]);
 
-  // 월별 통계 (선택 연도 + 월 범위)
   const monthlyStats = useMemo(() => {
     return MONTHS.filter((m) => m >= startMonth && m <= endMonth).map((m) => {
       const mItems = yearItems.filter((i) => i.month === m && i.status !== "DRAFT");
@@ -304,7 +432,6 @@ export default function AdminGeneralSettlementsPage() {
     });
   }, [yearItems, startMonth, endMonth]);
 
-  // 업체별 그룹핑 (선택 연도 기준)
   const groups = useMemo<PartnerGroup[]>(() => {
     const map = new Map<string, PartnerGroup>();
     yearItems.forEach((item) => {
@@ -324,10 +451,10 @@ export default function AdminGeneralSettlementsPage() {
     return Array.from(map.values()).sort((a, b) => b.pendingCount - a.pendingCount);
   }, [yearItems]);
 
-  const filtered = useMemo(() => {
+  const filteredGroups = useMemo(() => {
     let result = groups;
-    if (q.trim()) {
-      const lower = q.toLowerCase();
+    if (gQ.trim()) {
+      const lower = gQ.toLowerCase();
       result = result.filter((g) => g.partnerName.toLowerCase().includes(lower));
     }
     if (statusFilter !== "ALL") {
@@ -336,392 +463,508 @@ export default function AdminGeneralSettlementsPage() {
         .filter((g) => g.items.length > 0);
     }
     return result;
-  }, [groups, q, statusFilter]);
+  }, [groups, gQ, statusFilter]);
 
-  // 전체 대기중 (연도 무관)
-  const totalPending = items.filter((i) => i.status === "SUBMITTED").length;
-
-  // 연도 범위: 데스크탑 5개(-3~+1), 모바일 3개(-1~+1)
+  const totalGPending = gItems.filter((i) => i.status === "SUBMITTED").length;
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
   const mobileYearOptions = [selectedYear - 1, selectedYear, selectedYear + 1];
-
   const hasMonthlyData = monthlyStats.some((m) => m.count > 0);
 
-  const settlementTabs = [
-    { href: `/${orgSlug}/admin/settlements/partners`, label: "제휴사 수수료 정산 관리" },
-    { href: `/${orgSlug}/admin/point-requests`, label: "제휴사 포인트 출금정산" },
+  // ── 포인트 출금정산 계산 ──
+  const wGroups = useMemo(() => {
+    const map = new Map<string, { partnerId: string; partnerName: string; items: WithdrawalItem[]; pendingCount: number }>();
+    withdrawals.forEach((i) => {
+      const g = map.get(i.partnerId) ?? { partnerId: i.partnerId, partnerName: i.partnerName, items: [], pendingCount: 0 };
+      g.items.push(i);
+      if (i.status === "PENDING") g.pendingCount++;
+      map.set(i.partnerId, g);
+    });
+    return Array.from(map.values()).sort((a, b) => b.pendingCount - a.pendingCount);
+  }, [withdrawals]);
+
+  const sGroups = useMemo(() => {
+    const map = new Map<string, { partnerId: string; partnerName: string; items: PointSettlementItem[]; pendingCount: number }>();
+    pSettlements.forEach((i) => {
+      const g = map.get(i.partnerId) ?? { partnerId: i.partnerId, partnerName: i.partnerName, items: [], pendingCount: 0 };
+      g.items.push(i);
+      if (i.status === "PENDING") g.pendingCount++;
+      map.set(i.partnerId, g);
+    });
+    return Array.from(map.values()).sort((a, b) => b.pendingCount - a.pendingCount);
+  }, [pSettlements]);
+
+  const filteredWGroups = useMemo(() => {
+    if (!pQ.trim()) return wGroups;
+    return wGroups.filter((g) => g.partnerName.toLowerCase().includes(pQ.toLowerCase()));
+  }, [wGroups, pQ]);
+
+  const filteredSGroups = useMemo(() => {
+    if (!pQ.trim()) return sGroups;
+    return sGroups.filter((g) => g.partnerName.toLowerCase().includes(pQ.toLowerCase()));
+  }, [sGroups, pQ]);
+
+  const totalWPending = withdrawals.filter((i) => i.status === "PENDING").length;
+  const totalSPending = pSettlements.filter((i) => i.status === "PENDING").length;
+
+  // ── 탭 정의 ──
+  const mainTabs = [
+    { key: "general" as MainTab, label: "제휴사 수수료 정산", icon: FileText },
+    { key: "point" as MainTab, label: "제휴사 포인트 출금·정산", icon: Coins },
   ];
 
   return (
     <div className="space-y-5 max-w-3xl">
-      {/* ── 정산 탭 ── */}
-      <div className="flex gap-1 border-b border-border">
-        {settlementTabs.map((tab) => {
-          const active = pathname === tab.href;
-          return (
-            <a
-              key={tab.href}
-              href={tab.href}
-              className={`px-4 py-2 text-sm font-bold rounded-t-lg border border-b-0 relative bottom-[-1px] transition-colors whitespace-nowrap ${
-                active
-                  ? "bg-background border-border text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </a>
-          );
-        })}
-      </div>
 
-      {/* 헤더 */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-foreground tracking-tight">제휴사 수수료 정산 관리</h1>
-          <p className="text-sm text-muted-foreground mt-1">제휴사가 제출한 정산서를 확인하고 처리합니다.</p>
-        </div>
-        {totalPending > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-            <Clock className="w-3.5 h-3.5" />
-            대기중 {totalPending}건
-          </div>
-        )}
-      </div>
-
-      {/* 연도 선택 */}
-      <div className="flex items-center gap-2">
-        <BarChart3 className="w-4 h-4 text-muted-foreground shrink-0" />
-        <span className="text-sm font-bold text-muted-foreground">기간</span>
-        <div className="flex items-center gap-1 ml-1">
-          <button
-            type="button"
-            onClick={() => setSelectedYear((y) => y - 1)}
-            disabled={selectedYear <= yearOptions[0]}
-            className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
-          {/* 모바일: 3개 */}
-          <div className="flex gap-1 sm:hidden">
-            {mobileYearOptions.map((y) => (
-              <button
-                key={y}
-                type="button"
-                onClick={() => setSelectedYear(y)}
-                className={`px-2.5 py-1 rounded-lg text-sm font-bold transition-all ${
-                  selectedYear === y
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-                style={selectedYear === y ? { background: "oklch(0.52 0.27 264)" } : undefined}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
-          {/* 데스크탑: 5개 */}
-          <div className="hidden sm:flex gap-1">
-            {yearOptions.map((y) => (
-              <button
-                key={y}
-                type="button"
-                onClick={() => setSelectedYear(y)}
-                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${
-                  selectedYear === y
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-                style={selectedYear === y ? { background: "oklch(0.52 0.27 264)" } : undefined}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedYear((y) => y + 1)}
-            disabled={selectedYear >= yearOptions[yearOptions.length - 1]}
-            className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
-      </div>
-
-      {/* 월 범위 선택 */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-bold text-muted-foreground shrink-0">기간</span>
-        <div className="flex items-center gap-1.5">
-          <select
-            value={startMonth}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setStartMonth(v);
-              if (v > endMonth) setEndMonth(v);
-            }}
-            className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {MONTHS.map((m) => (
-              <option key={m} value={m}>{m}월</option>
-            ))}
-          </select>
-          <span className="text-sm text-muted-foreground font-semibold">~</span>
-          <select
-            value={endMonth}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setEndMonth(v);
-              if (v < startMonth) setStartMonth(v);
-            }}
-            className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {MONTHS.map((m) => (
-              <option key={m} value={m}>{m}월</option>
-            ))}
-          </select>
-          {(startMonth !== 1 || endMonth !== 12) && (
-            <button
-              type="button"
-              onClick={() => { setStartMonth(1); setEndMonth(12); }}
-              className="h-8 px-2.5 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors"
-            >
-              초기화
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* 제휴사 필터 */}
-      {!loading && allPartners.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-bold text-muted-foreground shrink-0">제휴사</span>
-          {allPartners.length <= 10 ? (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setSelectedPartnerId("all")}
-                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${
-                  selectedPartnerId === "all"
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
-                }`}
-                style={selectedPartnerId === "all" ? { background: "oklch(0.52 0.27 264)" } : undefined}
-              >
-                전체
-              </button>
-              {allPartners.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setSelectedPartnerId(p.id)}
-                  className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${
-                    selectedPartnerId === p.id
-                      ? "text-white"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
-                  }`}
-                  style={selectedPartnerId === p.id ? { background: "oklch(0.44 0.24 280)" } : undefined}
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <select
-              value={selectedPartnerId}
-              onChange={(e) => setSelectedPartnerId(e.target.value)}
-              className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="all">전체</option>
-              {allPartners.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
-
-      {/* 통계 카드 */}
-      {!loading && (
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            type="button"
-            onClick={() => applyStatusFilter("CONFIRMED")}
-            className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "CONFIRMED" ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-border"}`}
-          >
-            <p className="text-xs font-semibold text-muted-foreground">확인완료 총액</p>
-            <p className="text-lg font-black text-foreground leading-tight">
-              {formatMoney(stats.confirmedTotal)}
-              <span className="text-xs font-bold text-muted-foreground ml-1">원</span>
-            </p>
-            <p className="text-xs text-muted-foreground">{stats.confirmedCount}건</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => applyStatusFilter("SUBMITTED")}
-            className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "SUBMITTED" ? "ring-2 ring-amber-400" : "hover:ring-1 hover:ring-border"}`}
-          >
-            <p className="text-xs font-semibold text-muted-foreground">대기중 총액</p>
-            <p className="text-lg font-black leading-tight" style={{ color: "oklch(0.72 0.18 80)" }}>
-              {formatMoney(stats.pendingTotal)}
-              <span className="text-xs font-bold text-muted-foreground ml-1">원</span>
-            </p>
-            <p className="text-xs text-muted-foreground">{stats.pendingCount}건</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => applyStatusFilter("ALL")}
-            className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "ALL" ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-border"}`}
-          >
-            <p className="text-xs font-semibold text-muted-foreground">전체 건수</p>
-            <p className="text-lg font-black text-foreground leading-tight">
-              {stats.allCount}
-              <span className="text-xs font-bold text-muted-foreground ml-1">건</span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {selectedYear}년 {startMonth === 1 && endMonth === 12 ? "전체" : `${startMonth}월~${endMonth}월`}
-            </p>
-          </button>
-        </div>
-      )}
-
-      {/* 월별 통계 테이블 */}
-      {!loading && hasMonthlyData && (
-        <div className="bg-card shadow-card rounded-2xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border">
-            <span className="text-sm font-black text-foreground">
-              {selectedYear}년 {startMonth === 1 && endMonth === 12 ? "월별 현황" : `${startMonth}월~${endMonth}월 현황`}
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-xs">
-              <thead>
-                <tr className="bg-muted/40">
-                  <th className="px-4 py-2.5 text-left font-bold text-muted-foreground">월</th>
-                  <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">건수</th>
-                  <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">총액</th>
-                  <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">확인완료액</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {monthlyStats.map((m) => (
-                  <tr
-                    key={m.month}
-                    className={`transition-colors ${m.count > 0 ? "hover:bg-muted/20" : "opacity-40"}`}
-                  >
-                    <td className="px-4 py-2.5 font-semibold text-foreground">{m.month}월</td>
-                    <td className="px-4 py-2.5 text-right text-muted-foreground">
-                      {m.count > 0 ? `${m.count}건` : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-bold text-foreground">
-                      {m.total > 0 ? `${formatMoney(m.total)}원` : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-bold" style={m.confirmedTotal > 0 ? { color: "oklch(0.52 0.18 160)" } : undefined}>
-                      {m.confirmedTotal > 0 ? `${formatMoney(m.confirmedTotal)}원` : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-muted/40 border-t-2 border-border">
-                  <td className="px-4 py-2.5 font-black text-foreground">합계</td>
-                  <td className="px-4 py-2.5 text-right font-black text-foreground">{stats.allCount}건</td>
-                  <td className="px-4 py-2.5 text-right font-black text-foreground">
-                    {monthlyStats.reduce((s, m) => s + m.total, 0) > 0
-                      ? `${formatMoney(monthlyStats.reduce((s, m) => s + m.total, 0))}원`
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-2.5 text-right font-black" style={{ color: "oklch(0.52 0.18 160)" }}>
-                    {stats.confirmedTotal > 0 ? `${formatMoney(stats.confirmedTotal)}원` : "—"}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* 검색 */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="업체명 검색"
-          className="w-full pl-9 pr-9 h-10 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-        {q && (
-          <button type="button" onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-            <X className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="bg-card shadow-card rounded-2xl p-6 animate-pulse space-y-3">
-          {[1, 2, 3].map((j) => <div key={j} className="h-14 bg-muted rounded-xl" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
-          {q
-            ? "검색 결과가 없습니다."
-            : `${selectedYear}년 ${startMonth === 1 && endMonth === 12 ? "" : `${startMonth}월~${endMonth}월 `}제출된 정산서가 없습니다.`}
-
-        </div>
-      ) : (
-        <div ref={resultsRef} className="space-y-2" style={{ scrollMarginTop: "80px" }}>
-          {filtered.map((group) => {
-            const isOpen = expandedPartners.has(group.partnerId);
+      {/* ── 메인 탭 ── */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2 px-0.5">정산 관리</p>
+        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "oklch(0.94 0.005 250)" }}>
+          {mainTabs.map((tab) => {
+            const active = mainTab === tab.key;
+            const Icon = tab.icon;
             return (
-              <div key={group.partnerId} className="bg-card shadow-card rounded-2xl overflow-hidden">
-                {/* 업체 헤더 */}
-                <button
-                  type="button"
-                  onClick={() => togglePartner(group.partnerId)}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-black"
-                      style={{ background: "oklch(0.52 0.27 264)" }}
-                    >
-                      {(group.partnerName || "?").charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-black text-foreground truncate">{group.partnerName || "—"}</div>
-                      <div className="text-xs text-muted-foreground">정산서 {group.items.length}건</div>
-                    </div>
-                    {group.pendingCount > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <Clock className="w-3 h-3" />
-                        대기 {group.pendingCount}
-                      </span>
-                    )}
-                  </div>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                  )}
-                </button>
-
-                {/* 정산서 목록 */}
-                {isOpen && (
-                  <div className="border-t border-border">
-                    {group.items.map((item) => (
-                      <SettlementRow
-                        key={item.id}
-                        item={item}
-                        onConfirm={handleConfirm}
-                        confirming={confirming}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setMainTab(tab.key)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                style={active ? { background: "oklch(1 0 0)", boxShadow: "0 1px 4px oklch(0 0 0 / 0.1)" } : undefined}
+              >
+                <Icon
+                  className="w-3.5 h-3.5 shrink-0"
+                  style={active ? { color: "oklch(0.52 0.27 264)" } : undefined}
+                />
+                {tab.label}
+              </button>
             );
           })}
         </div>
+      </div>
+
+      {/* ══════════════════════════════════════════
+          수수료 정산 탭
+      ══════════════════════════════════════════ */}
+      {mainTab === "general" && (
+        <>
+          {/* 헤더 */}
+          <div className="bg-card shadow-card rounded-2xl px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-xl font-black text-foreground tracking-tight">제휴사 수수료 정산 관리</h1>
+                <p className="text-sm text-muted-foreground mt-1">제휴사가 제출한 정산서를 확인하고 처리합니다.</p>
+              </div>
+              {totalGPending > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  <Clock className="w-3.5 h-3.5" />대기중 {totalGPending}건
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 연도 선택 */}
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-bold text-muted-foreground">기간</span>
+            <div className="flex items-center gap-1 ml-1">
+              <button type="button" onClick={() => setSelectedYear((y) => y - 1)} disabled={selectedYear <= yearOptions[0]}
+                className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors">
+                <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <div className="flex gap-1 sm:hidden">
+                {mobileYearOptions.map((y) => (
+                  <button key={y} type="button" onClick={() => setSelectedYear(y)}
+                    className={`px-2.5 py-1 rounded-lg text-sm font-bold transition-all ${selectedYear === y ? "text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                    style={selectedYear === y ? { background: "oklch(0.52 0.27 264)" } : undefined}>
+                    {y}
+                  </button>
+                ))}
+              </div>
+              <div className="hidden sm:flex gap-1">
+                {yearOptions.map((y) => (
+                  <button key={y} type="button" onClick={() => setSelectedYear(y)}
+                    className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${selectedYear === y ? "text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                    style={selectedYear === y ? { background: "oklch(0.52 0.27 264)" } : undefined}>
+                    {y}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => setSelectedYear((y) => y + 1)} disabled={selectedYear >= yearOptions[yearOptions.length - 1]}
+                className="p-1 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors">
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+
+          {/* 월 범위 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-bold text-muted-foreground shrink-0">기간</span>
+            <div className="flex items-center gap-1.5">
+              <select value={startMonth} onChange={(e) => { const v = Number(e.target.value); setStartMonth(v); if (v > endMonth) setEndMonth(v); }}
+                className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {MONTHS.map((m) => <option key={m} value={m}>{m}월</option>)}
+              </select>
+              <span className="text-sm text-muted-foreground font-semibold">~</span>
+              <select value={endMonth} onChange={(e) => { const v = Number(e.target.value); setEndMonth(v); if (v < startMonth) setStartMonth(v); }}
+                className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {MONTHS.map((m) => <option key={m} value={m}>{m}월</option>)}
+              </select>
+              {(startMonth !== 1 || endMonth !== 12) && (
+                <button type="button" onClick={() => { setStartMonth(1); setEndMonth(12); }}
+                  className="h-8 px-2.5 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors">
+                  초기화
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 제휴사 필터 */}
+          {!gLoading && allPartners.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-bold text-muted-foreground shrink-0">제휴사</span>
+              {allPartners.length <= 10 ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button type="button" onClick={() => setSelectedPartnerId("all")}
+                    className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${selectedPartnerId === "all" ? "text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"}`}
+                    style={selectedPartnerId === "all" ? { background: "oklch(0.52 0.27 264)" } : undefined}>
+                    전체
+                  </button>
+                  {allPartners.map((p) => (
+                    <button key={p.id} type="button" onClick={() => setSelectedPartnerId(p.id)}
+                      className={`px-3 py-1 rounded-lg text-sm font-bold transition-all ${selectedPartnerId === p.id ? "text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"}`}
+                      style={selectedPartnerId === p.id ? { background: "oklch(0.44 0.24 280)" } : undefined}>
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <select value={selectedPartnerId} onChange={(e) => setSelectedPartnerId(e.target.value)}
+                  className="h-8 px-2 rounded-lg border border-border bg-card text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  <option value="all">전체</option>
+                  {allPartners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* 통계 카드 */}
+          {!gLoading && (
+            <div className="grid grid-cols-3 gap-3">
+              <button type="button" onClick={() => applyStatusFilter("CONFIRMED")}
+                className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "CONFIRMED" ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-border"}`}>
+                <p className="text-xs font-semibold text-muted-foreground">확인완료 총액</p>
+                <p className="text-lg font-black text-foreground leading-tight">{formatMoney(stats.confirmedTotal)}<span className="text-xs font-bold text-muted-foreground ml-1">원</span></p>
+                <p className="text-xs text-muted-foreground">{stats.confirmedCount}건</p>
+              </button>
+              <button type="button" onClick={() => applyStatusFilter("SUBMITTED")}
+                className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "SUBMITTED" ? "ring-2 ring-amber-400" : "hover:ring-1 hover:ring-border"}`}>
+                <p className="text-xs font-semibold text-muted-foreground">대기중 총액</p>
+                <p className="text-lg font-black leading-tight" style={{ color: "oklch(0.72 0.18 80)" }}>{formatMoney(stats.pendingTotal)}<span className="text-xs font-bold text-muted-foreground ml-1">원</span></p>
+                <p className="text-xs text-muted-foreground">{stats.pendingCount}건</p>
+              </button>
+              <button type="button" onClick={() => applyStatusFilter("ALL")}
+                className={`text-left bg-card shadow-card rounded-2xl px-4 py-4 space-y-1 transition-all ${statusFilter === "ALL" ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-border"}`}>
+                <p className="text-xs font-semibold text-muted-foreground">전체 건수</p>
+                <p className="text-lg font-black text-foreground leading-tight">{stats.allCount}<span className="text-xs font-bold text-muted-foreground ml-1">건</span></p>
+                <p className="text-xs text-muted-foreground">{selectedYear}년 {startMonth === 1 && endMonth === 12 ? "전체" : `${startMonth}월~${endMonth}월`}</p>
+              </button>
+            </div>
+          )}
+
+          {/* 월별 통계 */}
+          {!gLoading && hasMonthlyData && (
+            <div className="bg-card shadow-card rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-border">
+                <span className="text-sm font-black text-foreground">
+                  {selectedYear}년 {startMonth === 1 && endMonth === 12 ? "월별 현황" : `${startMonth}월~${endMonth}월 현황`}
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-muted/40">
+                      <th className="px-4 py-2.5 text-left font-bold text-muted-foreground">월</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">건수</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">총액</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">확인완료액</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {monthlyStats.map((m) => (
+                      <tr key={m.month} className={`transition-colors ${m.count > 0 ? "hover:bg-muted/20" : "opacity-40"}`}>
+                        <td className="px-4 py-2.5 font-semibold text-foreground">{m.month}월</td>
+                        <td className="px-4 py-2.5 text-right text-muted-foreground">{m.count > 0 ? `${m.count}건` : "—"}</td>
+                        <td className="px-4 py-2.5 text-right font-bold text-foreground">{m.total > 0 ? `${formatMoney(m.total)}원` : "—"}</td>
+                        <td className="px-4 py-2.5 text-right font-bold" style={m.confirmedTotal > 0 ? { color: "oklch(0.52 0.18 160)" } : undefined}>
+                          {m.confirmedTotal > 0 ? `${formatMoney(m.confirmedTotal)}원` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted/40 border-t-2 border-border">
+                      <td className="px-4 py-2.5 font-black text-foreground">합계</td>
+                      <td className="px-4 py-2.5 text-right font-black text-foreground">{stats.allCount}건</td>
+                      <td className="px-4 py-2.5 text-right font-black text-foreground">
+                        {monthlyStats.reduce((s, m) => s + m.total, 0) > 0 ? `${formatMoney(monthlyStats.reduce((s, m) => s + m.total, 0))}원` : "—"}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-black" style={{ color: "oklch(0.52 0.18 160)" }}>
+                        {stats.confirmedTotal > 0 ? `${formatMoney(stats.confirmedTotal)}원` : "—"}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 검색 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input type="text" value={gQ} onChange={(e) => setGQ(e.target.value)} placeholder="업체명 검색"
+              className="w-full pl-9 pr-9 h-10 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            {gQ && (
+              <button type="button" onClick={() => setGQ("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+
+          {/* 목록 */}
+          {gLoading ? (
+            <div className="bg-card shadow-card rounded-2xl p-6 animate-pulse space-y-3">
+              {[1, 2, 3].map((j) => <div key={j} className="h-14 bg-muted rounded-xl" />)}
+            </div>
+          ) : filteredGroups.length === 0 ? (
+            <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
+              {gQ ? "검색 결과가 없습니다." : `${selectedYear}년 ${startMonth === 1 && endMonth === 12 ? "" : `${startMonth}월~${endMonth}월 `}제출된 정산서가 없습니다.`}
+            </div>
+          ) : (
+            <div ref={resultsRef} className="space-y-2" style={{ scrollMarginTop: "80px" }}>
+              {filteredGroups.map((group) => {
+                const isOpen = expandedPartners.has(group.partnerId);
+                return (
+                  <div key={group.partnerId} className="bg-card shadow-card rounded-2xl overflow-hidden">
+                    <button type="button" onClick={() => togglePartner(group.partnerId)}
+                      className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors text-left">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-black"
+                          style={{ background: "oklch(0.52 0.27 264)" }}>
+                          {(group.partnerName || "?").charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-black text-foreground truncate">{group.partnerName || "—"}</div>
+                          <div className="text-xs text-muted-foreground">정산서 {group.items.length}건</div>
+                        </div>
+                        {group.pendingCount > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <Clock className="w-3 h-3" />대기 {group.pendingCount}
+                          </span>
+                        )}
+                      </div>
+                      {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-border">
+                        {group.items.map((item) => (
+                          <SettlementRow key={item.id} item={item} onConfirm={handleGeneralConfirm} confirming={gConfirming} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════
+          포인트 출금정산 탭
+      ══════════════════════════════════════════ */}
+      {mainTab === "point" && (
+        <>
+          {/* 헤더 */}
+          <div className="bg-card shadow-card rounded-2xl px-5 py-4">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h1 className="text-xl font-black text-foreground tracking-tight">포인트 출금/정산 관리</h1>
+                <p className="text-sm text-muted-foreground mt-1">제휴사의 포인트 출금 및 정산 요청을 처리합니다.</p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {totalWPending > 0 && (
+                  <span className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    <Clock className="w-3.5 h-3.5" />출금 대기 {totalWPending}건
+                  </span>
+                )}
+                {totalSPending > 0 && (
+                  <span className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    <Clock className="w-3.5 h-3.5" />정산 대기 {totalSPending}건
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 서브 탭 */}
+          <div className="flex gap-2">
+            {([["withdrawal", "포인트 출금", Coins], ["settlement", "포인트 정산", FileText]] as const).map(([key, label, Icon]) => {
+              const active = pSubTab === key;
+              return (
+                <button key={key} type="button" onClick={() => setPSubTab(key)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${active ? "text-white shadow-sm" : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted border border-border"}`}
+                  style={active ? { background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" } : undefined}>
+                  <Icon className="w-4 h-4" />{label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 검색 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input type="text" value={pQ} onChange={(e) => setPQ(e.target.value)} placeholder="업체명 검색"
+              className="w-full pl-9 pr-9 h-10 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            {pQ && <button type="button" onClick={() => setPQ("")} className="absolute right-3 top-1/2 -translate-y-1/2"><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+          </div>
+
+          {/* 목록 */}
+          {pLoading ? (
+            <div className="bg-card shadow-card rounded-2xl p-6 animate-pulse space-y-3">
+              {[1, 2, 3].map((j) => <div key={j} className="h-14 bg-muted rounded-xl" />)}
+            </div>
+          ) : pSubTab === "withdrawal" ? (
+            filteredWGroups.length === 0 ? (
+              <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">출금 요청이 없습니다.</div>
+            ) : (
+              <div className="space-y-2">
+                {filteredWGroups.map((group) => {
+                  const key = `w-${group.partnerId}`;
+                  const isOpen = pExpandedPartners.has(key);
+                  return (
+                    <div key={group.partnerId} className="bg-card shadow-card rounded-2xl overflow-hidden">
+                      <button type="button" onClick={() => togglePPartner(key)}
+                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors text-left">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-black"
+                            style={{ background: "oklch(0.52 0.27 264)" }}>
+                            {(group.partnerName || "?").charAt(0)}
+                          </div>
+                          <div>
+                            <div className="text-sm font-black text-foreground">{group.partnerName || "—"}</div>
+                            <div className="text-xs text-muted-foreground">요청 {group.items.length}건</div>
+                          </div>
+                          {group.pendingCount > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="w-3 h-3" />대기 {group.pendingCount}
+                            </span>
+                          )}
+                        </div>
+                        {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                      </button>
+                      {isOpen && (
+                        <div className="border-t border-border divide-y divide-border">
+                          {group.items.map((item) => (
+                            <div key={item.id} className="px-5 py-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm font-black text-foreground">{formatMoney(item.amount)}P</div>
+                                  <div className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString("ko-KR")} 신청</div>
+                                </div>
+                                <PointStatusChip status={item.status} />
+                              </div>
+                              {item.status === "PENDING" && (
+                                <div className="flex gap-2">
+                                  <button type="button" onClick={() => confirmWithdrawal(item.id)} disabled={pConfirming === item.id || pCancelling === item.id}
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-black text-white transition-all disabled:opacity-50"
+                                    style={{ background: "linear-gradient(135deg, oklch(0.52 0.27 264) 0%, oklch(0.44 0.24 280) 100%)" }}>
+                                    {pConfirming === item.id ? "처리 중..." : "출금 확정"}
+                                  </button>
+                                  <button type="button" onClick={() => cancelWithdrawal(item.id)} disabled={pConfirming === item.id || pCancelling === item.id}
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-50 bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-600 border border-border hover:border-red-200">
+                                    {pCancelling === item.id ? "처리 중..." : "거절"}
+                                  </button>
+                                </div>
+                              )}
+                              {item.confirmedAt && <p className="text-xs text-muted-foreground">확정일: {new Date(item.confirmedAt).toLocaleDateString("ko-KR")}</p>}
+                              {item.cancelledAt && <p className="text-xs text-muted-foreground">거절일: {new Date(item.cancelledAt).toLocaleDateString("ko-KR")}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            filteredSGroups.length === 0 ? (
+              <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">포인트 정산 요청이 없습니다.</div>
+            ) : (
+              <div className="space-y-2">
+                {filteredSGroups.map((group) => {
+                  const key = `s-${group.partnerId}`;
+                  const isOpen = pExpandedPartners.has(key);
+                  return (
+                    <div key={group.partnerId} className="bg-card shadow-card rounded-2xl overflow-hidden">
+                      <button type="button" onClick={() => togglePPartner(key)}
+                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors text-left">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-black"
+                            style={{ background: "oklch(0.44 0.24 280)" }}>
+                            {(group.partnerName || "?").charAt(0)}
+                          </div>
+                          <div>
+                            <div className="text-sm font-black text-foreground">{group.partnerName || "—"}</div>
+                            <div className="text-xs text-muted-foreground">요청 {group.items.length}건</div>
+                          </div>
+                          {group.pendingCount > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <Clock className="w-3 h-3" />대기 {group.pendingCount}
+                            </span>
+                          )}
+                        </div>
+                        {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                      </button>
+                      {isOpen && (
+                        <div className="border-t border-border divide-y divide-border">
+                          {group.items.map((item) => (
+                            <div key={item.id} className="px-5 py-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm font-black text-foreground">{item.year}년 {item.month}월 — {formatMoney(item.amount)}P</div>
+                                  {item.note && <div className="text-xs text-muted-foreground mt-0.5">{item.note}</div>}
+                                  <div className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString("ko-KR")} 신청</div>
+                                </div>
+                                <PointStatusChip status={item.status} />
+                              </div>
+                              {item.status === "PENDING" && (
+                                <div className="flex gap-2">
+                                  <button type="button" onClick={() => confirmSettlement(item.id)} disabled={pConfirming === item.id || pCancelling === item.id}
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-black text-white transition-all disabled:opacity-50"
+                                    style={{ background: "linear-gradient(135deg, oklch(0.44 0.24 280) 0%, oklch(0.52 0.27 264) 100%)" }}>
+                                    {pConfirming === item.id ? "처리 중..." : "정산 확정"}
+                                  </button>
+                                  <button type="button" onClick={() => cancelSettlement(item.id)} disabled={pConfirming === item.id || pCancelling === item.id}
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-50 bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-600 border border-border hover:border-red-200">
+                                    {pCancelling === item.id ? "처리 중..." : "거절"}
+                                  </button>
+                                </div>
+                              )}
+                              {item.confirmedAt && <p className="text-xs text-muted-foreground">확정일: {new Date(item.confirmedAt).toLocaleDateString("ko-KR")}</p>}
+                              {item.cancelledAt && <p className="text-xs text-muted-foreground">거절일: {new Date(item.cancelledAt).toLocaleDateString("ko-KR")}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+        </>
       )}
     </div>
   );

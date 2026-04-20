@@ -338,8 +338,8 @@ function GeneralHistoryTab() {
 type HistoryTab = "points" | "general";
 
 const HISTORY_TABS: { key: HistoryTab; label: string; icon: React.ElementType }[] = [
-  { key: "points", label: "포인트 정산", icon: Coins },
-  { key: "general", label: "일반 정산", icon: FileText },
+  { key: "points", label: "고객 포인트 정산", icon: Coins },
+  { key: "general", label: "거래처 정산", icon: FileText },
 ];
 
 export default function SettlementHistoryPage() {

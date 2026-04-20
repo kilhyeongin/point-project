@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
-import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck, Coins, ClipboardList, ChevronRight } from "lucide-react";
+import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck, ClipboardList, ChevronRight } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 import { Toaster } from "sonner";
 
@@ -26,8 +26,7 @@ export default function PartnerShellClient({ session, children }: Props) {
   const [settlementHover, setSettlementHover] = useState(false);
 
   const SETTLEMENT_SUB = [
-    { href: `/${orgSlug}/partner/settlements/points`, label: "포인트 정산", icon: Coins },
-    { href: `/${orgSlug}/partner/settlements/general`, label: "일반 정산", icon: FileText },
+    { href: `/${orgSlug}/partner/settlements/general`, label: "거래처 수수료 정산서", icon: FileText },
     { href: `/${orgSlug}/partner/settlements/history`, label: "정산내역", icon: ClipboardList },
   ];
 

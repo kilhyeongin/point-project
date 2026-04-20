@@ -421,10 +421,10 @@ export default async function AdminDashboard({
             <a href={`/${orgSlug}/admin/partner-approvals`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
               제휴사 승인 {formatNumber(pendingPartnerCount)}건
             </a>
-            <a href={`/${orgSlug}/admin/point-requests`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
+            <a href={`/${orgSlug}/admin/settlements/partners`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
               출금 {formatNumber(pendingWithdrawalCount)}건
             </a>
-            <a href={`/${orgSlug}/admin/point-requests`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
+            <a href={`/${orgSlug}/admin/settlements/partners`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
               포인트 정산 {formatNumber(pendingPointSettlementCount)}건
             </a>
             <a href={`/${orgSlug}/admin/settlements/partners`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">

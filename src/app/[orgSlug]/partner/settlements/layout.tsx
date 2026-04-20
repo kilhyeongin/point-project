@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { Coins, FileText, ClipboardList } from "lucide-react";
+import { FileText, ClipboardList } from "lucide-react";
 
 const TABS = [
-  { label: "포인트 정산", href: "points", icon: Coins },
-  { label: "일반 정산", href: "general", icon: FileText },
+  { label: "거래처 수수료 정산서", href: "general", icon: FileText },
   { label: "정산내역", href: "history", icon: ClipboardList },
 ] as const;
 

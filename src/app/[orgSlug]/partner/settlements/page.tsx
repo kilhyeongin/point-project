@@ -6,5 +6,5 @@ export default async function SettlementsRootPage({
   params: Promise<{ orgSlug: string }>;
 }) {
   const { orgSlug } = await params;
-  redirect(`/${orgSlug}/partner/settlements/points`);
+  redirect(`/${orgSlug}/partner/settlements/general`);
 }

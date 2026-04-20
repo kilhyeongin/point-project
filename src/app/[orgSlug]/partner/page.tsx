@@ -218,7 +218,11 @@ export default function PartnerPage() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visibleTopup, setVisibleTopup] = useState(5);
-  const [visibleHistory, setVisibleHistory] = useState(10);
+  const [visibleHistory, setVisibleHistory] = useState(5);
+  const [historyDateFilter, setHistoryDateFilter] = useState<"all" | "thisMonth" | "lastMonth" | "custom">("all");
+  const [historyDateFrom, setHistoryDateFrom] = useState("");
+  const [historyDateTo, setHistoryDateTo] = useState("");
+  const [historyQ, setHistoryQ] = useState("");
   const [visibleCount, setVisibleCount] = useState(6);
   const [pageStep, setPageStep] = useState(6);
 
@@ -1017,51 +1021,149 @@ export default function PartnerPage() {
 
           {/* ── 4. 포인트 처리 이력 ── */}
           <section className="bg-card shadow-card rounded-2xl p-5">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-3">
               <h2 className="text-base font-black text-foreground">포인트 처리 이력</h2>
               <Button variant="outline" size="sm" onClick={fetchPointHistory} className="font-bold h-8 px-3 text-xs">
                 새로고침
               </Button>
             </div>
+
+            {/* 날짜 필터 */}
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {([
+                { key: "all", label: "전체" },
+                { key: "thisMonth", label: "이번 달" },
+                { key: "lastMonth", label: "지난 달" },
+                { key: "custom", label: "직접 선택" },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { setHistoryDateFilter(key); setVisibleHistory(5); }}
+                  className={cn(
+                    "h-7 px-3 rounded-full text-xs font-bold border transition-colors",
+                    historyDateFilter === key
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-background text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* 검색창 */}
+            <div className="relative mb-3">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input
+                type="text"
+                value={historyQ}
+                onChange={(e) => { setHistoryQ(e.target.value); setVisibleHistory(5); }}
+                placeholder="고객 이름 검색"
+                className="w-full pl-8 pr-8 h-8 rounded-xl border border-border bg-background text-xs font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {historyQ && (
+                <button type="button" onClick={() => { setHistoryQ(""); setVisibleHistory(5); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              )}
+            </div>
+
+            {/* 직접 선택 날짜 입력 */}
+            {historyDateFilter === "custom" && (
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <input
+                  type="date"
+                  value={historyDateFrom}
+                  onChange={(e) => { setHistoryDateFrom(e.target.value); setVisibleHistory(5); }}
+                  className="h-8 px-2 rounded-lg border border-border bg-card text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-xs text-muted-foreground font-semibold">~</span>
+                <input
+                  type="date"
+                  value={historyDateTo}
+                  onChange={(e) => { setHistoryDateTo(e.target.value); setVisibleHistory(5); }}
+                  className="h-8 px-2 rounded-lg border border-border bg-card text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            )}
+
             {historyLoading ? (
               <EmptyText text="불러오는 중..." />
-            ) : historyItems.length === 0 ? (
-              <EmptyText text="처리 이력이 없습니다." />
-            ) : (
-              <>
-                <div className="space-y-2">
-                  {historyItems.slice(0, visibleHistory).map((it) => (
-                    <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
-                      <div className="min-w-0">
-                        <p className="text-sm font-black text-foreground truncate">
-                          {it.customer
-                            ? <>{it.customer.name}{(socialLabel(it.customer.socialProvider) ?? it.customer.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.customer.socialProvider) ?? it.customer.username})</span> : null}</>
-                            : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
-                        {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
+            ) : (() => {
+              const now = new Date();
+              const filtered = historyItems.filter((it) => {
+                if (historyDateFilter === "thisMonth") {
+                  const d = new Date(it.createdAt);
+                  if (!(d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth())) return false;
+                }
+                if (historyDateFilter === "lastMonth") {
+                  const d = new Date(it.createdAt);
+                  const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                  if (!(d.getFullYear() === last.getFullYear() && d.getMonth() === last.getMonth())) return false;
+                }
+                if (historyDateFilter === "custom") {
+                  const d = new Date(it.createdAt);
+                  if (historyDateFrom && d < new Date(historyDateFrom)) return false;
+                  if (historyDateTo && d > new Date(historyDateTo + "T23:59:59")) return false;
+                }
+                if (historyQ.trim()) {
+                  const lower = historyQ.toLowerCase();
+                  const name = it.customer?.name?.toLowerCase() ?? "";
+                  const username = it.customer?.username?.toLowerCase() ?? "";
+                  if (!name.includes(lower) && !username.includes(lower)) return false;
+                }
+                return true;
+              });
+
+              if (filtered.length === 0)
+                return <EmptyText text="처리 이력이 없습니다." />;
+
+              return (
+                <>
+                  <div className="space-y-2">
+                    {filtered.slice(0, visibleHistory).map((it) => (
+                      <div key={it.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/60 last:border-0">
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-foreground truncate">
+                            {it.customer
+                              ? <>{it.customer.name}{(socialLabel(it.customer.socialProvider) ?? it.customer.username) ? <span className="font-normal text-muted-foreground"> ({socialLabel(it.customer.socialProvider) ?? it.customer.username})</span> : null}</>
+                              : <span className="text-muted-foreground font-normal">회원탈퇴 고객</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{formatDateText(it.createdAt)}</p>
+                          {it.note && <p className="text-xs text-muted-foreground truncate">메모: {it.note}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={cn("text-sm font-black", it.type === "ISSUE" ? "text-blue-600" : "text-orange-500")}>
+                            {it.type === "ISSUE" ? "+" : "-"}{formatNumber(Math.abs(it.amount))}P
+                          </span>
+                          <Badge
+                            variant={it.type === "ISSUE" ? "secondary" : "outline"}
+                            className={cn("font-bold text-xs", it.type === "ISSUE" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-orange-600 border-orange-200 bg-orange-50")}
+                          >
+                            {pointHistoryTypeLabel(it.type, it.note)}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={cn("text-sm font-black", it.type === "ISSUE" ? "text-blue-600" : "text-orange-500")}>
-                          {it.type === "ISSUE" ? "+" : "-"}{formatNumber(Math.abs(it.amount))}P
-                        </span>
-                        <Badge
-                          variant={it.type === "ISSUE" ? "secondary" : "outline"}
-                          className={cn("font-bold text-xs", it.type === "ISSUE" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-orange-600 border-orange-200 bg-orange-50")}
-                        >
-                          {pointHistoryTypeLabel(it.type, it.note)}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {historyItems.length > visibleHistory && (
-                  <button type="button" onClick={() => setVisibleHistory(v => v + 10)} className="w-full mt-3 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-colors">
-                    더보기 ({historyItems.length - visibleHistory}건 남음)
-                  </button>
-                )}
-              </>
-            )}
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    {filtered.length > visibleHistory && (
+                      <button type="button" onClick={() => setVisibleHistory(v => v + 5)}
+                        className="flex-1 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-colors">
+                        더보기 ({filtered.length - visibleHistory}건 남음)
+                      </button>
+                    )}
+                    {visibleHistory > 5 && (
+                      <button type="button" onClick={() => setVisibleHistory(5)}
+                        className="flex-1 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-colors">
+                        접기
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </section>
         </>
       )}

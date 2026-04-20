@@ -12,6 +12,7 @@ import BackButton from "./BackButton";
 import ImageCarousel from "./ImageCarousel";
 import BottomNav from "./BottomNav";
 import KakaoFloatingButton from "./KakaoFloatingButton";
+import PhoneFloatingButton from "./PhoneFloatingButton";
 
 type PageProps = {
   params: Promise<{ orgSlug: string; id: string }>;
@@ -199,6 +200,7 @@ export default async function CustomerPartnerDetailPage({ params }: PageProps) {
         </div>
       </div>
       <BottomNav />
+      {phone && <PhoneFloatingButton phone={phone} hasKakao={!!kakaoChannelUrl} />}
       {kakaoChannelUrl && <KakaoFloatingButton url={kakaoChannelUrl} />}
     </div>
   );
