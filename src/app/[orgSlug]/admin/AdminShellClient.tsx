@@ -136,7 +136,7 @@ export default function AdminShellClient({ session, children }: Props) {
   return (
     <div className="min-h-screen bg-background">
       <Toaster
-        position="top-center"
+        position="bottom-center"
         richColors
         duration={5000}
         closeButton
