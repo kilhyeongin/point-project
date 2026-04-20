@@ -173,7 +173,7 @@ export default function PartnerScanPage() {
   function handleStartCamera() {
     startCamera((text) => {
       setScanned(text);
-      toast.success("QR 스캔 완료! 금액을 입력 후 처리해주세요.", { duration: 3000 });
+      toast.success("QR 스캔 완료! 금액을 입력 후 처리해주세요.");
       // 모바일 진동 피드백
       try { navigator.vibrate?.(100); } catch {}
     });

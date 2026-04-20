@@ -60,7 +60,15 @@ export default function PartnerShellClient({ session, children }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Toaster position="top-center" richColors />
+      <Toaster
+        position="top-center"
+        richColors
+        duration={5000}
+        closeButton
+        toastOptions={{
+          style: { fontSize: "0.875rem", fontWeight: "700", padding: "14px 16px" },
+        }}
+      />
       {/* ─── Desktop Layout ─── */}
       <div className="hidden lg:flex min-h-screen">
         {/* Sidebar — dark navy */}
