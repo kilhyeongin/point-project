@@ -28,15 +28,16 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   }
 
   await connectDB();
+  const orgId = session.orgId ?? "4nwn";
 
-  const doc = await GeneralSettlement.findById(id).lean() as any;
+  const doc = await GeneralSettlement.findOne({
+    _id: id,
+    organizationId: orgId,
+    partnerId: new mongoose.Types.ObjectId(session.uid),
+  }).lean() as any;
 
   if (!doc) {
     return NextResponse.json({ ok: false, message: "정산을 찾을 수 없습니다." }, { status: 404 });
-  }
-
-  if (String(doc.partnerId) !== session.uid) {
-    return NextResponse.json({ ok: false, message: "접근 권한이 없습니다." }, { status: 403 });
   }
 
   return NextResponse.json({
@@ -78,15 +79,16 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
   }
 
   await connectDB();
+  const orgId = session.orgId ?? "4nwn";
 
-  const doc = await GeneralSettlement.findById(id) as any;
+  const doc = await GeneralSettlement.findOne({
+    _id: id,
+    organizationId: orgId,
+    partnerId: new mongoose.Types.ObjectId(session.uid),
+  }) as any;
 
   if (!doc) {
     return NextResponse.json({ ok: false, message: "정산을 찾을 수 없습니다." }, { status: 404 });
-  }
-
-  if (String(doc.partnerId) !== session.uid) {
-    return NextResponse.json({ ok: false, message: "접근 권한이 없습니다." }, { status: 403 });
   }
 
   if (doc.status !== "DRAFT") {

@@ -22,6 +22,7 @@ import { Ledger } from "@/models/Ledger";
 import { FavoritePartner } from "@/models/FavoritePartner";
 import { debitWallet, creditWallet } from "@/services/wallet";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { getRedis } from "@/lib/redis";
 
 function parseQrPayload(v: string) {
   const s = String(v || "").trim();
@@ -146,10 +147,26 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, message: "QR에 고객 정보가 없습니다." }, { status: 400 });
       }
 
+      // jti 기반 일회성 사용 검증 (Redis 환경)
+      const jti = String(decoded?.jti ?? "");
+      if (jti) {
+        const redis = getRedis();
+        if (redis) {
+          const alreadyUsed = await redis.get(`qr:used:${jti}`);
+          if (alreadyUsed) {
+            return NextResponse.json(
+              { ok: false, message: "이미 사용된 QR입니다. 고객에게 QR을 새로고침 요청하세요." },
+              { status: 400 }
+            );
+          }
+        }
+      }
+
       targetUser = await User.findOne(
         { _id: new mongoose.Types.ObjectId(customerId), organizationId: session.orgId ?? "4nwn" },
         { _id: 1, role: 1, status: 1, username: 1, name: 1 }
       );
+      (targetUser as any).__qrJti = jti;
     } catch (e: any) {
       const m = String(e?.message ?? "");
       const friendly =
@@ -195,6 +212,8 @@ export async function POST(req: Request) {
   }
 
   const isQrScan = !!(qrTokenRaw || qrPayloadRaw);
+  const qrJti = isQrScan ? String((targetUser as any).__qrJti ?? "") : "";
+  if (targetUser && "__qrJti" in targetUser) delete (targetUser as any).__qrJti;
 
   // QR 중복 스캔 방지: 동일 고객-제휴사 쌍은 15초 내 1회만 허용
   if (isQrScan) {
@@ -265,6 +284,14 @@ export async function POST(req: Request) {
           balanceAfter: debit.balanceAfter,
         };
       });
+
+      // 사용된 QR jti를 Redis에 마킹 (3분 TTL = 토큰 만료와 동일)
+      if (qrJti) {
+        const redis = getRedis();
+        if (redis) {
+          await redis.set(`qr:used:${qrJti}`, "1", { ex: 180 }).catch(() => {});
+        }
+      }
 
       return NextResponse.json(
         {

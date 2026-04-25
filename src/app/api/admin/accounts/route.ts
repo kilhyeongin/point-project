@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
     ];
   }
 
+  try {
   await connectDB();
 
   const [users, total] = await Promise.all([
@@ -94,4 +95,8 @@ export async function GET(req: NextRequest) {
     totalPages: Math.ceil(total / PAGE_SIZE),
     total,
   });
+  } catch (error) {
+    console.error("[ADMIN_ACCOUNTS_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "계정 목록을 불러오지 못했습니다." }, { status: 500 });
+  }
 }

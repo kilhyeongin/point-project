@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     // 전화번호 중복 확인
     const normalizedPhone = phone.replace(/[^\d]/g, "");
     if (normalizedPhone) {
-      const existsPhone = await User.findOne({ "customerProfile.phone": { $regex: normalizedPhone }, organizationId }, { _id: 1, socialAccounts: 1 }).lean() as any;
+      const existsPhone = await User.findOne({ "customerProfile.phone": normalizedPhone, organizationId }, { _id: 1, socialAccounts: 1 }).lean() as any;
       if (existsPhone) {
         const providers: string[] = Array.isArray(existsPhone.socialAccounts)
           ? existsPhone.socialAccounts.map((s: { provider: string }) => s.provider)

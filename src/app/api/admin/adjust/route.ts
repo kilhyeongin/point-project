@@ -115,9 +115,9 @@ export async function POST(req: NextRequest) {
           {
             organizationId: orgId,
             accountId: targetOid,
-            userId: null,
+            userId: targetOid,
             actorId: adminOid,
-            counterpartyId: null,
+            counterpartyId: adminOid,
             type: "ADJUST",
             amount: amountNum,
             refType: "ADJUST",

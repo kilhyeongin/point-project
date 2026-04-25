@@ -27,24 +27,29 @@ export async function PATCH(
     return NextResponse.json({ ok: false, message: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  await connectDB();
+  try {
+    await connectDB();
 
-  const orgId = session.orgId ?? "4nwn";
+    const orgId = session.orgId ?? "4nwn";
 
-  const relation = await FavoritePartner.findOneAndUpdate(
-    {
-      _id: new mongoose.Types.ObjectId(relationId),
-      organizationId: orgId,
-      partnerId: new mongoose.Types.ObjectId(session.uid),
-      status: "APPLIED",
-    },
-    { $set: { contractedAt: new Date() } },
-    { new: true }
-  );
+    const relation = await FavoritePartner.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(relationId),
+        organizationId: orgId,
+        partnerId: new mongoose.Types.ObjectId(session.uid),
+        status: "APPLIED",
+      },
+      { $set: { contractedAt: new Date() } },
+      { new: true }
+    );
 
-  if (!relation) {
-    return NextResponse.json({ ok: false, message: "해당 고객 정보를 찾을 수 없습니다." }, { status: 404 });
+    if (!relation) {
+      return NextResponse.json({ ok: false, message: "해당 고객 정보를 찾을 수 없습니다." }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[PARTNER_CONTRACT_PATCH_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "계약 처리 중 오류가 발생했습니다." }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
 }

@@ -40,6 +40,7 @@ export async function GET(req: Request) {
     );
   }
 
+  try {
   await connectDB();
 
   const oid = new mongoose.Types.ObjectId(userId);
@@ -73,4 +74,8 @@ export async function GET(req: Request) {
     },
     balance: Number(balance),
   });
+  } catch (error) {
+    console.error("[ADMIN_BALANCE_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "잔액 조회 중 오류가 발생했습니다." }, { status: 500 });
+  }
 }

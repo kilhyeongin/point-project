@@ -242,11 +242,12 @@ export default function PartnerShellClient({ session, children }: Props) {
         {/* Bottom Tab Bar */}
         <nav
           className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-xl"
+          aria-label="하단 탭 메뉴"
           style={{
             boxShadow: "0 -1px 0 oklch(0.918 0.008 250), 0 -4px 16px -4px oklch(0 0 0 / 0.06)",
           }}
         >
-          <div className="flex items-stretch h-16">
+          <div className="flex items-stretch h-16" role="tablist">
             {MENU_ITEMS.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
@@ -261,15 +262,15 @@ export default function PartnerShellClient({ session, children }: Props) {
                       style={{ background: "oklch(0.52 0.27 264)" }}
                     />
                   )}
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[10px] font-bold">{item.label}</span>
                 </>
               );
               // QR 스캔은 하드 네비게이션 (삼성 인터넷 카메라 권한 버그 대응)
               return item.hardNav ? (
-                <a key={item.href} href={item.href} className={tabClass}>{inner}</a>
+                <a key={item.href} href={item.href} className={tabClass} role="tab" aria-current={active ? "page" : undefined} aria-selected={active}>{inner}</a>
               ) : (
-                <Link key={item.href} href={item.href} className={tabClass}>{inner}</Link>
+                <Link key={item.href} href={item.href} className={tabClass} role="tab" aria-current={active ? "page" : undefined} aria-selected={active}>{inner}</Link>
               );
             })}
           </div>

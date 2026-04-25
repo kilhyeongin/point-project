@@ -23,13 +23,13 @@ export async function GET() {
     );
   }
 
-  await connectDB();
-
-  const accountId = new mongoose.Types.ObjectId(session.uid);
-  const balance = await getAccountBalance(accountId);
-
-  return NextResponse.json({
-    ok: true,
-    balance: Number(balance),
-  });
+  try {
+    await connectDB();
+    const accountId = new mongoose.Types.ObjectId(session.uid);
+    const balance = await getAccountBalance(accountId);
+    return NextResponse.json({ ok: true, balance: Number(balance) });
+  } catch (error) {
+    console.error("[ME_BALANCE_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "잔액 조회 중 오류가 발생했습니다." }, { status: 500 });
+  }
 }

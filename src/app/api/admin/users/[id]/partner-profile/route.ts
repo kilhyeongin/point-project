@@ -99,6 +99,7 @@ export async function PATCH(
       coverImageUrl: toTrimmedString(body?.coverImageUrl),
       isPublished: toBoolean(body?.isPublished),
     };
+    user.markModified("partnerProfile");
 
     await user.save();
 

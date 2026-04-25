@@ -26,6 +26,7 @@ export async function GET(req: Request) {
     );
   }
 
+  try {
   const { searchParams } = new URL(req.url);
   const typeParam = String(searchParams.get("type") ?? "ALL").toUpperCase();
   const q = String(searchParams.get("q") ?? "").trim();
@@ -120,4 +121,8 @@ export async function GET(req: Request) {
     totalPages: Math.ceil(total / limit),
     total,
   });
+  } catch (error) {
+    console.error("[ADMIN_LEDGER_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "원장 조회 중 오류가 발생했습니다." }, { status: 500 });
+  }
 }

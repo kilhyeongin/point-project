@@ -21,15 +21,17 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   await connectDB();
   const orgId = session.orgId ?? "4nwn";
 
-  const doc = await WithdrawalRequest.findOne({ _id: id, organizationId: orgId });
-  if (!doc)
-    return NextResponse.json({ ok: false, message: "요청을 찾을 수 없습니다." }, { status: 404 });
-  if (doc.status !== "PENDING")
-    return NextResponse.json({ ok: false, message: "대기중인 요청만 거절할 수 있습니다." }, { status: 400 });
+  const doc = await WithdrawalRequest.findOneAndUpdate(
+    { _id: id, organizationId: orgId, status: "PENDING" },
+    { $set: { status: "CANCELLED", cancelledAt: new Date() } },
+    { new: true }
+  );
 
-  doc.status = "CANCELLED";
-  doc.cancelledAt = new Date();
-  await doc.save();
+  if (!doc) {
+    const exists = await WithdrawalRequest.findOne({ _id: id, organizationId: orgId }, { status: 1 }).lean() as any;
+    if (!exists) return NextResponse.json({ ok: false, message: "요청을 찾을 수 없습니다." }, { status: 404 });
+    return NextResponse.json({ ok: false, message: "대기중인 요청만 거절할 수 있습니다." }, { status: 400 });
+  }
 
   return NextResponse.json({ ok: true });
 }

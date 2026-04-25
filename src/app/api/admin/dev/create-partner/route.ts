@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { validatePassword } from "@/lib/validatePassword";
 
 export async function POST(req: NextRequest) {
   const session = await getSessionFromCookies();
@@ -20,8 +21,14 @@ export async function POST(req: NextRequest) {
       password,
       contactPhone,
       address,
-      organizationId = "4nwn",
     } = body;
+
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.ok) {
+      return NextResponse.json({ ok: false, error: pwCheck.error }, { status: 400 });
+    }
+
+    const organizationId = session.orgId ?? "4nwn";
 
     await connectDB();
 
@@ -30,7 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "이미 사용 중인 아이디입니다." }, { status: 409 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
 
     await User.create({
       organizationId,

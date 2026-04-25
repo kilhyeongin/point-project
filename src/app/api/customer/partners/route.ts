@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
         }
       )
         .sort({ createdAt: -1 })
+        .limit(500)
         .lean(),
       FavoritePartner.find(
         { organizationId: orgId, customerId: session.uid, likedByCustomer: true },

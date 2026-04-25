@@ -54,6 +54,7 @@ export async function GET(req: Request) {
     );
   }
 
+  try {
   await connectDB();
 
   const { searchParams } = new URL(req.url);
@@ -86,6 +87,7 @@ export async function GET(req: Request) {
     }
   )
     .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
+    .limit(500)
     .lean();
 
   const customerIds = relations
@@ -212,4 +214,8 @@ export async function GET(req: Request) {
       },
     }
   );
+  } catch (error) {
+    console.error("[REQUESTERS_CUSTOMERS_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "고객 목록을 불러오지 못했습니다." }, { status: 500 });
+  }
 }

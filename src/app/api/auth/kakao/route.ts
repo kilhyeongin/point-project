@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     redirect_uri: process.env.KAKAO_CALLBACK_URL!,
     response_type: "code",
     state,
-    scope: "account_email phone_number",
+    scope: "name account_email phone_number",
   });
 
   return NextResponse.redirect(

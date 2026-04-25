@@ -25,6 +25,9 @@ function periodKeyToDateRange(periodKey: string) {
   const [yearStr, monthStr] = periodKey.split("-");
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    throw new Error(`잘못된 기간 키: ${periodKey}`);
+  }
   const fromDate = new Date(`${periodKey}-01T00:00:00.000+09:00`);
   const lastDay = new Date(year, month, 0).getDate();
   const toDate = new Date(
@@ -35,6 +38,7 @@ function periodKeyToDateRange(periodKey: string) {
 
 export async function GET() {
   const session = await getSessionFromCookies();
+
 
   if (!session) {
     return NextResponse.json(
@@ -50,15 +54,16 @@ export async function GET() {
     );
   }
 
+  try {
   await connectDB();
 
   const counterpartyId = new mongoose.Types.ObjectId(session.uid);
   const currentPeriodKey = getCurrentPeriodKey();
   const orgId = session.orgId ?? "4nwn";
-
   // ----- 마감된 정산 조회 -----
   const rows = await Settlement.find({ organizationId: orgId, counterpartyId })
     .sort({ periodKey: -1, createdAt: -1 })
+    .limit(120)
     .lean() as any[];
 
   // 이미 정산이 있는 periodKey 집합
@@ -200,4 +205,11 @@ export async function GET() {
   const items = pendingItem ? [pendingItem, ...closedItems] : closedItems;
 
   return NextResponse.json({ ok: true, items });
+  } catch (error) {
+    console.error("[PARTNER_SETTLEMENTS_GET_ERROR]", error);
+    return NextResponse.json(
+      { ok: false, message: "정산 데이터를 불러오지 못했습니다." },
+      { status: 500 }
+    );
+  }
 }

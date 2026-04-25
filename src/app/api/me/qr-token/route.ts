@@ -9,6 +9,7 @@
 // =======================================================
 
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import jwt from "jsonwebtoken";
 import { getSessionFromCookies } from "@/lib/auth";
 
@@ -33,9 +34,10 @@ export async function GET() {
     secret,
     {
       subject: String(session.uid),
-      expiresIn: "3m", // 3분짜리 QR (짧게)
+      expiresIn: "3m",
       issuer: "point-platform",
       audience: "partner-scan",
+      jwtid: randomUUID(),
     }
   );
 

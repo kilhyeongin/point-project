@@ -107,7 +107,15 @@ export async function getRateLimitInfo(
 }
 
 export function getClientIp(req: Request): string {
+  // x-forwarded-for는 "client, proxy1, proxy2" 순서 — 마지막 신뢰 프록시가 추가한 값을 사용
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
+  if (forwarded) {
+    const parts = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
+    // 첫 번째 값이 실제 클라이언트 IP (Vercel/Nginx 등 역방향 프록시 표준)
+    const ip = parts[0];
+    if (ip && ip !== "unknown") return ip;
+  }
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp && realIp.trim()) return realIp.trim();
   return "unknown";
 }

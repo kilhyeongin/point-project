@@ -50,14 +50,21 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // 토큰을 먼저 원자적으로 사용 처리 — 비밀번호 변경 전에 재사용 가능성 차단
+    const marked = await PasswordResetToken.findOneAndUpdate(
+      { _id: resetToken._id, used: false },
+      { $set: { used: true } }
+    );
+    if (!marked) {
+      return NextResponse.json(
+        { ok: false, error: "이미 사용된 링크입니다." },
+        { status: 400 }
+      );
+    }
+
     await User.updateOne(
       { _id: resetToken.userId },
       { $set: { passwordHash } }
-    );
-
-    await PasswordResetToken.updateOne(
-      { _id: resetToken._id },
-      { $set: { used: true } }
     );
 
     return NextResponse.json({ ok: true });
@@ -72,6 +79,10 @@ export async function POST(req: NextRequest) {
 
 // 토큰 유효성만 확인 (페이지 진입 시)
 export async function GET(req: NextRequest) {
+  if (await isRateLimited(`reset-password-check:${getClientIp(req)}`, 20, 15 * 60 * 1000)) {
+    return NextResponse.json({ ok: false, valid: false, error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
+  }
+
   const token = new URL(req.url).searchParams.get("token") ?? "";
 
   if (!token) {

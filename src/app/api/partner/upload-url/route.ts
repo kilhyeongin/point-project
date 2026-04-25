@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSessionFromCookies } from "@/lib/auth";
+import { isRateLimited } from "@/lib/rateLimit";
 import { randomUUID } from "crypto";
 
 const s3 = new S3Client({
@@ -24,6 +25,10 @@ export async function POST(req: Request) {
   }
   if (session.role !== "PARTNER") {
     return NextResponse.json({ ok: false, message: "제휴사만 업로드할 수 있습니다." }, { status: 403 });
+  }
+
+  if (await isRateLimited(`upload-url:${session.uid}`, 10, 60_000)) {
+    return NextResponse.json({ ok: false, message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
   }
 
   let body: any = {};

@@ -118,7 +118,9 @@ export async function POST(req: Request & { ip?: string }) {
           {
             organizationId: orgId,
             accountId: targetOid,
+            userId: targetOid,
             actorId: adminId,
+            counterpartyId: adminId,
             type: "TOPUP",
             amount,
             refType: null,

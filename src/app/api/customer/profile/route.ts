@@ -53,12 +53,16 @@ export async function PUT(req: NextRequest) {
 
   await connectDB();
 
-  await User.findOneAndUpdate({ _id: session.uid, organizationId: session.orgId ?? "4nwn" }, {
+  const updated = await User.findOneAndUpdate({ _id: session.uid, organizationId: session.orgId ?? "4nwn" }, {
     ...(email !== undefined && { email: String(email).trim().toLowerCase() }),
     ...(phone !== undefined && { "customerProfile.phone": String(phone).trim() }),
     ...(address !== undefined && { "customerProfile.address": String(address).trim() }),
     ...(detailAddress !== undefined && { "customerProfile.detailAddress": String(detailAddress).trim() }),
   });
+
+  if (!updated) {
+    return NextResponse.json({ ok: false, message: "사용자를 찾을 수 없습니다." }, { status: 404 });
+  }
 
   return NextResponse.json({ ok: true, message: "저장되었습니다." });
 }

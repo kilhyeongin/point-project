@@ -32,6 +32,11 @@ export async function GET(
   }
 
   const { id } = await params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return NextResponse.json({ ok: false, message: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
+
   const { searchParams } = new URL(req.url);
   const startDate = parseDateStart(searchParams.get("startDate"));
   const endDate = parseDateEnd(searchParams.get("endDate"));
@@ -125,7 +130,7 @@ export async function GET(
         id: String(doc._id),
         type: doc.type,
         amount: Math.abs(Number(doc.amount ?? 0)),
-        memo: doc.memo ?? "",
+        note: doc.note ?? "",
         createdAt: doc.createdAt,
         customer: user ? { name: user.name ?? "", username: user.username ?? "" } : null,
       };

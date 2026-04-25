@@ -89,7 +89,9 @@ export async function PATCH(_req: Request, { params }: Params) {
           {
             organizationId: orgId,
             accountId: locked.accountId,
+            userId: locked.accountId,
             actorId: adminId,
+            counterpartyId: adminId,
             type: "TOPUP",
             amount: +amount,
             refType: "TOPUP",

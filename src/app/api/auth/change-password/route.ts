@@ -4,6 +4,7 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { validatePassword } from "@/lib/validatePassword";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -44,9 +45,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!newPassword || newPassword.length < 8) {
+  const pwCheck = validatePassword(newPassword);
+  if (!pwCheck.ok) {
     return NextResponse.json(
-      { ok: false, message: "새 비밀번호는 8자 이상이어야 합니다." },
+      { ok: false, message: pwCheck.error },
       { status: 400 }
     );
   }

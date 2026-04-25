@@ -85,7 +85,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
-  if (await isRateLimited(`admin-users-post:${ip}`, 10, 60 * 1000)) {
+  if (await isRateLimited(`admin-users-post:${ip}`, 3, 60 * 1000)) {
     return NextResponse.json({ ok: false, message: "요청이 너무 많습니다." }, { status: 429 });
   }
 

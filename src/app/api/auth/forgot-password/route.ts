@@ -42,15 +42,15 @@ export async function POST(req: NextRequest) {
 
     const userByUsername = await User.findOne({ username, organizationId: orgSlug }, { _id: 1, name: 1, email: 1, status: 1 }).lean();
 
-    // 유저 존재 여부 노출 방지: 유저가 없거나 이메일 불일치여도 동일한 성공 응답 반환
-    if (!userByUsername || (userByUsername as any).email !== email) {
-      // 타이밍 공격 방지: 실제 처리와 유사한 시간 소모
-      await new Promise((r) => setTimeout(r, 200 + Math.random() * 100));
-      return NextResponse.json({ ok: true });
-    }
+    // 유저 존재 여부 노출 방지: 모든 경로에 동일한 지연 적용
+    const delayMs = 400 + Math.random() * 200;
 
-    if ((userByUsername as any).status === "BLOCKED") {
-      await new Promise((r) => setTimeout(r, 200 + Math.random() * 100));
+    if (
+      !userByUsername ||
+      (userByUsername as any).email !== email ||
+      (userByUsername as any).status === "BLOCKED"
+    ) {
+      await new Promise((r) => setTimeout(r, delayMs));
       return NextResponse.json({ ok: true });
     }
 

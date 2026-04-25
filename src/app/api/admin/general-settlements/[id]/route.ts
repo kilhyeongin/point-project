@@ -19,19 +19,17 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   await connectDB();
 
-  const doc = await GeneralSettlement.findOne({
-    _id: id,
-    organizationId: session.orgId ?? "4nwn",
-  }) as any;
+  const doc = await GeneralSettlement.findOneAndUpdate(
+    { _id: id, organizationId: session.orgId ?? "4nwn", status: "SUBMITTED" },
+    { $set: { status: "CONFIRMED", confirmedAt: new Date() } },
+    { new: true }
+  );
 
-  if (!doc) return NextResponse.json({ ok: false, message: "정산을 찾을 수 없습니다." }, { status: 404 });
-  if (doc.status !== "SUBMITTED") {
+  if (!doc) {
+    const exists = await GeneralSettlement.findOne({ _id: id, organizationId: session.orgId ?? "4nwn" }, { status: 1 }).lean() as any;
+    if (!exists) return NextResponse.json({ ok: false, message: "정산을 찾을 수 없습니다." }, { status: 404 });
     return NextResponse.json({ ok: false, message: "대기중인 정산만 확인처리할 수 있습니다." }, { status: 400 });
   }
-
-  doc.status = "CONFIRMED";
-  doc.confirmedAt = new Date();
-  await doc.save();
 
   return NextResponse.json({ ok: true });
 }

@@ -98,7 +98,7 @@ export async function GET(req: Request) {
 
     const kakaoId = String(profile.id);
     const kakaoEmail = profile.kakao_account?.email?.toLowerCase() ?? "";
-    const kakaoName = profile.kakao_account?.name ?? profile.kakao_account?.profile?.nickname ?? "카카오 사용자";
+    const kakaoName = profile.kakao_account?.name ?? "카카오 사용자";
     // "+82 10-1234-5678" → "01012345678"
     const rawPhone = profile.kakao_account?.phone_number ?? "";
     const kakaoPhone = rawPhone
@@ -113,11 +113,20 @@ export async function GET(req: Request) {
       organizationId: resolvedOrgSlug,
     });
 
+    if (user) {
+      // 이름이 없거나 기본값인 경우 카카오에서 받은 이름으로 갱신
+      if (kakaoName && (!user.name || user.name === "카카오 사용자")) {
+        user.name = kakaoName;
+        await user.save();
+      }
+    }
+
     if (!user && kakaoEmail) {
       // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
       user = await User.findOne({ email: kakaoEmail, role: "CUSTOMER", organizationId: resolvedOrgSlug });
       if (user) {
         user.socialAccounts.push({ provider: "kakao", providerId: kakaoId });
+        if (kakaoName && (!user.name || user.name === "카카오 사용자")) user.name = kakaoName;
         await user.save();
       }
     }
@@ -128,6 +137,7 @@ export async function GET(req: Request) {
       if (user) {
         user.socialAccounts.push({ provider: "kakao", providerId: kakaoId });
         if (kakaoEmail && !user.email) user.email = kakaoEmail;
+        if (kakaoName && (!user.name || user.name === "카카오 사용자")) user.name = kakaoName;
         await user.save();
       }
     }

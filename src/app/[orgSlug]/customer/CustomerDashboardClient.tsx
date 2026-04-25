@@ -303,9 +303,12 @@ export default function CustomerDashboardClient({ session }: Props) {
   async function loadCategories() {
     try {
       const res = await fetch("/api/customer/category-options", { cache: "no-store" });
+      if (!res.ok) return;
       const data = await res.json();
       if (data?.ok) setAllCategories(data.items ?? []);
-    } catch {}
+    } catch {
+      // 카테고리 로드 실패 시 무시 (필터 없이 동작)
+    }
   }
 
   useEffect(() => {
@@ -510,6 +513,8 @@ export default function CustomerDashboardClient({ session }: Props) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="업체명, 소개, 혜택, 주소로 검색"
+                maxLength={100}
+                aria-label="제휴사 검색"
                 className="pl-9 h-11"
               />
             </div>

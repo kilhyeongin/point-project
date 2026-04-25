@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -497,6 +497,25 @@ export default function PartnerPage() {
     fetchPointHistory();
   }, []);
 
+  // ESC 키로 모달 닫기
+  const closeAllModals = useCallback(() => {
+    setModal(null);
+    setDetailModal(null);
+    setWithdrawalModal(false);
+    setSettlementModal(false);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeAllModals();
+    };
+    const hasModal = modal || detailModal || withdrawalModal || settlementModal;
+    if (hasModal) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [modal, detailModal, withdrawalModal, settlementModal, closeAllModals]);
+
   useEffect(() => {
     const t = setTimeout(() => {
       fetchCustomers();
@@ -760,6 +779,8 @@ export default function PartnerPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="이름 검색"
+                maxLength={50}
+                aria-label="고객 이름 검색"
                 className="min-w-0 w-full sm:w-40 h-9"
               />
               <Button variant="outline" onClick={fetchCustomers} className="h-9 px-4 font-bold whitespace-nowrap shrink-0">
@@ -1060,6 +1081,8 @@ export default function PartnerPage() {
                 value={historyQ}
                 onChange={(e) => { setHistoryQ(e.target.value); setVisibleHistory(5); }}
                 placeholder="고객 이름 검색"
+                maxLength={50}
+                aria-label="포인트 이력 고객 이름 검색"
                 className="w-full pl-8 pr-8 h-8 rounded-xl border border-border bg-background text-xs font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               {historyQ && (
@@ -1173,11 +1196,17 @@ export default function PartnerPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}
+          role="presentation"
         >
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6 grid gap-4">
+          <div
+            className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6 grid gap-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
             <div className="flex justify-between items-start gap-2">
               <div>
-                <h3 className="text-lg font-black text-foreground">
+                <h3 id="modal-title" className="text-lg font-black text-foreground">
                   {modal.type === "issue" ? "포인트 지급" : "포인트 사용"}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-0.5">{modal.customer.name} ({socialLabel(modal.customer.socialProvider) ?? modal.customer.username})</p>
@@ -1226,11 +1255,17 @@ export default function PartnerPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailModal(null); }}
+          role="presentation"
         >
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+          <div
+            className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="detail-modal-title"
+          >
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-black text-foreground">{detailModal.name}</h3>
+                <h3 id="detail-modal-title" className="text-lg font-black text-foreground">{detailModal.name}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5">{socialLabel(detailModal.socialProvider) ?? detailModal.username}</p>
               </div>
               <button type="button" onClick={() => setDetailModal(null)} className="text-muted-foreground hover:text-foreground text-xl leading-none">✕</button>

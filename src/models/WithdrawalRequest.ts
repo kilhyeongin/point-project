@@ -20,6 +20,11 @@ const WithdrawalRequestSchema = new Schema(
 );
 
 WithdrawalRequestSchema.index({ organizationId: 1, partnerId: 1, status: 1 });
+// Prevents double-submission race: only one PENDING request per partner per org
+WithdrawalRequestSchema.index(
+  { organizationId: 1, partnerId: 1 },
+  { unique: true, partialFilterExpression: { status: "PENDING" }, name: "unique_pending_per_partner" }
+);
 
 export const WithdrawalRequest =
   models.WithdrawalRequest || model("WithdrawalRequest", WithdrawalRequestSchema);

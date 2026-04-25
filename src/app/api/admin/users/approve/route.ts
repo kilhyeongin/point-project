@@ -59,15 +59,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (target.status === "ACTIVE") {
-      return NextResponse.json({
-        ok: true,
-        message: "이미 승인된 계정입니다.",
-      });
-    }
+    const updated = await User.findOneAndUpdate(
+      { _id: userId, organizationId: orgId, role: "PARTNER", status: { $ne: "ACTIVE" } },
+      { $set: { status: "ACTIVE" } },
+      { new: true }
+    );
 
-    target.status = "ACTIVE";
-    await target.save();
+    if (!updated) {
+      return NextResponse.json({ ok: true, message: "이미 승인된 계정입니다." });
+    }
 
     return NextResponse.json({
       ok: true,

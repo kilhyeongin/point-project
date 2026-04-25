@@ -9,34 +9,39 @@ export async function GET() {
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
   if (session.role !== "ADMIN") return NextResponse.json({ ok: false }, { status: 403 });
 
-  await connectDB();
+  try {
+    await connectDB();
 
-  const orgId = session.orgId ?? "4nwn";
+    const orgId = session.orgId ?? "4nwn";
 
-  const items = await GeneralSettlement.find({ organizationId: orgId })
-    .sort({ createdAt: -1 })
-    .limit(200)
-    .lean() as any[];
+    const items = await GeneralSettlement.find({ organizationId: orgId })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean() as any[];
 
-  return NextResponse.json({
-    ok: true,
-    items: items.map((item) => ({
-      id: String(item._id),
-      partnerId: String(item.partnerId),
-      partnerName: item.partnerName,
-      year: item.year,
-      month: item.month,
-      periodStart: item.periodStart,
-      periodEnd: item.periodEnd,
-      columns: item.columns,
-      rows: item.rows,
-      subtotal: item.subtotal,
-      tax: item.tax,
-      total: item.total,
-      status: item.status,
-      submittedAt: item.submittedAt ?? null,
-      confirmedAt: item.confirmedAt ?? null,
-      createdAt: item.createdAt,
-    })),
-  });
+    return NextResponse.json({
+      ok: true,
+      items: items.map((item) => ({
+        id: String(item._id),
+        partnerId: String(item.partnerId),
+        partnerName: item.partnerName,
+        year: item.year,
+        month: item.month,
+        periodStart: item.periodStart,
+        periodEnd: item.periodEnd,
+        columns: item.columns,
+        rows: item.rows,
+        subtotal: item.subtotal,
+        tax: item.tax,
+        total: item.total,
+        status: item.status,
+        submittedAt: item.submittedAt ?? null,
+        confirmedAt: item.confirmedAt ?? null,
+        createdAt: item.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("[ADMIN_GENERAL_SETTLEMENTS_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "정산 목록을 불러오지 못했습니다." }, { status: 500 });
+  }
 }

@@ -60,6 +60,14 @@ export default function AdminShellClient({ session, children }: Props) {
       ],
     },
     {
+      key: "shop",
+      label: "상품몰 관리",
+      items: [
+        { href: `/${orgSlug}/admin/shop/products`, label: "상품 관리" },
+        { href: `/${orgSlug}/admin/shop/orders`, label: "주문 내역" },
+      ],
+    },
+    {
       key: "manage",
       label: "설정·관리",
       items: [
@@ -186,6 +194,7 @@ export default function AdminShellClient({ session, children }: Props) {
                   <Link
                     key={group.key}
                     href={firstHref}
+                    aria-current={active ? "page" : undefined}
                     className={`shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all ${
                       active
                         ? "text-primary"
@@ -238,6 +247,7 @@ export default function AdminShellClient({ session, children }: Props) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={`shrink-0 px-3 py-1 rounded-lg text-sm font-bold transition-all ${
                       active
                         ? "text-primary"

@@ -15,27 +15,32 @@ export async function GET() {
   if (!session || session.role !== "PARTNER")
     return NextResponse.json({ ok: false }, { status: 401 });
 
-  await connectDB();
-  const partnerId = new mongoose.Types.ObjectId(session.uid);
-  const orgId = session.orgId ?? "4nwn";
+  try {
+    await connectDB();
+    const partnerId = new mongoose.Types.ObjectId(session.uid);
+    const orgId = session.orgId ?? "4nwn";
 
-  const items = await WithdrawalRequest.find({ organizationId: orgId, partnerId })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .lean() as any[];
+    const items = await WithdrawalRequest.find({ organizationId: orgId, partnerId })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean() as any[];
 
-  return NextResponse.json({
-    ok: true,
-    items: items.map((i) => ({
-      id: String(i._id),
-      amount: i.amount,
-      status: i.status,
-      adminNote: i.adminNote,
-      confirmedAt: i.confirmedAt ?? null,
-      cancelledAt: i.cancelledAt ?? null,
-      createdAt: i.createdAt,
-    })),
-  });
+    return NextResponse.json({
+      ok: true,
+      items: items.map((i) => ({
+        id: String(i._id),
+        amount: i.amount,
+        status: i.status,
+        adminNote: i.adminNote,
+        confirmedAt: i.confirmedAt ?? null,
+        cancelledAt: i.cancelledAt ?? null,
+        createdAt: i.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("[PARTNER_WITHDRAWAL_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "출금 요청 목록을 불러오지 못했습니다." }, { status: 500 });
+  }
 }
 
 // POST: 출금 신청
@@ -44,69 +49,81 @@ export async function POST(req: NextRequest) {
   if (!session || session.role !== "PARTNER")
     return NextResponse.json({ ok: false }, { status: 401 });
 
-  await connectDB();
-  const partnerId = new mongoose.Types.ObjectId(session.uid);
-  const orgId = session.orgId ?? "4nwn";
+  try {
+    await connectDB();
+    const partnerId = new mongoose.Types.ObjectId(session.uid);
+    const orgId = session.orgId ?? "4nwn";
 
-  // 이미 PENDING 출금 있는지 확인
-  const existing = await WithdrawalRequest.findOne({
-    organizationId: orgId,
-    partnerId,
-    status: "PENDING",
-  }).lean();
+    const body = await req.json();
+    const amount = Number(body?.amount ?? 0);
 
-  if (existing) {
-    return NextResponse.json(
-      { ok: false, message: "이미 대기중인 출금 신청이 있습니다. 취소 후 다시 신청해주세요." },
-      { status: 400 }
-    );
+    if (!Number.isFinite(amount) || amount < MIN_AMOUNT) {
+      return NextResponse.json(
+        { ok: false, message: `최소 출금 금액은 ${MIN_AMOUNT.toLocaleString()}P 입니다.` },
+        { status: 400 }
+      );
+    }
+    if ((amount - MIN_AMOUNT) % STEP !== 0) {
+      return NextResponse.json(
+        { ok: false, message: `${STEP.toLocaleString()}P 단위로만 출금 신청 가능합니다.` },
+        { status: 400 }
+      );
+    }
+
+    // 이미 PENDING 출금 있는지 확인 (partial unique index가 최종 방어선)
+    const existing = await WithdrawalRequest.findOne({
+      organizationId: orgId,
+      partnerId,
+      status: "PENDING",
+    }).lean();
+
+    if (existing) {
+      return NextResponse.json(
+        { ok: false, message: "이미 대기중인 출금 신청이 있습니다. 취소 후 다시 신청해주세요." },
+        { status: 400 }
+      );
+    }
+
+    // 가용 잔액 확인 (잔액 - PENDING 포인트 정산 금액)
+    const { PointSettlementPayment } = await import("@/models/PointSettlementPayment");
+    const [walletBalance, pendingSettlements] = await Promise.all([
+      getWalletBalance(partnerId),
+      PointSettlementPayment.aggregate([
+        { $match: { organizationId: orgId, partnerId, status: "PENDING" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+    ]);
+    const lockedBySettlement = Number(pendingSettlements[0]?.total ?? 0);
+    const available = walletBalance - lockedBySettlement;
+
+    if (amount > available) {
+      return NextResponse.json(
+        { ok: false, message: `가용 포인트가 부족합니다. (가용: ${available.toLocaleString()}P)` },
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findById(partnerId).lean() as any;
+    const partnerName = user?.partnerProfile?.businessName || user?.name || "";
+
+    const doc = await WithdrawalRequest.create({
+      organizationId: orgId,
+      partnerId,
+      partnerName,
+      amount,
+      status: "PENDING",
+    });
+
+    return NextResponse.json({ ok: true, id: String(doc._id) }, { status: 201 });
+  } catch (error: any) {
+    // Duplicate key = partial unique index blocked a race-condition double submission
+    if (error?.code === 11000) {
+      return NextResponse.json(
+        { ok: false, message: "이미 대기중인 출금 신청이 있습니다. 취소 후 다시 신청해주세요." },
+        { status: 400 }
+      );
+    }
+    console.error("[PARTNER_WITHDRAWAL_POST_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "출금 신청 중 오류가 발생했습니다." }, { status: 500 });
   }
-
-  const body = await req.json();
-  const amount = Number(body?.amount ?? 0);
-
-  if (!Number.isFinite(amount) || amount < MIN_AMOUNT) {
-    return NextResponse.json(
-      { ok: false, message: `최소 출금 금액은 ${MIN_AMOUNT.toLocaleString()}P 입니다.` },
-      { status: 400 }
-    );
-  }
-  if ((amount - MIN_AMOUNT) % STEP !== 0) {
-    return NextResponse.json(
-      { ok: false, message: `${STEP.toLocaleString()}P 단위로만 출금 신청 가능합니다.` },
-      { status: 400 }
-    );
-  }
-
-  // 가용 잔액 확인 (잔액 - PENDING 포인트 정산 금액)
-  const { PointSettlementPayment } = await import("@/models/PointSettlementPayment");
-  const [walletBalance, pendingSettlements] = await Promise.all([
-    getWalletBalance(partnerId),
-    PointSettlementPayment.aggregate([
-      { $match: { organizationId: orgId, partnerId, status: "PENDING" } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]),
-  ]);
-  const lockedBySettlement = Number(pendingSettlements[0]?.total ?? 0);
-  const available = walletBalance - lockedBySettlement;
-
-  if (amount > available) {
-    return NextResponse.json(
-      { ok: false, message: `가용 포인트가 부족합니다. (가용: ${available.toLocaleString()}P)` },
-      { status: 400 }
-    );
-  }
-
-  const user = await User.findById(partnerId).lean() as any;
-  const partnerName = user?.partnerProfile?.businessName || user?.name || "";
-
-  const doc = await WithdrawalRequest.create({
-    organizationId: orgId,
-    partnerId,
-    partnerName,
-    amount,
-    status: "PENDING",
-  });
-
-  return NextResponse.json({ ok: true, id: String(doc._id) }, { status: 201 });
 }

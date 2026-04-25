@@ -34,6 +34,10 @@ export async function GET(_req: NextRequest, { params }: Context) {
 
   const { id } = await params;
 
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return NextResponse.json({ ok: false, error: "잘못된 사용자 ID입니다." }, { status: 400 });
+  }
+
   await connectDB();
 
   const orgId = session.orgId ?? "4nwn";

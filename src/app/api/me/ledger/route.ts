@@ -1,6 +1,6 @@
 // src/app/api/me/ledger/route.ts
 // =======================================================
-// 로그인 사용자(PARTNER) 포인트 거래 내역
+// 로그인 사용자(CUSTOMER) 포인트 거래 내역
 // -------------------------------------------------------
 // ✔ 최근 100건 조회
 // ✔ Ledger 기반
@@ -29,36 +29,37 @@ export async function GET() {
     );
   }
 
-  await connectDB();
+  try {
+    await connectDB();
+    const accountId = new mongoose.Types.ObjectId(session.uid);
 
-  const accountId = new mongoose.Types.ObjectId(session.uid);
+    const docs = await Ledger.find({ organizationId: session.orgId ?? "4nwn", accountId })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate("actorId", "name partnerProfile.businessName")
+      .lean();
 
-  const docs = await Ledger.find({ organizationId: session.orgId ?? "4nwn", accountId })
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .populate("actorId", "name partnerProfile.businessName")
-    .lean();
+    const items = (docs as any[]).map((d) => {
+      const actor = d.actorId as any;
+      const partnerName =
+        actor?.name?.trim() ||
+        actor?.partnerProfile?.businessName?.trim() ||
+        null;
+      return {
+        id: String(d._id),
+        type: d.type,
+        amount: d.amount,
+        note: d.note ?? "",
+        refType: d.refType ?? null,
+        refId: d.refId ? String(d.refId) : null,
+        partnerName,
+        createdAt: d.createdAt,
+      };
+    });
 
-  const items = (docs as any[]).map((d) => {
-    const actor = d.actorId as any;
-    const partnerName =
-      actor?.name?.trim() ||
-      actor?.partnerProfile?.businessName?.trim() ||
-      null;
-    return {
-      id: String(d._id),
-      type: d.type,
-      amount: d.amount,
-      note: d.note ?? "",
-      refType: d.refType ?? null,
-      refId: d.refId ? String(d.refId) : null,
-      partnerName,
-      createdAt: d.createdAt,
-    };
-  });
-
-  return NextResponse.json({
-    ok: true,
-    items,
-  });
+    return NextResponse.json({ ok: true, items });
+  } catch (error) {
+    console.error("[ME_LEDGER_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, message: "거래내역 조회 중 오류가 발생했습니다." }, { status: 500 });
+  }
 }

@@ -80,6 +80,7 @@ export async function GET(req: Request) {
           }
         )
           .sort({ createdAt: -1 })
+          .limit(5000)
           .lean();
 
         const issueCount = rows.length;

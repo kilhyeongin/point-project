@@ -24,6 +24,11 @@ const PointSettlementPaymentSchema = new Schema(
 );
 
 PointSettlementPaymentSchema.index({ organizationId: 1, partnerId: 1, year: 1, month: 1 });
+// 동시 중복 신청 방지: 파트너당 PENDING 정산은 1건만
+PointSettlementPaymentSchema.index(
+  { organizationId: 1, partnerId: 1 },
+  { unique: true, partialFilterExpression: { status: "PENDING" }, name: "unique_pending_settlement_per_partner" }
+);
 
 export const PointSettlementPayment =
   models.PointSettlementPayment ||

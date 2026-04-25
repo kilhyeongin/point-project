@@ -105,11 +105,19 @@ export async function GET(req: Request) {
       organizationId: resolvedOrgSlug,
     });
 
+    if (user) {
+      if (naverName && (!user.name || user.name === "네이버 사용자")) {
+        user.name = naverName;
+        await user.save();
+      }
+    }
+
     if (!user && naverEmail) {
       // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
       user = await User.findOne({ email: naverEmail, role: "CUSTOMER", organizationId: resolvedOrgSlug });
       if (user) {
         user.socialAccounts.push({ provider: "naver", providerId: naverId });
+        if (naverName && (!user.name || user.name === "네이버 사용자")) user.name = naverName;
         await user.save();
       }
     }
@@ -120,6 +128,7 @@ export async function GET(req: Request) {
       if (user) {
         user.socialAccounts.push({ provider: "naver", providerId: naverId });
         if (naverEmail && !user.email) user.email = naverEmail;
+        if (naverName && (!user.name || user.name === "네이버 사용자")) user.name = naverName;
         await user.save();
       }
     }

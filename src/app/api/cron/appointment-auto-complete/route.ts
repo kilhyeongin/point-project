@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { FavoritePartner } from "@/models/FavoritePartner";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
   const expected = process.env.CRON_SECRET;
@@ -59,7 +60,7 @@ export async function GET(req: Request) {
     }
   );
 
-  console.log(`[CRON_APPOINTMENT_AUTO_COMPLETE] 자동완료 처리: ${result.modifiedCount}건`);
+  logger.info(`[CRON_APPOINTMENT_AUTO_COMPLETE] 자동완료 처리: ${result.modifiedCount}건`);
 
   return NextResponse.json({
     ok: true,

@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect } from "react";
-import { Home, Heart, QrCode, Clock, LogOut, Settings, ArrowLeft } from "lucide-react";
+import { Home, Heart, QrCode, Clock, LogOut, Settings, ArrowLeft, ShoppingBag } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 
 type SessionInfo = {
@@ -57,6 +57,7 @@ export default function CustomerShellClient({
   const isQr = pathname === `/${orgSlug}/customer/qr`;
   const isHistory = pathname === `/${orgSlug}/customer/history`;
   const isSettings = pathname === `/${orgSlug}/customer/settings`;
+  const isShop = pathname.startsWith(`/${orgSlug}/customer/shop`);
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,13 +142,17 @@ export default function CustomerShellClient({
       {/* Bottom Tab Bar */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-xl"
+        aria-label="하단 탭 메뉴"
         style={{
           boxShadow: "0 -1px 0 oklch(0.918 0.008 250), 0 -4px 16px -4px oklch(0 0 0 / 0.06)",
         }}
       >
-        <div className="max-w-2xl mx-auto flex items-stretch h-16">
+        <div className="max-w-2xl mx-auto flex items-stretch h-16" role="tablist">
           <Link
             href={`/${orgSlug}/customer`}
+            role="tab"
+            aria-current={isHome ? "page" : undefined}
+            aria-selected={isHome}
             className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
               isHome ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
@@ -158,12 +163,15 @@ export default function CustomerShellClient({
                 style={{ background: "oklch(0.52 0.27 264)" }}
               />
             )}
-            <Home className="w-5 h-5" />
+            <Home className="w-5 h-5" aria-hidden="true" />
             <span className="text-[11px] font-bold">둘러보기</span>
           </Link>
 
           <Link
             href={`/${orgSlug}/customer/qr`}
+            role="tab"
+            aria-current={isQr ? "page" : undefined}
+            aria-selected={isQr}
             className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
               isQr ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
@@ -174,12 +182,34 @@ export default function CustomerShellClient({
                 style={{ background: "oklch(0.52 0.27 264)" }}
               />
             )}
-            <QrCode className="w-5 h-5" />
+            <QrCode className="w-5 h-5" aria-hidden="true" />
             <span className="text-[11px] font-bold">결제 QR</span>
           </Link>
 
           <Link
+            href={`/${orgSlug}/customer/shop`}
+            role="tab"
+            aria-current={isShop ? "page" : undefined}
+            aria-selected={isShop}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
+              isShop ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {isShop && (
+              <span
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 rounded-full"
+                style={{ background: "oklch(0.52 0.27 264)" }}
+              />
+            )}
+            <ShoppingBag className="w-5 h-5" aria-hidden="true" />
+            <span className="text-[11px] font-bold">상품몰</span>
+          </Link>
+
+          <Link
             href={`/${orgSlug}/customer/history`}
+            role="tab"
+            aria-current={isHistory ? "page" : undefined}
+            aria-selected={isHistory}
             className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
               isHistory ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
@@ -190,12 +220,15 @@ export default function CustomerShellClient({
                 style={{ background: "oklch(0.52 0.27 264)" }}
               />
             )}
-            <Clock className="w-5 h-5" />
-            <span className="text-[11px] font-bold text-center leading-tight break-keep">포인트 사용내역</span>
+            <Clock className="w-5 h-5" aria-hidden="true" />
+            <span className="text-[11px] font-bold text-center leading-tight break-keep">사용내역</span>
           </Link>
 
           <Link
             href={`/${orgSlug}/customer/favorites`}
+            role="tab"
+            aria-current={isFavorites ? "page" : undefined}
+            aria-selected={isFavorites}
             className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
               isFavorites ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
@@ -206,12 +239,15 @@ export default function CustomerShellClient({
                 style={{ background: "oklch(0.52 0.27 264)" }}
               />
             )}
-            <Heart className="w-5 h-5" />
+            <Heart className="w-5 h-5" aria-hidden="true" />
             <span className="text-[11px] font-bold">관심업체</span>
           </Link>
 
           <Link
             href={`/${orgSlug}/customer/settings`}
+            role="tab"
+            aria-current={isSettings ? "page" : undefined}
+            aria-selected={isSettings}
             className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
               isSettings ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
@@ -222,7 +258,7 @@ export default function CustomerShellClient({
                 style={{ background: "oklch(0.52 0.27 264)" }}
               />
             )}
-            <Settings className="w-5 h-5" />
+            <Settings className="w-5 h-5" aria-hidden="true" />
             <span className="text-[11px] font-bold">마이페이지</span>
           </Link>
         </div>
