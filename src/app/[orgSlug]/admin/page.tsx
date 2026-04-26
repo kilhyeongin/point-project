@@ -422,7 +422,7 @@ export default async function AdminDashboard({
               제휴사 승인 {formatNumber(pendingPartnerCount)}건
             </a>
             <a href={`/${orgSlug}/admin/settlements/partners?tab=withdrawal`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
-              출금 {formatNumber(pendingWithdrawalCount)}건
+              포인트 출금요청 {formatNumber(pendingWithdrawalCount)}건
             </a>
             <a href={`/${orgSlug}/admin/settlements/partners?tab=point-settlement`} className="text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity">
               포인트 정산 {formatNumber(pendingPointSettlementCount)}건
