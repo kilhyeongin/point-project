@@ -66,6 +66,7 @@ export default function CustomerShopClient({ session }: { session: SessionInfo }
 
   const [selected, setSelected] = useState<Product | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [result, setResult] = useState<{
     ok: boolean;
     pinNumber?: string;
@@ -97,6 +98,10 @@ export default function CustomerShopClient({ session }: { session: SessionInfo }
   async function handlePurchase() {
     if (!selected || purchasing) return;
 
+    // 재시도 시 같은 키 재사용 (중복 구매 방지)
+    const key = pendingKey ?? generateIdempotencyKey();
+    if (!pendingKey) setPendingKey(key);
+
     setPurchasing(true);
     setResult(null);
 
@@ -106,7 +111,7 @@ export default function CustomerShopClient({ session }: { session: SessionInfo }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: selected.id,
-          idempotencyKey: generateIdempotencyKey(),
+          idempotencyKey: key,
         }),
       });
       const data = await res.json();
@@ -127,6 +132,7 @@ export default function CustomerShopClient({ session }: { session: SessionInfo }
   function closeModal() {
     setSelected(null);
     setResult(null);
+    setPendingKey(null);
   }
 
   return (

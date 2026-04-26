@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/auth";
 import { ShopOrder } from "@/models/ShopOrder";
@@ -30,16 +31,18 @@ export async function GET(req: NextRequest) {
 
     const orgId = session.orgId ?? "4nwn";
 
+    const customerId = new mongoose.Types.ObjectId(session.uid);
+
     const [orders, total] = await Promise.all([
       ShopOrder.find(
-        { organizationId: orgId, customerId: session.uid },
+        { organizationId: orgId, customerId },
         { smartconOrderId: 0, smartconRetryCount: 0, smartconLastTriedAt: 0 }
       )
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      ShopOrder.countDocuments({ organizationId: orgId, customerId: session.uid }),
+      ShopOrder.countDocuments({ organizationId: orgId, customerId }),
     ]);
 
     const items = (orders as any[]).map((doc) => ({

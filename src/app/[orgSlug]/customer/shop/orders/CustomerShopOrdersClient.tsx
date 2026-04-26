@@ -47,16 +47,28 @@ export default function CustomerShopOrdersClient({
 }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetch("/api/customer/shop/orders", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.ok) setOrders(Array.isArray(data.items) ? data.items : []);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  async function fetchOrders(p: number, append = false) {
+    if (p === 1) setLoading(true); else setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/customer/shop/orders?page=${p}`, { cache: "no-store" });
+      const data = await res.json();
+      if (data?.ok) {
+        const items = Array.isArray(data.items) ? data.items : [];
+        setOrders((prev) => append ? [...prev, ...items] : items);
+        setTotalPages(data.totalPages ?? 1);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }
+
+  useEffect(() => { fetchOrders(1); }, []);
 
   return (
     <CustomerShellClient
@@ -162,6 +174,22 @@ export default function CustomerShopOrdersClient({
             );
           })}
         </div>
+      )}
+
+      {/* 더 보기 */}
+      {page < totalPages && (
+        <button
+          type="button"
+          onClick={() => {
+            const next = page + 1;
+            setPage(next);
+            fetchOrders(next, true);
+          }}
+          disabled={loadingMore}
+          className="w-full mt-4 py-3 rounded-2xl border border-border text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+        >
+          {loadingMore ? "불러오는 중..." : "더 보기"}
+        </button>
       )}
     </CustomerShellClient>
   );

@@ -163,50 +163,39 @@ export async function POST() {
     for (let i = 0; i < catalog.length; i++) {
       const item = catalog[i];
 
-      const existing = await ShopProduct.findOne({
-        organizationId: orgId,
-        smartconProductCode: item.productCode,
-      });
+      // upsert로 race condition 방지 (동시 동기화 요청도 안전)
+      const result = await ShopProduct.findOneAndUpdate(
+        { organizationId: orgId, smartconProductCode: item.productCode },
+        {
+          $set: {
+            name: item.productName,
+            brand: item.brand,
+            description: item.description,
+            ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
+            expirationDays: item.expirationDays,
+            updatedBy: session.username,
+          },
+          $setOnInsert: {
+            organizationId: orgId,
+            smartconProductCode: item.productCode,
+            pointCost: item.price,
+            isActive: true,
+            sortOrder: i,
+            createdBy: session.username,
+          },
+        },
+        { upsert: true, new: false }
+      );
 
-      if (!existing) {
-        await ShopProduct.create({
-          organizationId: orgId,
-          name: item.productName,
-          brand: item.brand,
-          description: item.description,
-          pointCost: item.price,
-          imageUrl: item.imageUrl,
-          smartconProductCode: item.productCode,
-          expirationDays: item.expirationDays,
-          isActive: true,
-          sortOrder: i,
-          createdBy: session.username,
-          updatedBy: session.username,
-        });
+      if (!result) {
         added++;
       } else {
-        // 이미지, 상품명, 유효기간만 업데이트 (포인트 가격은 관리자가 조정할 수 있으니 유지)
         const needsUpdate =
-          existing.name !== item.productName ||
-          (item.imageUrl && existing.imageUrl !== item.imageUrl) ||
-          existing.expirationDays !== item.expirationDays;
-
-        if (needsUpdate) {
-          await ShopProduct.updateOne(
-            { _id: existing._id },
-            {
-              $set: {
-                name: item.productName,
-                ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
-                expirationDays: item.expirationDays,
-                updatedBy: session.username,
-              },
-            }
-          );
-          updated++;
-        } else {
-          unchanged++;
-        }
+          result.name !== item.productName ||
+          (item.imageUrl && result.imageUrl !== item.imageUrl) ||
+          result.expirationDays !== item.expirationDays;
+        if (needsUpdate) updated++;
+        else unchanged++;
       }
     }
 

@@ -8,6 +8,7 @@ import { Ledger } from "@/models/Ledger";
 import { debitWallet } from "@/services/wallet";
 import { sendSms, buildGiftCardSmsText } from "@/lib/sms";
 import { User } from "@/models/User";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 // 스마트콘 API Mock — API 키 발급 후 실제 구현으로 교체
 async function callSmartconAPI(params: {
@@ -28,6 +29,14 @@ async function callSmartconAPI(params: {
 }
 
 export async function POST(req: NextRequest) {
+  // 1분에 10회 제한 (중복 구매 시도 방지)
+  if (await isRateLimited(`shop-order:${getClientIp(req)}`, 10, 60 * 1000)) {
+    return NextResponse.json(
+      { ok: false, error: "잠시 후 다시 시도해 주세요." },
+      { status: 429 }
+    );
+  }
+
   try {
     const session = await getSessionFromCookies();
 
@@ -113,7 +122,7 @@ export async function POST(req: NextRequest) {
       await dbSession.withTransaction(async () => {
         // 1. 주문 생성 (PENDING)
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + Math.max(1, Number(productDoc.expirationDays ?? 90)));
+        expiresAt.setUTCDate(expiresAt.getUTCDate() + Math.max(1, Number(productDoc.expirationDays ?? 90)));
 
         const [newOrder] = await ShopOrder.create(
           [
@@ -294,6 +303,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 400 }
+      );
+    }
+    // 동시 요청으로 중복키 충돌 시 (idempotencyKey unique index)
+    if (error?.code === 11000) {
+      return NextResponse.json(
+        { ok: false, error: "이미 처리 중인 주문입니다. 잠시 후 구매 내역을 확인해주세요." },
+        { status: 409 }
       );
     }
     console.error("[SHOP_ORDER_POST_ERROR]", error);
