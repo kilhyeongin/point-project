@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   ChevronDown, ChevronUp, CheckCircle2, Clock, Search, X,
@@ -213,9 +213,17 @@ export default function AdminSettlementsPage() {
   const pathname = usePathname();
   const orgSlug = pathname.split("/")[1];
   const currentYear = new Date().getFullYear();
+  const searchParams = useSearchParams();
 
-  // 메인 탭
-  const [mainTab, setMainTab] = useState<MainTab>("general");
+  // URL ?tab= 파라미터로 초기 탭 설정
+  // tab=general → 일반 정산
+  // tab=withdrawal → 포인트 출금
+  // tab=point-settlement → 포인트 정산
+  const urlTab = searchParams.get("tab");
+  const initMainTab: MainTab = urlTab === "withdrawal" || urlTab === "point-settlement" ? "point" : "general";
+  const initSubTab: PointSubTab = urlTab === "point-settlement" ? "settlement" : "withdrawal";
+
+  const [mainTab, setMainTab] = useState<MainTab>(initMainTab);
 
   // ── 수수료 정산 상태 ──
   const [gItems, setGItems] = useState<GeneralSettlementItem[]>([]);
@@ -237,7 +245,7 @@ export default function AdminSettlementsPage() {
   const [pConfirming, setPConfirming] = useState<string | null>(null);
   const [pCancelling, setPCancelling] = useState<string | null>(null);
   const [pQ, setPQ] = useState("");
-  const [pSubTab, setPSubTab] = useState<PointSubTab>("withdrawal");
+  const [pSubTab, setPSubTab] = useState<PointSubTab>(initSubTab);
   const [pExpandedPartners, setPExpandedPartners] = useState<Set<string>>(new Set());
 
   // ── 데이터 로드 ──
