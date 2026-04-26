@@ -9,6 +9,7 @@ type Props = {
   initialFavorite: boolean;
   onChange?: (next: boolean) => void;
   onChanged?: (next: boolean) => void;
+  onImage?: boolean;
 };
 
 type ToggleResponse = {
@@ -23,6 +24,7 @@ export default function FavoritePartnerButton({
   initialFavorite,
   onChange,
   onChanged,
+  onImage = false,
 }: Props) {
   const [favorite, setFavorite] = useState(Boolean(initialFavorite));
   const [loading, setLoading] = useState(false);
@@ -71,11 +73,11 @@ export default function FavoritePartnerButton({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 28,
-        height: 28,
+        width: onImage ? 24 : 28,
+        height: onImage ? 24 : 28,
         borderRadius: "50%",
         border: "none",
-        background: "transparent",
+        background: onImage ? "rgba(255,255,255,0.45)" : "transparent",
         cursor: loading ? "not-allowed" : "pointer",
         padding: 0,
         transition: "transform 0.15s ease",
@@ -83,17 +85,15 @@ export default function FavoritePartnerButton({
       }}
     >
       <svg
-        width="18"
-        height="18"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
         fill={favorite ? "#ef4444" : "none"}
         stroke={favorite ? "#ef4444" : "#9ca3af"}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{
-          transition: "fill 0.2s ease, stroke 0.2s ease",
-        }}
+        style={{ transition: "fill 0.2s ease, stroke 0.2s ease" }}
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>

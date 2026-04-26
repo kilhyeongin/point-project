@@ -119,6 +119,7 @@ function GridCard({
             partnerId={item.id}
             initialFavorite={Boolean(item.isFavorite)}
             onChanged={(next) => onFavoriteChanged?.(item.id, next)}
+            onImage
           />
         </div>
       </div>
