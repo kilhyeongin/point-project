@@ -6,7 +6,7 @@ import { signSession, setSessionCookie } from "@/lib/auth";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
-  if (await isRateLimited(`super-admin-login:${getClientIp(req)}`, 5, 2 * 60 * 1000)) {
+  if (await isRateLimited(`techforest-admin-login:${getClientIp(req)}`, 5, 2 * 60 * 1000)) {
     return NextResponse.json(
       { ok: false, message: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

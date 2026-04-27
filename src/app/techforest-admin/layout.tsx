@@ -5,7 +5,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
   const session = await getSessionFromCookies();
 
   if (!session || session.role !== "SUPER_ADMIN") {
-    redirect("/super-admin/login");
+    redirect("/techforest-admin/login");
   }
 
   return <>{children}</>;

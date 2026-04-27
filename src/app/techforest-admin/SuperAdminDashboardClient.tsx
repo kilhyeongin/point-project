@@ -32,7 +32,7 @@ export default function SuperAdminDashboardClient({ session }: { session: Sessio
   const fetchOrgs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/super-admin/organizations", { cache: "no-store" });
+      const res = await fetch("/api/techforest-admin/organizations", { cache: "no-store" });
       const data = await res.json();
       if (data.ok) setOrgs(data.organizations ?? []);
     } finally {
@@ -45,7 +45,7 @@ export default function SuperAdminDashboardClient({ session }: { session: Sessio
   async function toggleActive(org: OrgItem) {
     setTogglingSlug(org.slug);
     try {
-      await fetch(`/api/super-admin/organizations/${org.slug}`, {
+      await fetch(`/api/techforest-admin/organizations/${org.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !org.isActive }),
@@ -60,7 +60,7 @@ export default function SuperAdminDashboardClient({ session }: { session: Sessio
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/super-admin/login";
+    window.location.href = "/techforest-admin/login";
   }
 
   const totalPartners = orgs.reduce((s, o) => s + o.partnerCount, 0);
@@ -241,7 +241,7 @@ function CreateOrgForm({ onCreated, onCancel }: { onCreated: () => void; onCance
     setLoading(true);
 
     try {
-      const res = await fetch("/api/super-admin/organizations", {
+      const res = await fetch("/api/techforest-admin/organizations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

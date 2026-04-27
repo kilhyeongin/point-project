@@ -19,7 +19,7 @@ export default function SuperAdminLoginClient() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/super-admin/login", {
+      const res = await fetch("/api/techforest-admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -27,7 +27,7 @@ export default function SuperAdminLoginClient() {
       const data = await res.json();
 
       if (data.ok) {
-        router.replace("/super-admin");
+        router.replace("/techforest-admin");
       } else {
         setError(data.message ?? "로그인에 실패했습니다.");
       }
