@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/auth";
 import { FavoritePartner } from "@/models/FavoritePartner";
@@ -22,6 +23,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (session.role !== "PARTNER") return NextResponse.json({ ok: false, error: "접근 권한이 없습니다." }, { status: 403 });
 
     const { id } = await params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ ok: false, error: "잘못된 ID입니다." }, { status: 400 });
+    }
+
     const body = await req.json();
 
     await connectDB();

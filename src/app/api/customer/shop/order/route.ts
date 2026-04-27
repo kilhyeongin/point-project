@@ -10,17 +10,36 @@ import { sendSms, buildGiftCardSmsText } from "@/lib/sms";
 import { User } from "@/models/User";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
-// 스마트콘 API Mock — API 키 발급 후 실제 구현으로 교체
 async function callSmartconAPI(params: {
   productCode: string;
   orderId: string;
   quantity: number;
 }): Promise<{ pinNumber: string; pinUrl: string; smartconOrderId: string }> {
-  // TODO: 실제 스마트콘 API 연동
-  // const apiKey = process.env.SMARTCON_API_KEY;
-  // const res = await fetch("https://api.smartcon.co.kr/v1/order", { ... });
+  const apiKey = process.env.SMARTCON_API_KEY;
 
-  // Mock 응답
+  if (!apiKey) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SMARTCON_API_KEY가 설정되지 않았습니다.");
+    }
+    // 개발 환경 Mock
+    return {
+      pinNumber: `MOCK-${Date.now()}-${params.orderId.slice(-6)}`,
+      pinUrl: "",
+      smartconOrderId: `SC-${Date.now()}`,
+    };
+  }
+
+  // TODO: 실제 스마트콘 API 연동
+  // const res = await fetch("https://api.smartcon.co.kr/v1/order", {
+  //   method: "POST",
+  //   headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+  //   body: JSON.stringify({ productCode: params.productCode, orderId: params.orderId, quantity: params.quantity }),
+  // });
+  // const data = await res.json();
+  // if (!res.ok) throw new Error(data.message ?? "스마트콘 API 오류");
+  // return { pinNumber: data.pinNumber, pinUrl: data.pinUrl ?? "", smartconOrderId: data.orderId };
+
+  // API 키는 있으나 실제 연동 전 임시 Mock
   return {
     pinNumber: `MOCK-${Date.now()}-${params.orderId.slice(-6)}`,
     pinUrl: "",
@@ -156,6 +175,7 @@ export async function POST(req: NextRequest) {
               organizationId: orgId,
               accountId: customerId,
               userId: customerId,
+              actorId: customerId,
               type: "USE",
               amount: -pointCost,
               refType: "ShopOrder",
@@ -283,6 +303,11 @@ export async function POST(req: NextRequest) {
         }
       } catch (refundError) {
         console.error("[SHOP_REFUND_ERROR]", refundError);
+        // 환불 실패 시 상태를 REFUND_FAILED로 기록 (관리자 수동 처리 필요)
+        await ShopOrder.updateOne(
+          { _id: order._id },
+          { $set: { status: "REFUND_FAILED", failReason: "자동 환불 실패 - 관리자 수동 처리 필요" } }
+        ).catch(() => {});
       }
 
       return NextResponse.json(

@@ -16,11 +16,11 @@ const TOKEN_TTL_SEC = 60 * 60 * 24; // 1일
 // 세션에 넣을 최소 정보 (보안상 과도한 정보 금지)
 export type SessionPayload = {
   uid: string;
-  role: "PARTNER" | "CUSTOMER" | "ADMIN" | "HOST";
+  role: "SUPER_ADMIN" | "PARTNER" | "CUSTOMER" | "ADMIN" | "HOST";
   username: string;
   name: string;
-  jti: string; // 토큰 고유 ID (블랙리스트용)
-  orgId: string; // 소속 단체 slug
+  jti: string;
+  orgId: string;
 };
 
 // JWT 생성 (1일 유효)

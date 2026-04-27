@@ -8,12 +8,17 @@ import {
   getPartnerCategoryMasters,
   DEFAULT_PARTNER_CATEGORY_SEEDS,
 } from "@/lib/partnerCategories";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 function textIncludes(source: unknown, keyword: string) {
   return String(source ?? "").toLowerCase().includes(keyword.toLowerCase());
 }
 
 export async function GET(req: NextRequest) {
+  if (await isRateLimited(`customer-partners:${getClientIp(req)}`, 60, 60 * 1000)) {
+    return NextResponse.json({ ok: false, error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
+  }
+
   try {
     const session = await getSessionFromCookies();
 

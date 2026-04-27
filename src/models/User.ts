@@ -1,6 +1,6 @@
 import { Schema, models, model } from "mongoose";
 
-export type UserRole = "ADMIN" | "HOST" | "PARTNER" | "CUSTOMER";
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "HOST" | "PARTNER" | "CUSTOMER";
 export type UserStatus = "ACTIVE" | "PENDING" | "BLOCKED";
 
 const CustomerProfileSchema = new Schema(

@@ -8,12 +8,17 @@
 // ✔ payload: { sub: customerId, typ: "customer_qr" }
 // =======================================================
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import jwt from "jsonwebtoken";
 import { getSessionFromCookies } from "@/lib/auth";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (await isRateLimited(`qr-token:${getClientIp(req)}`, 20, 60 * 1000)) {
+    return NextResponse.json({ ok: false, error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
+  }
+
   const session = await getSessionFromCookies();
   if (!session) {
     return NextResponse.json({ ok: false, message: "로그인이 필요합니다." }, { status: 401 });
