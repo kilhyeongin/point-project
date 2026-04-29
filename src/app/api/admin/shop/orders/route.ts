@@ -34,9 +34,10 @@ export async function GET(req: NextRequest) {
     if (period === "today") {
       query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) };
     } else if (period === "week") {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      query.createdAt = { $gte: weekAgo };
+      const day = now.getDay(); // 0=일, 1=월 ... 6=토
+      const diffToMonday = (day === 0 ? -6 : 1 - day);
+      const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+      query.createdAt = { $gte: monday };
     } else if (period === "month") {
       query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
     }

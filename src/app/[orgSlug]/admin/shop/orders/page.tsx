@@ -123,7 +123,7 @@ export default function AdminShopOrdersPage() {
       <div className="flex gap-2 flex-wrap mb-3">
         {[
           { value: "today", label: "오늘" },
-          { value: "week", label: "1주일" },
+          { value: "week", label: "이번주" },
           { value: "month", label: "이번달" },
           { value: "all", label: "전체" },
         ].map((opt) => (
