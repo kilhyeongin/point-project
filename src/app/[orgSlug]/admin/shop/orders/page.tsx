@@ -122,12 +122,25 @@ export default function AdminShopOrdersPage() {
     }
   }
 
+  const PERIOD_OPTIONS = [
+    { value: "today", label: "오늘" },
+    { value: "week", label: "이번주" },
+    { value: "month", label: "이번달" },
+    { value: "all", label: "전체" },
+  ];
+
+  const isCustomRange = !!(fromDate || toDate);
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+
+      {/* 헤더 */}
+      <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-black text-foreground">주문 내역</h1>
-          <p className="text-sm text-muted-foreground mt-1">전체 {total.toLocaleString()}건</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            조회된 주문 <span className="font-bold text-foreground">{total.toLocaleString()}건</span>
+          </p>
         </div>
         <button
           type="button"
@@ -139,79 +152,95 @@ export default function AdminShopOrdersPage() {
         </button>
       </div>
 
-      {/* 기간 필터 */}
-      <div className="flex gap-2 flex-wrap mb-3">
-        {[
-          { value: "today", label: "오늘" },
-          { value: "week", label: "이번주" },
-          { value: "month", label: "이번달" },
-          { value: "all", label: "전체" },
-        ].map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => handlePeriod(opt.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
-              period === opt.value && !fromDate && !toDate
-                ? "bg-foreground text-background"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      {/* 필터 카드 */}
+      <div className="bg-card border border-border rounded-2xl p-4 mb-5 space-y-3">
 
-      {/* 날짜 범위 검색 */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary transition-all"
-        />
-        <span className="text-sm text-muted-foreground font-bold">~</span>
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          className="h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary transition-all"
-        />
-        <button
-          type="button"
-          onClick={handleDateSearch}
-          disabled={!fromDate && !toDate}
-          className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 transition-all"
-        >
-          조회
-        </button>
-        {(fromDate || toDate) && (
-          <button
-            type="button"
-            onClick={() => { setFromDate(""); setToDate(""); handlePeriod("today"); }}
-            className="h-9 px-3 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:text-foreground transition-all"
-          >
-            초기화
-          </button>
-        )}
-      </div>
+        {/* 기간 + 날짜 직접입력 */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* 세그먼트 컨트롤 */}
+          <div className="inline-flex rounded-xl border border-border overflow-hidden shrink-0">
+            {PERIOD_OPTIONS.map((opt) => {
+              const active = period === opt.value && !isCustomRange;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handlePeriod(opt.value)}
+                  className={`px-3.5 py-2 text-sm font-bold transition-all border-r border-border last:border-r-0 ${
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* 상태 필터 */}
-      <div className="flex gap-2 flex-wrap mb-4">
-        {STATUS_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setStatusFilter(opt.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
-              statusFilter === opt.value
-                ? "bg-primary text-white"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
+          {/* 날짜 직접입력 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className={`h-9 rounded-xl border px-3 text-sm text-foreground bg-background outline-none transition-all ${
+                isCustomRange ? "border-primary ring-1 ring-primary/20" : "border-border focus:border-primary"
+              }`}
+            />
+            <span className="text-muted-foreground font-bold text-sm">—</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className={`h-9 rounded-xl border px-3 text-sm text-foreground bg-background outline-none transition-all ${
+                isCustomRange ? "border-primary ring-1 ring-primary/20" : "border-border focus:border-primary"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={handleDateSearch}
+              disabled={!fromDate && !toDate}
+              className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 hover:bg-primary/90 transition-all"
+            >
+              조회
+            </button>
+            {isCustomRange && (
+              <button
+                type="button"
+                onClick={() => { setFromDate(""); setToDate(""); handlePeriod("today"); }}
+                className="h-9 px-3 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
+              >
+                초기화
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 구분선 */}
+        <div className="border-t border-border" />
+
+        {/* 상태 필터 */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-bold text-muted-foreground shrink-0">상태</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatusFilter(opt.value)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  statusFilter === opt.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
 
       {/* 주문 목록 */}
