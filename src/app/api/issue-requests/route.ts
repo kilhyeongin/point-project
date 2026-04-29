@@ -166,7 +166,7 @@ export async function POST(req: Request) {
             amount: -amount,
             refType: "ISSUE_REQUEST",
             refId: issueDoc._id,
-            note: note ? `신청 고객 지급 차감 / ${note}` : "신청 고객 지급 차감",
+            note: note ? `포인트 지급 / ${note}` : "포인트 지급",
           },
           {
             organizationId: session.orgId ?? "4nwn",
