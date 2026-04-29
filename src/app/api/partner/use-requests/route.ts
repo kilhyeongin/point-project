@@ -115,6 +115,7 @@ export async function POST(req: Request) {
   await connectDB();
 
   let targetUser: any = null;
+  let qrJti = ""; // 모든 검증 통과 후 Redis SET NX에 사용
 
   if (toUsername) {
     targetUser = await User.findOne(
@@ -147,26 +148,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, message: "QR에 고객 정보가 없습니다." }, { status: 400 });
       }
 
-      // jti 기반 일회성 사용 검증 (Redis 환경)
       const jti = String(decoded?.jti ?? "");
-      if (jti) {
-        const redis = getRedis();
-        if (redis) {
-          const alreadyUsed = await redis.get(`qr:used:${jti}`);
-          if (alreadyUsed) {
-            return NextResponse.json(
-              { ok: false, message: "이미 사용된 QR입니다. 고객에게 QR을 새로고침 요청하세요." },
-              { status: 400 }
-            );
-          }
-        }
+      if (!jti) {
+        return NextResponse.json({ ok: false, message: "유효하지 않은 QR입니다." }, { status: 400 });
       }
+      // jti는 모든 검증 통과 후 Redis SET NX 처리 (아래에서 실행)
+      qrJti = jti;
 
       targetUser = await User.findOne(
         { _id: new mongoose.Types.ObjectId(customerId), organizationId: session.orgId ?? "4nwn" },
         { _id: 1, role: 1, status: 1, username: 1, name: 1 }
       );
-      (targetUser as any).__qrJti = jti;
     } catch (e: any) {
       const m = String(e?.message ?? "");
       const friendly =
@@ -212,8 +204,6 @@ export async function POST(req: Request) {
   }
 
   const isQrScan = !!(qrTokenRaw || qrPayloadRaw);
-  const qrJti = isQrScan ? String((targetUser as any).__qrJti ?? "") : "";
-  if (targetUser && "__qrJti" in targetUser) delete (targetUser as any).__qrJti;
 
   // QR 중복 스캔 방지: 동일 고객-제휴사 쌍은 15초 내 1회만 허용
   if (isQrScan) {
@@ -222,6 +212,24 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { ok: false, message: "잠시 후 다시 시도해주세요. (중복 처리 방지)" },
         { status: 429 }
+      );
+    }
+  }
+
+  // 모든 검증 통과 후 jti 원자적 선점 — Redis 없으면 QR 스캔 차단
+  if (isQrScan && qrJti) {
+    const redis = getRedis();
+    if (!redis) {
+      return NextResponse.json(
+        { ok: false, message: "QR 스캔을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요." },
+        { status: 503 }
+      );
+    }
+    const reserved = await redis.set(`qr:used:${qrJti}`, "1", { nx: true, ex: 180 });
+    if (reserved === null) {
+      return NextResponse.json(
+        { ok: false, message: "이미 사용된 QR입니다. 고객에게 QR을 새로고침 요청하세요." },
+        { status: 400 }
       );
     }
   }
@@ -284,14 +292,6 @@ export async function POST(req: Request) {
           balanceAfter: debit.balanceAfter,
         };
       });
-
-      // 사용된 QR jti를 Redis에 마킹 (3분 TTL = 토큰 만료와 동일)
-      if (qrJti) {
-        const redis = getRedis();
-        if (redis) {
-          await redis.set(`qr:used:${qrJti}`, "1", { ex: 180 }).catch(() => {});
-        }
-      }
 
       return NextResponse.json(
         {

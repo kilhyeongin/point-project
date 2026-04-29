@@ -113,28 +113,24 @@ export async function GET(req: Request) {
     }
 
     if (!user && naverEmail) {
-      // 2. 동일 이메일 계정 찾기 → 소셜 계정 연결
-      user = await User.findOne({ email: naverEmail, role: "CUSTOMER", organizationId: resolvedOrgSlug });
-      if (user) {
-        user.socialAccounts.push({ provider: "naver", providerId: naverId });
-        if (naverName && (!user.name || user.name === "네이버 사용자")) user.name = naverName;
-        await user.save();
+      // 2. 동일 이메일 계정 존재 시 → 자동 연결 금지, 오류 안내
+      const emailExists = await User.exists({ email: naverEmail, organizationId: resolvedOrgSlug });
+      if (emailExists) {
+        return NextResponse.redirect(new URL(`${loginRedirectBase}?error=naver_email_exists`, baseUrl));
       }
     }
 
     if (!user && naverPhone) {
-      // 3. 동일 전화번호 계정 찾기 → 소셜 계정 연결
-      user = await User.findOne({ "customerProfile.phone": naverPhone, role: "CUSTOMER", organizationId: resolvedOrgSlug });
-      if (user) {
-        user.socialAccounts.push({ provider: "naver", providerId: naverId });
-        if (naverEmail && !user.email) user.email = naverEmail;
-        if (naverName && (!user.name || user.name === "네이버 사용자")) user.name = naverName;
-        await user.save();
+      // 3. 동일 전화번호 계정 존재 시 → 자동 연결 금지, 오류 안내
+      const phoneExists = await User.exists({ "customerProfile.phone": naverPhone, organizationId: resolvedOrgSlug });
+      if (phoneExists) {
+        return NextResponse.redirect(new URL(`${loginRedirectBase}?error=naver_phone_exists`, baseUrl));
       }
     }
 
     if (!user) {
       // 3. 신규 고객 계정 생성
+      const referralCode = (cookieStore.get("referral_code")?.value ?? "").toUpperCase().trim().slice(0, 20);
       const username = `naver_${naverId}`;
       user = await User.create({
         username,
@@ -149,9 +145,13 @@ export async function GET(req: Request) {
           phone: naverPhone,
           onboardingCompleted: false,
           interests: [],
+          referralCode,
         },
       });
     }
+
+    // 추천인 쿠키 사용 후 삭제
+    cookieStore.delete("referral_code");
 
     if (user.status === "BLOCKED") {
       return NextResponse.redirect(new URL(`/${resolvedOrgSlug}/login?error=blocked`, baseUrl));

@@ -27,11 +27,9 @@ export default async function CustomerFavoritesPage({ params }: { params: Promis
 
   await connectDB();
 
-  const me = await User.findById(
-    session.uid,
-    {
-      customerProfile: 1,
-    }
+  const me = await User.findOne(
+    { _id: session.uid, organizationId: orgSlug },
+    { customerProfile: 1 }
   ).lean();
 
   if (!me) {

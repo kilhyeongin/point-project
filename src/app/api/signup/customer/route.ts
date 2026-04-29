@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     const organizationId = String(body?.organizationId ?? "4nwn").trim() || "4nwn";
+    const referralCode = text(body?.referralCode, 20).toUpperCase();
 
     await connectDB();
 
@@ -160,6 +161,7 @@ export async function POST(req: NextRequest) {
         detailAddress,
         onboardingCompleted: false,
         interests: [],
+        referralCode,
       },
     });
 

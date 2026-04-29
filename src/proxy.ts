@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
 const CRON_PATHS: string[] = [];
-const CSRF_BYPASS_PATHS = ["/api/auth/logout", "/api/platform/setup", "/api/platform/organizations", "/api/platform/rename-org"];
+const CSRF_BYPASS_PATHS = ["/api/auth/logout", "/api/platform/setup", "/api/platform/organizations", "/api/platform/rename-org", "/api/techforest-admin/setup"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

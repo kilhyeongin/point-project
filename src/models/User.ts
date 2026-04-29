@@ -29,6 +29,11 @@ const CustomerProfileSchema = new Schema(
       type: [String],
       default: [],
     },
+    referralCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   { _id: false }
 );
@@ -197,7 +202,6 @@ const UserSchema = new Schema(
     username: {
       type: String,
       required: true,
-      unique: true,
       index: true,
       trim: true,
       lowercase: true,
@@ -224,7 +228,7 @@ const UserSchema = new Schema(
     role: {
       type: String,
       required: true,
-      enum: ["ADMIN", "HOST", "PARTNER", "CUSTOMER"],
+      enum: ["SUPER_ADMIN", "ADMIN", "HOST", "PARTNER", "CUSTOMER"],
       index: true,
     },
     status: {
@@ -253,6 +257,7 @@ const UserSchema = new Schema(
   }
 );
 
+UserSchema.index({ organizationId: 1, username: 1 }, { unique: true });
 UserSchema.index({ organizationId: 1, role: 1, status: 1 });
 UserSchema.index({ organizationId: 1, role: 1, "partnerProfile.isPublished": 1 });
 UserSchema.index({ organizationId: 1, role: 1, "partnerProfile.categories": 1 });

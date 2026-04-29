@@ -18,11 +18,9 @@ export default async function CustomerOnboardingPage({ params }: { params: Promi
 
   await connectDB();
 
-  const me = await User.findById(
-    session.uid,
-    {
-      customerProfile: 1,
-    }
+  const me = await User.findOne(
+    { _id: session.uid, organizationId: orgSlug },
+    { customerProfile: 1 }
   ).lean();
 
   if (!me) {

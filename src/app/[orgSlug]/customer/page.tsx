@@ -16,7 +16,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ orgSl
 
   await connectDB();
 
-  const me = await User.findById(session.uid, { customerProfile: 1 }).lean();
+  const me = await User.findOne({ _id: session.uid, organizationId: orgSlug }, { customerProfile: 1 }).lean();
   if (!me) redirect(`/${orgSlug}/login`);
 
   const onboardingCompleted = Boolean((me as any)?.customerProfile?.onboardingCompleted);

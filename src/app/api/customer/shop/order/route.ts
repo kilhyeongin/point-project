@@ -232,9 +232,10 @@ export async function POST(req: NextRequest) {
 
       // SMS 발송 (실패해도 구매는 유지)
       try {
-        const user = await User.findById(customerId, {
-          "customerProfile.phone": 1,
-        }).lean();
+        const user = await User.findOne(
+          { _id: customerId, organizationId: session.orgId ?? "4nwn" },
+          { "customerProfile.phone": 1 }
+        ).lean();
         const phone = String((user as any)?.customerProfile?.phone ?? "").trim();
 
         if (phone) {

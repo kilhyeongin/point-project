@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -26,7 +26,21 @@ interface DaumPostcodeResult {
 export default function CustomerSignupPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const orgSlug = pathname.split("/")[1];
+
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      const code = ref.toUpperCase().trim().slice(0, 20);
+      setReferralCode(code);
+      // 소셜 로그인/다른 경로로 가입해도 추천인 연결되도록 쿠키 저장 (10분)
+      const expires = new Date(Date.now() + 10 * 60 * 1000).toUTCString();
+      document.cookie = `referral_code=${code}; expires=${expires}; path=/; SameSite=Lax`;
+    }
+  }, [searchParams]);
 
   const [form, setForm] = useState({
     name: "",
@@ -186,7 +200,7 @@ export default function CustomerSignupPage() {
       const res = await fetch("/api/signup/customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, organizationId: orgSlug }),
+        body: JSON.stringify({ ...form, organizationId: orgSlug, referralCode }),
       });
 
       const data = await res.json();

@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await User.findById(partnerId).lean() as any;
+    const user = await User.findOne({ _id: partnerId, organizationId: orgId }).lean() as any;
     const partnerName = user?.partnerProfile?.businessName || user?.name || "";
 
     const doc = await PointSettlementPayment.create({

@@ -14,7 +14,7 @@ export default async function CustomerHistoryPage({ params }: { params: Promise<
 
   await connectDB();
 
-  const me = await User.findById(session.uid, { customerProfile: 1 }).lean();
+  const me = await User.findOne({ _id: session.uid, organizationId: orgSlug }, { customerProfile: 1 }).lean();
   if (!me) redirect(`/${orgSlug}/login`);
 
   const onboardingCompleted = Boolean(

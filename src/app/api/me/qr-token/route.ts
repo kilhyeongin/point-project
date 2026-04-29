@@ -15,7 +15,7 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
-  if (await isRateLimited(`qr-token:${getClientIp(req)}`, 20, 60 * 1000)) {
+  if (await isRateLimited(`qr-token:ip:${getClientIp(req)}`, 20, 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
   }
 
@@ -25,6 +25,10 @@ export async function GET(req: NextRequest) {
   }
   if (session.role !== "CUSTOMER") {
     return NextResponse.json({ ok: false, message: "고객만 사용할 수 있습니다." }, { status: 403 });
+  }
+
+  if (await isRateLimited(`qr-token:uid:${session.uid}`, 10, 60 * 1000)) {
+    return NextResponse.json({ ok: false, error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
   }
 
   const secret = process.env.QR_SECRET;

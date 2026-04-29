@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
-import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck, ClipboardList, ChevronRight } from "lucide-react";
+import { LayoutDashboard, User, LogOut, QrCode, FileText, CalendarCheck, ClipboardList, ChevronRight, Users } from "lucide-react";
 import { initAuthInterceptor, onSessionExpired } from "@/lib/clientFetch";
 import { Toaster } from "sonner";
 
@@ -34,6 +34,7 @@ export default function PartnerShellClient({ session, children }: Props) {
     { href: `/${orgSlug}/partner`, label: "대시보드", icon: LayoutDashboard },
     { href: `/${orgSlug}/partner/scan`, label: "QR 스캔", icon: QrCode, mobileOnly: true, hardNav: true },
     { href: `/${orgSlug}/partner/appointments`, label: "예약", icon: CalendarCheck },
+    { href: `/${orgSlug}/partner/staff`, label: "직원 관리", icon: Users },
     { href: `/${orgSlug}/partner/profile`, label: "내 정보", icon: User },
     { href: `/${orgSlug}/partner/settlements`, label: "정산", icon: FileText },
   ];

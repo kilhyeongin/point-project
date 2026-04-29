@@ -20,7 +20,6 @@ const WalletSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
       index: true,
     },
     balance: {
@@ -35,6 +34,8 @@ const WalletSchema = new Schema(
     versionKey: false,
   }
 );
+
+WalletSchema.index({ organizationId: 1, accountId: 1 }, { unique: true });
 
 export const Wallet = models.Wallet || model("Wallet", WalletSchema);
 

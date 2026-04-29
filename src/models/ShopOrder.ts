@@ -50,7 +50,6 @@ const ShopOrderSchema = new Schema(
     idempotencyKey: {
       type: String,
       required: true,
-      unique: true,
       index: true,
     },
     // 포인트 차감 Ledger 연결 (중복 처리 방지)
@@ -110,6 +109,7 @@ const ShopOrderSchema = new Schema(
   }
 );
 
+ShopOrderSchema.index({ organizationId: 1, idempotencyKey: 1 }, { unique: true });
 ShopOrderSchema.index({ organizationId: 1, customerId: 1, createdAt: -1 });
 ShopOrderSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
 // 장애 복구 Cron용: FAILED 상태이면서 환불 안 된 주문 조회
