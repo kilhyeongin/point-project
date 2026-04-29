@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
     const status = searchParams.get("status") ?? "";
+    const period = searchParams.get("period") ?? "today";
     const limit = 30;
     const skip = (page - 1) * limit;
 
@@ -28,6 +29,17 @@ export async function GET(req: NextRequest) {
     const orgId = session.orgId ?? "4nwn";
     const query: Record<string, unknown> = { organizationId: orgId };
     if (status) query.status = status;
+
+    const now = new Date();
+    if (period === "today") {
+      query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) };
+    } else if (period === "week") {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      query.createdAt = { $gte: weekAgo };
+    } else if (period === "month") {
+      query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+    }
 
     const [orders, total] = await Promise.all([
       ShopOrder.find(query)

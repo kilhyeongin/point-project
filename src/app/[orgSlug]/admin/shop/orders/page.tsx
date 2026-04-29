@@ -52,15 +52,16 @@ export default function AdminShopOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
+  const [period, setPeriod] = useState("today");
   const [refunding, setRefunding] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  async function load(p = page, status = statusFilter) {
+  async function load(p = page, status = statusFilter, per = period) {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(p) });
+      const params = new URLSearchParams({ page: String(p), period: per });
       if (status) params.set("status", status);
 
       const res = await fetch(`/api/admin/shop/orders?${params}`, { cache: "no-store" });
@@ -76,9 +77,9 @@ export default function AdminShopOrdersPage() {
   }
 
   useEffect(() => {
-    load(1, statusFilter);
+    load(1, statusFilter, period);
     setPage(1);
-  }, [statusFilter]);
+  }, [statusFilter, period]);
 
   async function handleRefund(orderId: string, customerName: string, pointsSpent: number) {
     if (!confirm(`${customerName}님의 주문을 취소하고 ${formatPoint(pointsSpent)}P를 환불하시겠습니까?`)) return;
@@ -116,6 +117,29 @@ export default function AdminShopOrdersPage() {
           <RefreshCw className="w-4 h-4" />
           새로고침
         </button>
+      </div>
+
+      {/* 기간 필터 */}
+      <div className="flex gap-2 flex-wrap mb-3">
+        {[
+          { value: "today", label: "오늘" },
+          { value: "week", label: "1주일" },
+          { value: "month", label: "이번달" },
+          { value: "all", label: "전체" },
+        ].map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setPeriod(opt.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
+              period === opt.value
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* 상태 필터 */}
