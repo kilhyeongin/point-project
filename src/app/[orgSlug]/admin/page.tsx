@@ -186,6 +186,7 @@ export default async function AdminDashboard({
         organizationId: orgId,
         type: "USE",
         counterpartyId: { $ne: null },
+        amount: { $lt: 0 }, // 고객 차감 행만 (counterpartyId가 제휴사)
         createdAt: { $gte: thisMonthStart, $lte: thisMonthEnd },
       },
     },
