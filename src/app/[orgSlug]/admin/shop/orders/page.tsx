@@ -53,15 +53,23 @@ export default function AdminShopOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [period, setPeriod] = useState("today");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [refunding, setRefunding] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  async function load(p = page, status = statusFilter, per = period) {
+  async function load(p = page, status = statusFilter, per = period, from = fromDate, to = toDate) {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(p), period: per });
+      const params = new URLSearchParams({ page: String(p) });
+      if (from || to) {
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+      } else {
+        params.set("period", per);
+      }
       if (status) params.set("status", status);
 
       const res = await fetch(`/api/admin/shop/orders?${params}`, { cache: "no-store" });
@@ -77,9 +85,21 @@ export default function AdminShopOrdersPage() {
   }
 
   useEffect(() => {
-    load(1, statusFilter, period);
+    load(1, statusFilter, period, fromDate, toDate);
     setPage(1);
   }, [statusFilter, period]);
+
+  function handleDateSearch() {
+    setPeriod("");
+    load(1, statusFilter, "", fromDate, toDate);
+    setPage(1);
+  }
+
+  function handlePeriod(per: string) {
+    setPeriod(per);
+    setFromDate("");
+    setToDate("");
+  }
 
   async function handleRefund(orderId: string, customerName: string, pointsSpent: number) {
     if (!confirm(`${customerName}님의 주문을 취소하고 ${formatPoint(pointsSpent)}P를 환불하시겠습니까?`)) return;
@@ -130,9 +150,9 @@ export default function AdminShopOrdersPage() {
           <button
             key={opt.value}
             type="button"
-            onClick={() => setPeriod(opt.value)}
+            onClick={() => handlePeriod(opt.value)}
             className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
-              period === opt.value
+              period === opt.value && !fromDate && !toDate
                 ? "bg-foreground text-background"
                 : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
@@ -142,8 +162,42 @@ export default function AdminShopOrdersPage() {
         ))}
       </div>
 
+      {/* 날짜 범위 검색 */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          className="h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary transition-all"
+        />
+        <span className="text-sm text-muted-foreground font-bold">~</span>
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          className="h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary transition-all"
+        />
+        <button
+          type="button"
+          onClick={handleDateSearch}
+          disabled={!fromDate && !toDate}
+          className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 transition-all"
+        >
+          조회
+        </button>
+        {(fromDate || toDate) && (
+          <button
+            type="button"
+            onClick={() => { setFromDate(""); setToDate(""); handlePeriod("today"); }}
+            className="h-9 px-3 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:text-foreground transition-all"
+          >
+            초기화
+          </button>
+        )}
+      </div>
+
       {/* 상태 필터 */}
-      <div className="flex gap-2 flex-wrap mb-5">
+      <div className="flex gap-2 flex-wrap mb-4">
         {STATUS_OPTIONS.map((opt) => (
           <button
             key={opt.value}

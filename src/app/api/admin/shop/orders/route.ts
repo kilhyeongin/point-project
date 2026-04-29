@@ -30,16 +30,26 @@ export async function GET(req: NextRequest) {
     const query: Record<string, unknown> = { organizationId: orgId };
     if (status) query.status = status;
 
-    const now = new Date();
-    if (period === "today") {
-      query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) };
-    } else if (period === "week") {
-      const day = now.getDay(); // 0=일, 1=월 ... 6=토
-      const diffToMonday = (day === 0 ? -6 : 1 - day);
-      const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
-      query.createdAt = { $gte: monday };
-    } else if (period === "month") {
-      query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+    const from = searchParams.get("from") ?? "";
+    const to = searchParams.get("to") ?? "";
+
+    if (from || to) {
+      const range: Record<string, Date> = {};
+      if (from) range.$gte = new Date(from + "T00:00:00.000Z");
+      if (to) range.$lte = new Date(to + "T23:59:59.999Z");
+      query.createdAt = range;
+    } else {
+      const now = new Date();
+      if (period === "today") {
+        query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) };
+      } else if (period === "week") {
+        const day = now.getDay();
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+        query.createdAt = { $gte: monday };
+      } else if (period === "month") {
+        query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+      }
     }
 
     const [orders, total] = await Promise.all([
