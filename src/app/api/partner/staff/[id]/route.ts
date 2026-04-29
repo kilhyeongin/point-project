@@ -6,14 +6,14 @@ import { PartnerStaff } from "@/models/PartnerStaff";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSessionFromCookies();
   if (!session || session.role !== "PARTNER") {
     return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!id || !mongoose.isValidObjectId(id)) {
     return NextResponse.json({ ok: false, error: "잘못된 요청입니다." }, { status: 400 });
   }
