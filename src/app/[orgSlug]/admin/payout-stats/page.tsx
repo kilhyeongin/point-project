@@ -21,7 +21,8 @@ function format(n: number) {
 function formatDate(v: string | null) {
   if (!v) return "-";
   try {
-    return new Date(v).toLocaleString();
+    const d = new Date(v);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   } catch {
     return "-";
   }
@@ -29,26 +30,12 @@ function formatDate(v: string | null) {
 
 function getTodayYmd() {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function getMonthStartYmd() {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}-01`;
-}
-
-function cardStyle(): React.CSSProperties {
-  return {
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    background: "#fff",
-    padding: 20,
-  };
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export default function PayoutStatsPage() {
@@ -66,35 +53,27 @@ export default function PayoutStatsPage() {
     setLoading(true);
     setMsg("");
     setSearched(true);
-
     try {
       if ((start && !end) || (!start && end)) {
         setMsg("시작일과 종료일을 모두 선택하거나 둘 다 비워두세요.");
         setItems([]);
         return;
       }
-
       if (start && end && new Date(start) > new Date(end)) {
         setMsg("시작일은 종료일보다 늦을 수 없습니다.");
         setItems([]);
         return;
       }
-
       const params = new URLSearchParams();
       if (start) params.set("startDate", start);
       if (end) params.set("endDate", end);
-
-      const res = await fetch(`/api/admin/payout-stats?${params.toString()}`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`/api/admin/payout-stats?${params.toString()}`, { cache: "no-store" });
       const data = await res.json();
-
       if (!res.ok || !data?.ok) {
         setMsg(data?.message ?? "조회 실패");
         setItems([]);
         return;
       }
-
       setItems(Array.isArray(data?.items) ? data.items : []);
     } catch {
       setMsg("네트워크 오류");
@@ -108,544 +87,223 @@ export default function PayoutStatsPage() {
     fetchData(startDate, endDate);
   }
 
-
   const filteredItems = useMemo(() => {
     const q = keyword.trim().toLowerCase();
-
     let list = items;
-
     if (q) {
-      list = list.filter((item) => {
-        return (
+      list = list.filter(
+        (item) =>
           String(item.name ?? "").toLowerCase().includes(q) ||
           String(item.username ?? "").toLowerCase().includes(q)
-        );
-      });
+      );
     }
-
     return [...list].sort((a, b) => {
       if (sortType === "amount") {
-        if (b.issueTotal !== a.issueTotal) return b.issueTotal - a.issueTotal;
-        return b.issueCount - a.issueCount;
+        return b.issueTotal !== a.issueTotal ? b.issueTotal - a.issueTotal : b.issueCount - a.issueCount;
       }
-      if (b.issueCount !== a.issueCount) return b.issueCount - a.issueCount;
-      return b.issueTotal - a.issueTotal;
+      return b.issueCount !== a.issueCount ? b.issueCount - a.issueCount : b.issueTotal - a.issueTotal;
     });
   }, [items, keyword, sortType]);
 
-  const summary = useMemo(() => {
-    const totalPartners = filteredItems.length;
-    const activePartners = filteredItems.filter((item) => item.issueCount > 0).length;
-    const totalIssueCount = filteredItems.reduce((sum, item) => sum + item.issueCount, 0);
-    const totalIssueAmount = filteredItems.reduce((sum, item) => sum + item.issueTotal, 0);
-
-    return {
-      totalPartners,
-      activePartners,
-      totalIssueCount,
-      totalIssueAmount,
-    };
-  }, [filteredItems]);
+  const summary = useMemo(() => ({
+    totalPartners: filteredItems.length,
+    activePartners: filteredItems.filter((i) => i.issueCount > 0).length,
+    totalIssueCount: filteredItems.reduce((s, i) => s + i.issueCount, 0),
+    totalIssueAmount: filteredItems.reduce((s, i) => s + i.issueTotal, 0),
+  }), [filteredItems]);
 
   return (
-    <main style={{ display: "grid", gap: 16 }}>
-      <section style={cardStyle()}>
-        <div className="payout-stats__header-row">
-          <div>
-            <h1 style={{ fontSize: 26, fontWeight: 900, margin: 0 }}>
-              포인트 지급 현황
-            </h1>
-            <div className="payout-stats__desc">
-              관리자가 제휴사에 충전 승인한 포인트 건수 및 금액을 기간별로 확인합니다.
-            </div>
-          </div>
-
-          <button
-            onClick={load}
-            className="payout-stats__primary-btn"
-            type="button"
-          >
-            새로고침
-          </button>
+    <main className="space-y-5">
+      {/* 헤더 + 필터 */}
+      <section className="bg-card border border-border rounded-2xl p-5 space-y-4">
+        <div>
+          <h1 className="text-2xl font-black text-foreground tracking-tight">포인트 지급 현황</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            관리자가 제휴사에 충전 승인한 포인트 건수 및 금액을 기간별로 확인합니다.
+          </p>
         </div>
 
-        <div className="payout-stats__filter-row">
-          <div className="payout-stats__filter-group">
-            <label className="payout-stats__label">시작일</label>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-muted-foreground">시작일</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="payout-stats__input"
+              className="h-9 px-3 rounded-xl border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-
-          <div className="payout-stats__filter-group">
-            <label className="payout-stats__label">종료일</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-muted-foreground">종료일</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="payout-stats__input"
+              className="h-9 px-3 rounded-xl border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-
-          <div className="payout-stats__filter-group">
-            <label className="payout-stats__label">제휴사 검색</label>
+          <div className="space-y-1 flex-1 min-w-[140px]">
+            <label className="text-xs font-bold text-muted-foreground">제휴사 검색</label>
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="제휴사명 / 아이디 검색"
-              className="payout-stats__input"
+              placeholder="제휴사명 / 아이디"
+              className="w-full h-9 px-3 rounded-xl border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-
-          <div className="payout-stats__filter-group">
-            <label className="payout-stats__label">정렬 기준</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-muted-foreground">정렬</label>
             <select
               value={sortType}
               onChange={(e) => setSortType(e.target.value as "amount" | "count")}
-              className="payout-stats__input"
+              className="h-9 px-3 rounded-xl border border-border text-sm bg-background focus:outline-none"
             >
               <option value="amount">지급 금액순</option>
               <option value="count">지급 건수순</option>
             </select>
           </div>
-
-          <div className="payout-stats__filter-actions">
+          <div className="flex gap-2 flex-wrap">
             <button
               type="button"
               onClick={load}
-              className="payout-stats__primary-btn"
+              className="h-9 px-4 rounded-xl bg-foreground text-background text-sm font-bold hover:opacity-80 transition-opacity"
             >
               조회
             </button>
-
             <button
               type="button"
-              onClick={() => {
-                setStartDate(getMonthStartYmd());
-                setEndDate(getTodayYmd());
-              }}
-              className="payout-stats__secondary-btn"
+              onClick={() => { setStartDate(getMonthStartYmd()); setEndDate(getTodayYmd()); }}
+              className="h-9 px-4 rounded-xl border border-border text-sm font-bold hover:bg-muted transition-colors"
             >
               이번 달
             </button>
-
             <button
               type="button"
-              onClick={() => {
-                setStartDate("");
-                setEndDate("");
-                setKeyword("");
-                setItems([]);
-                setSearched(false);
-                setMsg("");
-              }}
-              className="payout-stats__secondary-btn"
+              onClick={() => { setStartDate(""); setEndDate(""); setKeyword(""); setItems([]); setSearched(false); setMsg(""); }}
+              className="h-9 px-4 rounded-xl border border-border text-sm font-bold hover:bg-muted transition-colors"
             >
               전체 기간
             </button>
           </div>
         </div>
 
-        {msg ? <div className="payout-stats__msg">{msg}</div> : null}
+        {msg && (
+          <div className="p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-bold">
+            {msg}
+          </div>
+        )}
       </section>
 
       {!searched && (
-        <div style={{ padding: "48px 0", textAlign: "center", color: "#9ca3af", fontSize: 14, border: "1px dashed #e5e7eb", borderRadius: 16 }}>
+        <div className="py-12 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
           필터를 입력하고 조회 버튼을 눌러주세요.
         </div>
       )}
 
-      {searched && <section className="payout-stats__summary-grid">
-        <div style={cardStyle()}>
-          <div className="payout-stats__summary-label">조회 제휴사</div>
-          <div className="payout-stats__summary-value">
-            {format(summary.totalPartners)}개
+      {searched && (
+        <>
+          {/* 요약 카드 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "조회 제휴사", value: `${format(summary.totalPartners)}개` },
+              { label: "지급 발생 제휴사", value: `${format(summary.activePartners)}개` },
+              { label: "총 지급 건수", value: `${format(summary.totalIssueCount)}건` },
+              { label: "총 지급 포인트", value: `${format(summary.totalIssueAmount)}P`, highlight: true },
+            ].map((card) => (
+              <div key={card.label} className="bg-card border border-border rounded-2xl p-4">
+                <div className="text-xs font-bold text-muted-foreground mb-2">{card.label}</div>
+                <div className={`text-2xl font-black ${card.highlight ? "text-primary" : "text-foreground"}`}>
+                  {card.value}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div style={cardStyle()}>
-          <div className="payout-stats__summary-label">지급 발생 제휴사</div>
-          <div className="payout-stats__summary-value">
-            {format(summary.activePartners)}개
-          </div>
-        </div>
+          {/* 결과 */}
+          <section className="bg-card border border-border rounded-2xl p-5">
+            <p className="text-xs font-bold text-muted-foreground mb-4">
+              {startDate && endDate ? `${startDate} ~ ${endDate}` : "전체 기간"}
+              {keyword.trim() ? ` · 검색: ${keyword}` : ""}
+              {" · "}
+              {sortType === "amount" ? "지급 금액순" : "지급 건수순"}
+            </p>
 
-        <div style={cardStyle()}>
-          <div className="payout-stats__summary-label">총 지급 건수</div>
-          <div className="payout-stats__summary-value">
-            {format(summary.totalIssueCount)}건
-          </div>
-        </div>
-
-        <div style={cardStyle()}>
-          <div className="payout-stats__summary-label">총 지급 포인트</div>
-          <div className="payout-stats__summary-value">
-            {format(summary.totalIssueAmount)}P
-          </div>
-        </div>
-      </section>}
-
-      {searched && <section style={cardStyle()}>
-        <div className="payout-stats__meta-line">
-          조회 기간: {startDate && endDate ? `${startDate} ~ ${endDate}` : "전체 기간"}
-          {keyword.trim() ? ` / 검색어: ${keyword}` : ""}
-          {` / 정렬: ${sortType === "amount" ? "지급 금액순" : "지급 건수순"}`}
-        </div>
-
-        {loading ? (
-          <div style={{ padding: 20 }}>불러오는 중...</div>
-        ) : (
-          <>
-            <div className="payout-stats__table-wrap">
-              <div className="payout-stats__table">
-                <div className="payout-stats__thead">
-                  <div>제휴사</div>
-                  <div>아이디</div>
-                  <div>지급 건수</div>
-                  <div>지급 합계</div>
-                  <div>평균 지급</div>
-                  <div>마지막 지급일</div>
+            {loading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">불러오는 중...</div>
+            ) : (
+              <>
+                {/* 데스크탑 테이블 */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2.5 px-3 text-xs font-black text-muted-foreground">제휴사</th>
+                        <th className="text-left py-2.5 px-3 text-xs font-black text-muted-foreground">아이디</th>
+                        <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">지급 건수</th>
+                        <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">지급 합계</th>
+                        <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">평균 지급</th>
+                        <th className="text-right py-2.5 px-3 text-xs font-black text-muted-foreground">마지막 지급일</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredItems.map((it) => (
+                        <tr key={it.partnerId} className="border-b border-border/50">
+                          <td className="py-3 px-3 font-black text-foreground">{it.name}</td>
+                          <td className="py-3 px-3 text-muted-foreground text-sm">{formatUsername(it.username)}</td>
+                          <td className="py-3 px-3 text-right font-semibold">{format(it.issueCount)}건</td>
+                          <td className="py-3 px-3 text-right font-black text-primary">{format(it.issueTotal)}P</td>
+                          <td className="py-3 px-3 text-right font-semibold">{format(it.avgIssue)}P</td>
+                          <td className="py-3 px-3 text-right text-xs text-muted-foreground">{formatDate(it.lastIssuedAt)}</td>
+                        </tr>
+                      ))}
+                      {filteredItems.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
+                            데이터가 없습니다.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
-                {filteredItems.map((it) => (
-                  <div key={it.partnerId} className="payout-stats__row">
-                    <div style={{ fontWeight: 800 }}>{it.name}</div>
-                    <div>{formatUsername(it.username)}</div>
-                    <div>{format(it.issueCount)}건</div>
-                    <div style={{ fontWeight: 800 }}>
-                      {format(it.issueTotal)}P
+                {/* 모바일 카드 */}
+                <div className="flex md:hidden flex-col gap-3">
+                  {filteredItems.map((it) => (
+                    <article key={it.partnerId} className="border border-border rounded-2xl p-4 space-y-3">
+                      <div>
+                        <div className="font-black text-foreground">{it.name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{formatUsername(it.username)}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {[
+                          { label: "지급 건수", value: `${format(it.issueCount)}건` },
+                          { label: "지급 합계", value: `${format(it.issueTotal)}P`, highlight: true },
+                          { label: "평균 지급", value: `${format(it.avgIssue)}P` },
+                          { label: "마지막 지급일", value: formatDate(it.lastIssuedAt) },
+                        ].map((row) => (
+                          <div key={row.label} className="border-t border-border/50 pt-2.5">
+                            <div className="text-xs font-bold text-muted-foreground mb-1">{row.label}</div>
+                            <div className={`text-sm font-black ${"highlight" in row && row.highlight ? "text-primary" : "text-foreground"}`}>
+                              {row.value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                  {filteredItems.length === 0 && (
+                    <div className="py-12 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
+                      데이터가 없습니다.
                     </div>
-                    <div>{format(it.avgIssue)}P</div>
-                    <div>{formatDate(it.lastIssuedAt)}</div>
-                  </div>
-                ))}
-
-                {!loading && filteredItems.length === 0 ? (
-                  <div className="payout-stats__empty">데이터가 없습니다.</div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="payout-stats__mobile-cards">
-              {filteredItems.map((it) => (
-                <article key={it.partnerId} className="payout-stats__mobile-card">
-                  <div className="payout-stats__mobile-title">
-                    <div className="payout-stats__mobile-name">{it.name}</div>
-                    <div className="payout-stats__mobile-username">{formatUsername(it.username)}</div>
-                  </div>
-
-                  <div className="payout-stats__mobile-grid">
-                    <div className="payout-stats__mobile-item">
-                      <span>지급 건수</span>
-                      <strong>{format(it.issueCount)}건</strong>
-                    </div>
-
-                    <div className="payout-stats__mobile-item">
-                      <span>지급 합계</span>
-                      <strong>{format(it.issueTotal)}P</strong>
-                    </div>
-
-                    <div className="payout-stats__mobile-item">
-                      <span>평균 지급</span>
-                      <strong>{format(it.avgIssue)}P</strong>
-                    </div>
-
-                    <div className="payout-stats__mobile-item">
-                      <span>마지막 지급</span>
-                      <strong>{formatDate(it.lastIssuedAt)}</strong>
-                    </div>
-                  </div>
-                </article>
-              ))}
-
-              {!loading && filteredItems.length === 0 ? (
-                <div className="payout-stats__empty">데이터가 없습니다.</div>
-              ) : null}
-            </div>
-          </>
-        )}
-      </section>}
-
-      <style jsx>{`
-        .payout-stats__header-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          flex-wrap: wrap;
-          align-items: center;
-        }
-
-        .payout-stats__desc {
-          margin-top: 8px;
-          color: #6b7280;
-          line-height: 1.6;
-        }
-
-        .payout-stats__filter-row {
-          margin-top: 18px;
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr auto;
-          gap: 12px;
-          align-items: end;
-        }
-
-        .payout-stats__filter-group {
-          display: grid;
-          gap: 6px;
-          min-width: 0;
-        }
-
-        .payout-stats__label {
-          font-size: 13px;
-          font-weight: 800;
-          color: #6b7280;
-        }
-
-        .payout-stats__input {
-          width: 100%;
-          height: 44px;
-          border-radius: 10px;
-          border: 1px solid #d1d5db;
-          background: #fff;
-          padding: 0 12px;
-          box-sizing: border-box;
-          min-width: 0;
-        }
-
-        .payout-stats__filter-actions {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .payout-stats__primary-btn {
-          height: 44px;
-          padding: 0 14px;
-          border-radius: 10px;
-          border: 1px solid #111827;
-          background: #111827;
-          color: #fff;
-          font-weight: 800;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .payout-stats__secondary-btn {
-          height: 44px;
-          padding: 0 14px;
-          border-radius: 10px;
-          border: 1px solid #d1d5db;
-          background: #fff;
-          color: #111827;
-          font-weight: 800;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .payout-stats__msg {
-          margin-top: 12px;
-          padding: 12px;
-          border-radius: 10px;
-          border: 1px solid #fecaca;
-          background: #fef2f2;
-          color: #991b1b;
-          font-weight: 700;
-        }
-
-        .payout-stats__summary-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
-        }
-
-        .payout-stats__summary-label {
-          font-size: 13px;
-          color: #6b7280;
-          margin-bottom: 8px;
-          font-weight: 800;
-        }
-
-        .payout-stats__summary-value {
-          font-size: 28px;
-          color: #111827;
-          font-weight: 900;
-          line-height: 1.2;
-        }
-
-        .payout-stats__meta-line {
-          font-size: 15px;
-          font-weight: 800;
-          margin-bottom: 14px;
-          color: #374151;
-          line-height: 1.6;
-          word-break: keep-all;
-        }
-
-        .payout-stats__table-wrap {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .payout-stats__table {
-          min-width: 980px;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
-          overflow: hidden;
-          background: #fff;
-        }
-
-        .payout-stats__thead,
-        .payout-stats__row {
-          display: grid;
-          grid-template-columns: 180px 180px 130px 160px 140px 220px;
-          padding: 12px 14px;
-          align-items: center;
-          column-gap: 12px;
-        }
-
-        .payout-stats__thead {
-          background: #f8fafc;
-          font-size: 13px;
-          font-weight: 900;
-          color: #475569;
-        }
-
-        .payout-stats__row {
-          border-top: 1px solid #f1f5f9;
-        }
-
-        .payout-stats__mobile-cards {
-          display: none;
-        }
-
-        .payout-stats__mobile-card {
-          border: 1px solid #e5e7eb;
-          border-radius: 14px;
-          padding: 14px;
-          background: #fff;
-          display: grid;
-          gap: 12px;
-        }
-
-        .payout-stats__mobile-title {
-          display: grid;
-          gap: 4px;
-        }
-
-        .payout-stats__mobile-name {
-          font-size: 17px;
-          font-weight: 900;
-          color: #111827;
-          line-height: 1.3;
-        }
-
-        .payout-stats__mobile-username {
-          font-size: 14px;
-          color: #6b7280;
-          word-break: break-all;
-        }
-
-        .payout-stats__mobile-grid {
-          display: grid;
-          gap: 10px;
-        }
-
-        .payout-stats__mobile-item {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: flex-start;
-          padding: 10px 0;
-          border-top: 1px solid #f1f5f9;
-          line-height: 1.5;
-        }
-
-        .payout-stats__mobile-item:first-child {
-          border-top: none;
-          padding-top: 0;
-        }
-
-        .payout-stats__mobile-item span {
-          color: #6b7280;
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .payout-stats__mobile-item strong {
-          color: #111827;
-          font-size: 14px;
-          font-weight: 900;
-          text-align: right;
-        }
-
-        .payout-stats__empty {
-          padding: 20px;
-          text-align: center;
-          color: #6b7280;
-        }
-
-        @media (max-width: 1400px) {
-          .payout-stats__filter-row {
-            grid-template-columns: 1fr 1fr 1fr;
-          }
-
-          .payout-stats__filter-actions {
-            grid-column: 1 / -1;
-          }
-        }
-
-        @media (max-width: 1100px) {
-          .payout-stats__summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .payout-stats__filter-row {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .payout-stats__table-wrap {
-            display: none;
-          }
-
-          .payout-stats__mobile-cards {
-            display: grid;
-            gap: 12px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .payout-stats__summary-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .payout-stats__filter-row {
-            grid-template-columns: 1fr;
-          }
-
-          .payout-stats__filter-actions {
-            grid-column: auto;
-          }
-
-          .payout-stats__summary-value {
-            font-size: 24px;
-          }
-
-          .payout-stats__primary-btn,
-          .payout-stats__secondary-btn {
-            width: 100%;
-          }
-
-          .payout-stats__header-row {
-            align-items: stretch;
-          }
-        }
-      `}</style>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }
