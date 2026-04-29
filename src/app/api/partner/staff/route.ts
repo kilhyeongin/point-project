@@ -32,49 +32,53 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
   }
 
-  await connectDB();
-  const orgId = session.orgId ?? "4nwn";
-  const partnerId = new mongoose.Types.ObjectId(session.uid);
+  try {
+    await connectDB();
+    const orgId = session.orgId ?? "4nwn";
+    const partnerId = new mongoose.Types.ObjectId(session.uid);
 
-  const staff = await PartnerStaff.find({ organizationId: orgId, partnerId })
-    .sort({ createdAt: 1 })
-    .limit(200)
-    .lean();
+    const staff = await PartnerStaff.find({ organizationId: orgId, partnerId })
+      .sort({ createdAt: 1 })
+      .limit(200)
+      .lean();
 
-  const codes = staff.map((s: any) => s.code);
+    const codes = staff.map((s: any) => s.code);
 
-  // 각 직원별 추천 가입자 수 집계
-  const counts = await User.aggregate([
-    {
-      $match: {
-        organizationId: orgId,
-        role: "CUSTOMER",
-        "customerProfile.referralCode": { $in: codes },
+    const counts = await User.aggregate([
+      {
+        $match: {
+          organizationId: orgId,
+          role: "CUSTOMER",
+          "customerProfile.referralCode": { $in: codes },
+        },
       },
-    },
-    {
-      $group: {
-        _id: "$customerProfile.referralCode",
-        count: { $sum: 1 },
+      {
+        $group: {
+          _id: "$customerProfile.referralCode",
+          count: { $sum: 1 },
+        },
       },
-    },
-  ]);
+    ]);
 
-  const countMap: Record<string, number> = {};
-  for (const c of counts) {
-    countMap[c._id] = c.count;
+    const countMap: Record<string, number> = {};
+    for (const c of counts) {
+      countMap[c._id] = c.count;
+    }
+
+    const result = staff.map((s: any) => ({
+      id: String(s._id),
+      name: s.name,
+      code: s.code,
+      isActive: s.isActive,
+      referralCount: countMap[s.code] ?? 0,
+      createdAt: s.createdAt,
+    }));
+
+    return NextResponse.json({ ok: true, staff: result });
+  } catch (error) {
+    console.error("[PARTNER_STAFF_GET_ERROR]", error);
+    return NextResponse.json({ ok: false, error: "직원 목록을 불러오지 못했습니다." }, { status: 500 });
   }
-
-  const result = staff.map((s: any) => ({
-    id: String(s._id),
-    name: s.name,
-    code: s.code,
-    isActive: s.isActive,
-    referralCount: countMap[s.code] ?? 0,
-    createdAt: s.createdAt,
-  }));
-
-  return NextResponse.json({ ok: true, staff: result });
 }
 
 export async function POST(req: NextRequest) {
