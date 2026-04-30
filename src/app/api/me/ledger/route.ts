@@ -41,10 +41,13 @@ export async function GET() {
 
     const items = (docs as any[]).map((d) => {
       const actor = d.actorId as any;
-      const partnerName =
-        actor?.name?.trim() ||
-        actor?.partnerProfile?.businessName?.trim() ||
-        null;
+      const actorId = String(actor?._id ?? actor ?? "");
+      const isSelf = actorId === String(accountId);
+      const partnerName = isSelf
+        ? null
+        : actor?.partnerProfile?.businessName?.trim() ||
+          actor?.name?.trim() ||
+          null;
       return {
         id: String(d._id),
         type: d.type,
