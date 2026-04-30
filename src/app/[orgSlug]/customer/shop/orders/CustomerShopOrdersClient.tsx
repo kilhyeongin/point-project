@@ -16,6 +16,7 @@ type Order = {
   pinNumber: string;
   pinUrl: string;
   expiresAt: string | null;
+  refundedAt: string | null;
   createdAt: string | null;
 };
 
@@ -127,11 +128,20 @@ export default function CustomerShopOrdersClient({
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatDate(order.createdAt)}
                     </p>
+                    {order.status === "REFUNDED" && order.refundedAt && (
+                      <p className="text-xs text-blue-400 mt-0.5">
+                        환불일 {formatDate(order.refundedAt)}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className="text-sm font-black text-primary">
-                      -{formatPoint(order.pointsSpent)}P
-                    </span>
+                    {order.status === "REFUNDED" ? (
+                      <span className="text-sm font-black text-blue-500">환불</span>
+                    ) : (
+                      <span className="text-sm font-black text-primary">
+                        -{formatPoint(order.pointsSpent)}P
+                      </span>
+                    )}
                     <div className={`flex items-center gap-1 ${statusInfo.color}`}>
                       <StatusIcon className="w-3.5 h-3.5" />
                       <span className="text-xs font-bold">{statusInfo.label}</span>

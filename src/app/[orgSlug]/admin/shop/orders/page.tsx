@@ -28,6 +28,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   PENDING: { label: "처리 중", color: "text-yellow-600", bg: "bg-yellow-50" },
   POINT_DEDUCTED: { label: "포인트 차감됨", color: "text-yellow-600", bg: "bg-yellow-50" },
   SMARTCON_CALLED: { label: "발송 중", color: "text-yellow-600", bg: "bg-yellow-50" },
+  REFUND_FAILED: { label: "환불 실패 · 수동처리 필요", color: "text-red-700", bg: "bg-red-100" },
 };
 
 const STATUS_OPTIONS = [
@@ -35,6 +36,7 @@ const STATUS_OPTIONS = [
   { value: "COMPLETED", label: "발송 완료" },
   { value: "FAILED", label: "실패" },
   { value: "REFUNDED", label: "환불 완료" },
+  { value: "REFUND_FAILED", label: "환불 실패" },
   { value: "PENDING", label: "처리 중" },
 ];
 
@@ -258,7 +260,7 @@ export default function AdminShopOrdersPage() {
               color: "text-muted-foreground",
               bg: "bg-muted",
             };
-            const canRefund = ["FAILED", "POINT_DEDUCTED", "SMARTCON_CALLED"].includes(order.status);
+            const canRefund = ["FAILED", "POINT_DEDUCTED", "SMARTCON_CALLED", "REFUND_FAILED"].includes(order.status);
 
             return (
               <div

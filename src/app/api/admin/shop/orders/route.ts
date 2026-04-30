@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
 
     const orderDoc = order as any;
 
-    if (!["FAILED", "POINT_DEDUCTED", "SMARTCON_CALLED"].includes(orderDoc.status)) {
+    if (!["FAILED", "POINT_DEDUCTED", "SMARTCON_CALLED", "REFUND_FAILED"].includes(orderDoc.status)) {
       return NextResponse.json(
         { ok: false, error: `${orderDoc.status} 상태는 환불할 수 없습니다.` },
         { status: 400 }

@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
       pinNumber: ["COMPLETED"].includes(doc.status) ? String(doc.pinNumber ?? "") : "",
       pinUrl: ["COMPLETED"].includes(doc.status) ? String(doc.pinUrl ?? "") : "",
       expiresAt: doc.expiresAt ?? null,
+      refundedAt: doc.refundedAt ?? null,
       createdAt: doc.createdAt ?? null,
     }));
 
