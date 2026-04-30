@@ -18,10 +18,7 @@ async function callSmartconAPI(params: {
   const apiKey = process.env.SMARTCON_API_KEY;
 
   if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("SMARTCON_API_KEY가 설정되지 않았습니다.");
-    }
-    // 개발 환경 Mock
+    // 스마트콘 API 키 미설정 시 Mock 동작 (실제 연동 전 임시)
     return {
       pinNumber: `MOCK-${Date.now()}-${params.orderId.slice(-6)}`,
       pinUrl: "",
