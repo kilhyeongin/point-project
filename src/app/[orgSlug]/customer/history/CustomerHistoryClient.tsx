@@ -20,19 +20,20 @@ type LedgerItem = {
   createdAt: string;
 };
 
-function typeLabel(type: string, hasPartner = false) {
+function typeLabel(type: string, refType: string | null, amount: number, hasPartner = false) {
   if (type === "TOPUP") return "포인트 충전";
-  if (type === "ISSUE") return hasPartner ? "포인트 지급받음" : "포인트 지급";
-  if (type === "USE") return "포인트 사용";
-  if (type === "ADJUST") return "포인트 조정";
+  if (type === "ISSUE") return hasPartner ? "포인트 지급받음" : "포인트 지급받음";
+  if (type === "USE") return refType === "ShopOrder" ? "상품몰 구매" : "포인트 사용";
+  if (type === "ADJUST") {
+    if (refType === "ShopOrder" && amount > 0) return "구매 환불";
+    return amount > 0 ? "포인트 지급" : "포인트 차감";
+  }
   return type;
 }
 
-function typeColor(type: string) {
-  if (type === "TOPUP" || type === "ISSUE") return "oklch(0.45 0.2 145)"; // green
-  if (type === "USE") return "oklch(0.5 0.22 25)"; // red
-  if (type === "ADJUST") return "oklch(0.5 0.18 264)"; // blue
-  return "oklch(0.5 0 0)";
+function typeColor(type: string, amount: number) {
+  if (type === "TOPUP" || type === "ISSUE" || (type === "ADJUST" && amount > 0)) return "oklch(0.45 0.2 145)";
+  return "oklch(0.5 0.22 25)";
 }
 
 function formatDate(iso: string) {
@@ -56,11 +57,7 @@ export default function CustomerHistoryClient({ session }: { session: SessionInf
       .finally(() => setLoading(false));
   }, []);
 
-  const totalBalance = items.reduce((acc, item) => {
-    if (item.type === "TOPUP" || item.type === "ISSUE") return acc + item.amount;
-    if (item.type === "USE" || item.type === "ADJUST") return acc - Math.abs(item.amount);
-    return acc;
-  }, 0);
+  const totalBalance = items.reduce((acc, item) => acc + item.amount, 0);
 
   return (
     <CustomerShellClient
@@ -112,7 +109,7 @@ export default function CustomerHistoryClient({ session }: { session: SessionInf
         )}
 
         {!loading && items.map((item) => {
-          const isPositive = item.type === "TOPUP" || item.type === "ISSUE";
+          const isPositive = item.amount > 0;
           const sign = isPositive ? "+" : "-";
           return (
             <div key={item.id} className="bg-card shadow-card rounded-2xl p-4">
@@ -120,8 +117,8 @@ export default function CustomerHistoryClient({ session }: { session: SessionInf
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-extrabold text-foreground">
                     {item.partnerName
-                      ? `${item.partnerName}에서 ${typeLabel(item.type, true)}`
-                      : typeLabel(item.type)}
+                      ? `${item.partnerName}에서 ${typeLabel(item.type, item.refType, item.amount, true)}`
+                      : typeLabel(item.type, item.refType, item.amount)}
                   </p>
                   {!item.partnerName && item.note && (
                     <p className="text-xs text-muted-foreground mt-0.5">{item.note}</p>
@@ -130,7 +127,7 @@ export default function CustomerHistoryClient({ session }: { session: SessionInf
                 </div>
                 <span
                   className="text-base font-black whitespace-nowrap"
-                  style={{ color: typeColor(item.type) }}
+                  style={{ color: typeColor(item.type, item.amount) }}
                 >
                   {sign}{Math.abs(item.amount).toLocaleString()}P
                 </span>
